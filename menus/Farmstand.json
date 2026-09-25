@@ -1,0 +1,3983 @@
+ID: prod
+MAPPINGS:
+{
+  "ingredients": [
+    {
+      "menu_item_ids": [
+        "mb:cannellini-bean-salad-a-ae575779af514bb5bbfef8f2a002e3db-8d9f:f86eea75-dc46-4038-a7f0-8fd0af7be99f",
+        "mb:cannellini-bean-salad-a-ae575779af514bb5bbfef8f2a002e3db-9f42:19dc555e-dc5b-446b-b3d1-709a282c95fd"
+      ],
+      "ingredient_name": "Bean Salad",
+      "per_portion_weight_g": 80.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:miso-ginger-dressing-a-ae575779af514bb5bbfef8f2a002e3db-8fe5:4ed7ceb0-10fd-4847-870e-154175176b9c"
+      ],
+      "ingredient_name": "Miso Ginger",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:marinated-tomatoes-a-ae575779af514bb5bbfef8f2a002e3db-d732:77eda270-3378-4f9a-b6ad-bb2d117c5be3"
+      ],
+      "ingredient_name": "Tomatoes",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:pasta-salad"
+      ],
+      "ingredient_name": "Pasta Salad",
+      "per_portion_weight_g": 80.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:cucumbers-plain"
+      ],
+      "ingredient_name": "Cucumbers Plain",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:massaged-kale"
+      ],
+      "ingredient_name": "Massaged Kale",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:massaged-kale"
+      ],
+      "ingredient_name": "Massaged Kale",
+      "per_portion_weight_g": 41.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:massaged-kale"
+      ],
+      "ingredient_name": "Massaged Kale",
+      "per_portion_weight_g": 41.0,
+      "per_portion_minimum_weight_g": 0.0
+    }
+  ],
+  "product_templates": [
+    {
+      "source_item_id": "mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14",
+      "target_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:black-beans",
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:cheese",
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:mexican-rice",
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:chicken-tex-mex",
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:chipotle-crema",
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:tomatoes"
+      ]
+    },
+    {
+      "source_item_id": "mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6",
+      "target_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:couscous",
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:tzatziki",
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:cucumbers-plain",
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:brown-rice-and-lentils",
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:chicken-herby",
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:feta"
+      ]
+    },
+    {
+      "source_item_id": "mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0",
+      "target_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:romaine-base",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:pasta-salad",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:broccoli",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:cheese",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:citrus-vin",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:cucumbers-plain",
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:tomatoes"
+      ]
+    },
+    {
+      "source_item_id": "mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7",
+      "target_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:romaine-base",
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:pasta-salad",
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:chicken-salad",
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:couscous",
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:seeds"
+      ]
+    },
+    {
+      "source_item_id": "mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5",
+      "target_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:pasta-salad",
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:chicken-salad",
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:citrus-vin",
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:salsa-matcha",
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:massaged-kale"
+      ]
+    },
+    {
+      "source_item_id": "mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff",
+      "target_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:romaine-base",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:couscous",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:pasta-salad",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:broccoli",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:chicken-salad",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:seeds",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:ranch",
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:massaged-kale"
+      ]
+    },
+    {
+      "source_item_id": "mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894",
+      "target_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:couscous",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:cucumbers-plain",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:tzatziki",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:tomatoes",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:harissa",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:feta",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:massaged-kale"
+      ]
+    },
+    {
+      "source_item_id": "mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff",
+      "target_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:romaine-base",
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:chicken-salad",
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:corn",
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:cheese",
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:cilantro-crema",
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:tomatoes"
+      ]
+    },
+    {
+      "source_item_id": "mb:build-your-own-farmstand-salad:667b1539-d18b-49d1-b67c-fce3aaf3093f",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:build-your-own-farmstand-bowl:1518b9ce-a552-4e4c-924c-161c107df0ea",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22",
+      "target_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:romaine-base",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:asian-salad",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:couscous",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:pasta-salad",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:cucumbers-plain",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:feta",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:chicken-salad",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:salsa-macha",
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:citrus-vin"
+      ]
+    },
+    {
+      "source_item_id": "mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3",
+      "target_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:chicken-salad",
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:citrus-vin",
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:pasta-salad",
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:salsa-macha"
+      ]
+    },
+    {
+      "source_item_id": "mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f",
+      "target_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:broccoli",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:chicken-salad",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:couscous",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:pasta-salad",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:ranch",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:romaine-base",
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:seeds"
+      ]
+    },
+    {
+      "source_item_id": "mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46",
+      "target_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:couscous",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:cucumbers-plain",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:feta",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:harissa",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:tomatoes",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:tzatziki"
+      ]
+    },
+    {
+      "source_item_id": "mb:build-your-own-farmstand-bowl:2b6d1828-e3f1-42cb-bfbb-c62ad4f924e9",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb",
+      "target_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:chicken-salad",
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:citrus-vin",
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:pasta-salad",
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:salsa-macha"
+      ]
+    },
+    {
+      "source_item_id": "mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef",
+      "target_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:broccoli",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:chicken-salad",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:couscous",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:pasta-salad",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:ranch",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:romaine-base",
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:seeds"
+      ]
+    },
+    {
+      "source_item_id": "mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b",
+      "target_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:couscous",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:cucumbers-plain",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:feta",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:harissa",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:tomatoes",
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:tzatziki"
+      ]
+    },
+    {
+      "source_item_id": "mb:build-your-own-farmstand-bowl:43d980b5-64a0-40f7-8866-0b864abd2234",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b",
+      "target_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:romaine-base",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:pasta-salad",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:broccoli",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:cheese",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:citrus-vin",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:cucumbers-plain",
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:tomatoes"
+      ]
+    }
+  ],
+  "multi_product_templates": [],
+  "ingredient_templates": [],
+  "ignored_product_ids": [
+    "mb:no-dressing:e61cb6a7-3bb7-4c53-8e9d-e86f1df2af33",
+    "mb:no-caesar-dressing:e912b5c5-4a38-4630-8fe6-dd70f9c89c62",
+    "mb:no-chicken-breast:156c6341-4e26-4120-bb4a-27b335d0d82e",
+    "mb:no-roasted-chicken-please:82c15494-43af-4697-9b72-2cdff057d86f",
+    "mb:no-utensils:1a9f7e9a-3d64-4b11-98ec-f3cdd8bfddca",
+    "mb:no-utensils:375a2698-1dea-4097-8c7f-ee6e69f994a4",
+    "mb:no-utensils:89270f75-6059-4388-b364-4a9a9c4d8105",
+    "mb:no-roasted-chicken-please:985038b4-c2a2-4d24-9b0f-7adff381c996",
+    "mb:no-dressing:02263445-090f-4ddb-9c11-93b5e38c65f2",
+    "mb:no-utensils:b8008ca3-0700-4ae9-8aaa-55922d62e5df",
+    "mb:no-utensils:8055a81d-5e6e-446c-9492-913359a3fabc",
+    "mb:no-utensils:f595dbda-ea89-4e2d-9044-88193ed7797b",
+    "mb:no-utensils:898b6d3f-bf12-4cd5-9450-d32e2d869861",
+    "mb:no-utensils:b07e86c0-f000-461c-a902-9fc20cb1a31e",
+    "mb:no-dressing:dd70ae30-8626-4eae-8d81-feacf2a694f2",
+    "mb:no-roasted-chicken-please:c00872b6-b3f9-46d7-a133-c71eb7ca9da9"
+  ],
+  "ignored_ingredient_ids": [
+    "mb:no-utensils-a-ae575779af514bb5bbfef8f2a002e3db-6b50:f3bd4cfe-aeac-4e7d-898e-f9977a077621",
+    "mb:no-fritos-please-i-know-they-are-included-but-dont-want-them-a-ae575779af514bb5bbfef8f2a002e3db-1f16:963aa736-9a1a-403e-a2ea-0ddcd9bd1a42",
+    "mb:no-dressing:e61cb6a7-3bb7-4c53-8e9d-e86f1df2af33",
+    "mb:no-caesar-dressing:e912b5c5-4a38-4630-8fe6-dd70f9c89c62",
+    "mb:no-chicken-breast:156c6341-4e26-4120-bb4a-27b335d0d82e",
+    "mb:no-roasted-chicken-please:82c15494-43af-4697-9b72-2cdff057d86f",
+    "mb:no-utensils:1a9f7e9a-3d64-4b11-98ec-f3cdd8bfddca",
+    "mb:no-utensils:375a2698-1dea-4097-8c7f-ee6e69f994a4",
+    "mb:no-utensils:89270f75-6059-4388-b364-4a9a9c4d8105",
+    "mb:no-roasted-chicken-please:985038b4-c2a2-4d24-9b0f-7adff381c996",
+    "mb:no-dressing:02263445-090f-4ddb-9c11-93b5e38c65f2",
+    "mb:no-utensils:b8008ca3-0700-4ae9-8aaa-55922d62e5df",
+    "mb:no-utensils:8055a81d-5e6e-446c-9492-913359a3fabc",
+    "mb:no-utensils:f595dbda-ea89-4e2d-9044-88193ed7797b",
+    "mb:no-utensils:898b6d3f-bf12-4cd5-9450-d32e2d869861",
+    "mb:no-utensils:b07e86c0-f000-461c-a902-9fc20cb1a31e",
+    "mb:no-dressing:dd70ae30-8626-4eae-8d81-feacf2a694f2",
+    "mb:no-roasted-chicken-please:c00872b6-b3f9-46d7-a133-c71eb7ca9da9"
+  ],
+  "auxiliary_product_ids": [
+    "mb:basil-garlic-crunch-pasta-salad:aeb848ca-ddf0-47b4-9aae-6426d5d81515",
+    "mb:bottled-water:89174f81-f169-4a45-927a-5dd5bf488d25",
+    "mb:caesar-dressing:cd6dfb2e-559f-481f-b92a-9b08bfea8e85",
+    "mb:cannellini-bean-salad:3ff40f07-9587-43b8-b93e-ba9b783cf304",
+    "mb:cinnamon-caramel-cookie:4277bb0b-a634-4e0c-81ae-7c02380235ab",
+    "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-7928:9d9495ee-a04f-4c0a-b11b-8cb3ea1a0a47",
+    "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-4d18:f6e76b94-c8a9-48ea-98fc-b02608b617d2",
+    "mb:crunchy-fritos-please-a-ae575779af514bb5bbfef8f2a002e3db-4595:a7ddc0f4-4f47-47da-9443-62ebcdb58cab",
+    "mb:crunchy-seed-praline:d0c1e92c-07f6-4b9b-8bbd-cb6bc5966a6b",
+    "mb:farmstand-blueberry-streusel-bar:214905a1-92f0-4690-bd8e-eaa70f7dc141",
+    "mb:farmstand-cornbread:edd22cf0-f882-4d69-944f-118eafc25652",
+    "mb:farmstand-garlic-flatbread:032fd0d3-86fe-48b9-b6b8-d23093bf725d",
+    "mb:farmstand-ranch-dressing:ef849e99-35b1-46aa-ad2c-91a7bcc2946c",
+    "mb:farro-couscous-salad:9778de67-c83f-4c76-b6f9-6d7c75e24fa6",
+    "mb:garlicky-chicken-salad:8da1311e-a8a2-43ad-be0c-46b609222e09",
+    "mb:ginger-lemon-kombucha:5c38971e-b7f5-4fb8-9a99-bec7aac31e64",
+    "mb:lemon-vinaigrette:3789d2fa-47df-4430-9a16-1b55c61fefe7",
+    "mb:mediterranean-chili-dressing:c2b99eb2-5f3f-4bc9-9921-22f10d3b8353",
+    "mb:miso-ginger-dressing:b352de32-a731-45b3-8df6-92f54713524d",
+    "mb:pistachio-lemon-cookie:cf01b77e-b28d-4f21-8352-d5bf5b3ddcd1",
+    "mb:smoky-chipotle-crema:b993c737-d35d-479c-a90f-3621d7889481",
+    "mb:sparkling-blackberry-izze:72cd4e05-6cde-487c-84d9-7154c56b0519",
+    "mb:sparkling-pomegranate-izze:62a9d59c-9021-4ff0-9cc7-9a4211854893",
+    "mb:tzatziki:d679a38b-d340-4c12-be25-a5217048cf3f",
+    "mb:yia-yia-s-creamy-hummus:cc87724b-2831-4a30-863f-55289c7f5d57",
+    "mb:smoked-romesco-broccoli-carrot:1a31ea3c-3b84-4412-95c0-2ec857cf29aa",
+    "mb:side-of-guacamole-a-ae575779af514bb5bbfef8f2a002e3db-ab91:a82dd020-dc48-42ee-bdbc-abf91da95788",
+    "mb:cornbread-cookie:bb55a39e-218b-4a46-889e-b878754bf2b6",
+    "mb:spiced-tahini:590268a5-198d-4c36-9388-1ff07e1c49cb",
+    "mb:zesty-cilantro-crema:b8ef3542-5a47-4215-be70-5c9aafbc2987",
+    "mb:farmstand-ranch-dressing:cb6477d9-1d07-4cb1-a31b-f75ee9f9f1af",
+    "mb:caesar-dressing:1f2cc7b4-5037-44ef-aea6-06a2f06f7de8",
+    "mb:ginger-carrot-dressing:d91398be-58fb-433f-b4ab-be6ac3721307",
+    "mb:crunchy-seeds:08ec6fa9-528e-4872-a340-9dae28eb505e",
+    "mb:lemon-vinaigrette:a1eb5260-4f94-4e95-b6ac-bb0fc783f1e4",
+    "mb:tzatziki:76caf9af-4ba6-4ef5-8cd2-0c9ac9d305c8",
+    "mb:smoky-chipotle-crema:eae089b7-ee6c-473f-b167-d7cab8f4f736",
+    "mb:mediterranean-chili-dressing:75aa95c7-f347-4c23-b0f7-75dc3f6ae6f8",
+    "mb:add-included-caesar-dressing:bb6561d1-7a27-4682-ad2f-15ad6efc9af8",
+    "mb:chili-crisp-crunch:ad1d421b-091e-43db-a6bd-ccd01df29d4b",
+    "mb:caesar-dressing-a-ae575779af514bb5bbfef8f2a002e3db-1ee0:e5227f0c-a632-4087-a503-79f1d329040b",
+    "mb:corn-bread-cookie:84fd25ac-7778-415d-b909-d164b68363fa",
+    "mb:zesty-cilantro-crema:41b71894-fee9-4b74-8f16-47263d66a361",
+    "mb:spiced-tahini:ad689597-2ad1-4774-a882-7420a5f26862",
+    "mb:chili-crisp-crunch:5828e7ef-8d1f-4f5d-8330-b227bc8f8032",
+    "mb:yes-utensils-a-ae575779af514bb5bbfef8f2a002e3db-0b79:bb553c18-203a-431e-852c-29b0a6e04ec9",
+    "mb:passionfruit-iced-green-tea:bf54a79a-1829-4b6c-8c3f-f999c6bbc2a8",
+    "mb:iced-lychee-hibiscus-tea:b063dadc-84dc-4b27-a6d8-27807e7cd579",
+    "mb:cherry-lime-sparkling-water:5d079370-7240-4d01-8392-60824028b85a",
+    "mb:high-tide-yuzu-sparkling-water:a14bfe62-6ae6-47fe-a3dc-ef79d0a25238",
+    "mb:open-water-aluminum-bottle-16-oz:0321a0d3-655c-4b88-94ee-7abd941fd051",
+    "mb:coke-can-12-oz:4cca769d-cdbc-4b4c-abd2-36cc25c514d0",
+    "mb:diet-coke-can-12-oz:ea726e5a-e0bc-43f4-8025-2c373e140074",
+    "mb:passionfruit-iced-green-tea:f01ddb0c-1c73-4783-8d52-bd3584a2f3f6",
+    "mb:iced-lychee-hibiscus-tea:f07e5f8a-3829-420c-bfa7-575d2814ddd9",
+    "mb:cherry-lime-sparkling-water:ce2be0d2-0ad4-43ed-8d9f-2412f0c51367",
+    "mb:high-tide-yuzu-sparkling-water:19ac603e-ed9b-4fd0-9698-0f7925bc244b",
+    "mb:open-water-aluminum-bottle-16-oz:3d15e83b-3fb1-468e-ac89-823bb6d39d73",
+    "mb:coke-can-12-oz:9905cb33-f8dc-4ab5-864a-c4d79082fa5a",
+    "mb:diet-coke-can-12-oz:4f6d5d39-58c2-4836-82f7-68da0389d6d9",
+    "mb:bottled-water:3fb64620-4fd3-42dd-8c2b-2ec296cac11a",
+    "mb:chocolate-chip-sea-salt-cookie:554662b7-1f32-43b3-ae3f-14ccc99a111c",
+    "mb:double-double-cookie:10f20be6-07f3-4b12-948e-77b36094f07a",
+    "mb:basic-b:05924cf2-6138-47e3-87e0-a91c848ed02d",
+    "mb:mango-passionfruit-bubble-tea:376273d1-590e-4fc9-8ce6-cfc511902114",
+    "mb:strawberry-lemonade-bubble-tea:b49e9e5e-08f1-4478-83b0-2e98375e7946",
+    "mb:black-cherry-switch:0f6e1252-d95e-45fd-a5a3-b8f7ec03a23a",
+    "mb:orange-tangerine-switch:e3018e63-994c-420d-b999-e31c6d2dfb6c",
+    "mb:strawberry-watermelon-switch:85ff1c42-55cd-4563-a7b8-994dc593700c",
+    "mb:coca-cola:a412fd64-ca59-483b-8d57-75603d0d6bfa",
+    "mb:chocolate-chip-brownie:30dc24d3-5b99-4d80-a826-62b165ea4b22",
+    "mb::a2fef08e-6617-41d2-89f3-2c11c1a6dbd2",
+    "mb:basic-b:f8587c75-627b-44b9-8bc2-fb10ae342853",
+    "mb:basil-crunch-pasta-salad:3519ea54-694d-41ba-8c6e-ec56300ae716",
+    "mb:chicken-salad:a24b86c2-be92-4641-b4f9-49d580cfd59b",
+    "mb:farmstand-cornbread:11ce0380-178f-4f46-a738-df223c9fe9dc",
+    "mb:farmstand-flatbread:d4c5823e-9095-45e4-93c4-e1b907d88846",
+    "mb:farro-couscous-salad:3702db54-afdd-4046-9001-c6886ddb34f6",
+    "mb:smoked-romesco-broccoli-carrot:86d71c1c-63f4-43b2-aeb5-9f163cb27e57",
+    "mb:yia-yia-s-creamy-hummus:edf0c03a-838c-4830-915e-e67ebc066c6c",
+    "mb:chocolate-chip-brownie:3007ead9-163a-433c-9139-b854269d9f6a",
+    "mb:black-cherry-switch:3d262f6b-bcdb-4246-9c43-a7ed998fb99d",
+    "mb:bottled-water:ccfbad9c-e257-4063-bf66-e8097bbaced5",
+    "mb:coca-cola:b5878e25-c8b2-48ca-aa22-65fb8e8223f5",
+    "mb:mango-passionfruit-bubble-tea:20437bba-aeac-4b7c-9d30-9f372ba176b6",
+    "mb:yes-utensils:c120e133-b98e-4367-89f9-6ac52d419e56",
+    "mb:basil-crunch-pasta-salad:46002226-cc63-4cac-bb30-e4f08f732d2c",
+    "mb:chicken-salad:9d49dd32-e78e-4be2-9f1d-9a882be5c959",
+    "mb:farmstand-cornbread:3d24969b-6d75-4854-87ce-9c2e837e6890",
+    "mb:farmstand-flatbread:b8a0c023-08ca-40a8-adf7-68198ee5808f",
+    "mb:farro-couscous-salad:d27e0e85-a9ef-4763-ab37-10a1bf2e1283",
+    "mb:smoked-romesco-broccoli-carrot:6fa32a7b-ea46-4658-874d-b070e1f0e219",
+    "mb:yia-yia-s-creamy-hummus:8c86b3c5-32a0-4abd-bbb7-f9401158ee52",
+    "mb:chocolate-chip-brownie:12ae1e44-c259-4e35-9e0a-aa54c45e626a",
+    "mb:black-cherry-switch:7b2d736e-2a81-44a5-8970-a3dc835d2362",
+    "mb:bottled-water:cc650575-c2e6-4fb7-8d06-0bc4903dadad",
+    "mb:coca-cola:5520f8bf-5b3b-4f8d-b82f-f5e6264c963c",
+    "mb:mango-passionfruit-bubble-tea:ddcec001-6f20-4ab5-b031-159279e0f140",
+    "mb:yes-utensils:7f3b4fa0-9a5e-4333-9f62-e1900879c752",
+    "mb:basil-crunch-pasta-salad:aa8f1f75-7178-4ec6-8452-c2c3f1d8650e",
+    "mb:chicken-salad:466754dc-e37c-4586-a9d0-60759e0bfd43",
+    "mb:farmstand-cornbread:c4b592ab-752b-463c-aaed-00c0a095491c",
+    "mb:farmstand-flatbread:8b356a60-60bb-41a4-be19-cf9fd47eab7f",
+    "mb:farro-couscous-salad:ce42a3c0-2642-453a-9355-d378642e3ead",
+    "mb:smoked-romesco-broccoli-carrot:b25c137e-43a3-4be6-979c-bf7978f5a2f7",
+    "mb:yia-yia-s-creamy-hummus:7eb4ccbc-49f4-4984-ad88-26a68142889c",
+    "mb:chocolate-chip-brownie:57320dde-4b41-4340-9094-5da91902326b",
+    "mb:black-cherry-switch:ce5f8509-c7fa-4c88-b376-3a3ee8b0da14",
+    "mb:bottled-water:67cf1341-9447-41bf-97fd-4999b9e3bb9c",
+    "mb:coca-cola:64c342d7-4e6b-464b-a5ab-84dd2e5ae2e5",
+    "mb:mango-passionfruit-bubble-tea:ebc7522f-a209-48a6-9638-c9b118121868",
+    "mb:yes-utensils:5ffdb568-23a2-4067-8e7e-833a500f4d46",
+    "mb:crunchy-fritos:729fb9de-0f07-4812-92ba-12bc49d2c055",
+    "mb:basil-crunch-pasta-salad:693d89e3-e2e6-4414-983e-c472530ba849",
+    "mb:chicken-salad:ce9c0b88-0311-4b05-bf21-308e23c752c0",
+    "mb:farmstand-cornbread:43b167e4-4d4d-4a93-bd91-0bcdd5f5efea",
+    "mb:farmstand-flatbread:86389a56-25c1-4c60-9f73-1b0bd2b51815",
+    "mb:farro-couscous-salad:344beca4-237b-4f23-a85f-64836d387ea2",
+    "mb:smoked-romesco-broccoli-carrot:7f25c84f-38ab-4bfd-9d11-13362d57014d",
+    "mb:yia-yia-s-creamy-hummus:b1cee724-3613-434a-973e-69e19e6c6a50",
+    "mb:chocolate-chip-brownie:919a3dd4-61bc-44d1-b087-4cdc8f1fff14",
+    "mb:black-cherry-switch:1368e0ae-3927-48f3-bac5-470698907550",
+    "mb:bottled-water:785b8879-a789-4b0f-91a3-4b52196da5d8",
+    "mb:coca-cola:8fe4fa98-b372-44e7-9519-59e1d1064e8e",
+    "mb:mango-passionfruit-bubble-tea:b7d4dcba-fcd3-4f84-af09-b8adcab1b5d8",
+    "mb:yes-utensils:3d3a462f-eea7-420b-8f71-5a0f7fed5c5a",
+    "mb:basil-crunch-pasta-salad:26f1b232-fe13-48bb-a481-ecd785bc9221",
+    "mb:chicken-salad:be76946c-8706-4cb2-8af4-4ed9f940f0d0",
+    "mb:farmstand-cornbread:d2ea963f-56c7-467d-998d-c8cb502e5ed5",
+    "mb:farmstand-flatbread:c4f755b2-a4c2-4293-b2ea-492cb4feeb51",
+    "mb:farro-couscous-salad:fc6c8455-3c14-41ab-860e-d7160428ba28",
+    "mb:smoked-romesco-broccoli-carrot:57680030-5eb8-4dae-a88e-db8be9a212f7",
+    "mb:yia-yia-s-creamy-hummus:03ddafd4-1494-4634-b923-4e20a08ab389",
+    "mb:chocolate-chip-brownie:f92c6ea0-84cc-4ca4-92ae-34ce4b6c7301",
+    "mb:black-cherry-switch:9f7c492f-2623-4048-8184-9931ec28bb9d",
+    "mb:bottled-water:7443d694-5ce6-4811-92ac-a9ad49029d5c",
+    "mb:coca-cola:12066945-bcf8-47ac-899d-b6eb47b883c5",
+    "mb:mango-passionfruit-bubble-tea:1d4374ec-96ec-4901-952b-eabf2ff74688",
+    "mb:yes-utensils:6a5fcfb8-78a2-468f-9bdb-0374608f389c",
+    "mb:basil-crunch-pasta-salad:98e09757-c407-44ee-818e-4da9b40462f6",
+    "mb:chicken-salad:cbd515ae-92da-4363-afd3-5eea777f81ef",
+    "mb:farmstand-cornbread:2882b3f8-0921-4188-91c5-113f22cf62ec",
+    "mb:farmstand-flatbread:fd4c3024-ca94-4a04-b61f-4f45d59d6f12",
+    "mb:farro-couscous-salad:e0a3984c-4c18-4587-843f-b8e6fef1e5da",
+    "mb:smoked-romesco-broccoli-carrot:6b7a31de-b907-41e7-8558-5bf6df4c7656",
+    "mb:yia-yia-s-creamy-hummus:6bcb936a-ab82-45c7-9d8b-f267fb219898",
+    "mb:chocolate-chip-brownie:0569c1ce-da7d-40a1-9394-2877766ca4ce",
+    "mb:black-cherry-switch:d7a654aa-afdc-49be-9e4c-e1f8040f530d",
+    "mb:bottled-water:94a0a02f-a623-4804-bfe3-897ac53d00b5",
+    "mb:coca-cola:4a5c55dd-146a-411b-a700-cc89dbdb3e97",
+    "mb:mango-passionfruit-bubble-tea:6be18685-4682-4b9b-8245-0fd2cc14aa10",
+    "mb:yes-utensils:c7f2fa70-1b0a-49ca-a652-265365911421",
+    "mb:basil-crunch-pasta-salad:e829cd42-111e-4a8c-a0c7-db6df205a681",
+    "mb:chicken-salad:600e02b9-ef77-4a50-984c-8232dec7898a",
+    "mb:farmstand-cornbread:0d4ea006-d512-4d2d-8932-3595c940bd7c",
+    "mb:farmstand-flatbread:3b07b431-0757-43f7-ba74-ca6503341577",
+    "mb:farro-couscous-salad:6dca942a-8ad6-42a5-b159-93cef24d6498",
+    "mb:smoked-romesco-broccoli-carrot:10b6845f-9a6d-4379-9798-daf2e229f027",
+    "mb:yia-yia-s-creamy-hummus:3138bf1c-eb2e-4f12-918a-0cb2fa318d9b",
+    "mb:chocolate-chip-brownie:f59992b6-db5f-4ba8-852b-0c9fc57e9eb0",
+    "mb:black-cherry-switch:21026a2a-9080-431c-bdda-98e010f7fb96",
+    "mb:bottled-water:04d32c9b-e001-446f-bbff-08161570f4f4",
+    "mb:coca-cola:7760f87d-dc25-43f6-9afd-6c8e786a0105",
+    "mb:mango-passionfruit-bubble-tea:c78257e3-eff3-4ab3-b05b-b807029fa8f5",
+    "mb:yes-utensils:732125a9-521c-4247-b1d3-b69359401625",
+    "mb:pistachio-lemon-cookie:f1c2fced-0b4b-4716-a36d-b4fe0153e09c",
+    "mb:churro-cookie:8ab7a95d-fc62-4993-ad51-071ed8394487",
+    "mb:crunchy-fritos:06459d71-6741-467e-865d-06f1fbbe97ba",
+    "mb:basil-crunch-pasta-salad:c6f5da57-39d7-45a9-a517-a707d632ded8",
+    "mb:chicken-salad:091af08a-84ed-4729-be24-830504ea7e4a",
+    "mb:farmstand-cornbread:dc535ee8-c907-4fc7-b596-af6d2eaa9c2a",
+    "mb:farmstand-flatbread:50282607-3f92-4691-b422-40d993ba847c",
+    "mb:farro-couscous-salad:ccd2c2c6-72fb-4aeb-94d7-1ed4150c2646",
+    "mb:smoked-romesco-broccoli-carrot:2b010ee5-3b3c-4351-9bca-56774e9f8f18",
+    "mb:yia-yia-s-creamy-hummus:f09f621e-7698-4184-8351-47b67e8b8aef",
+    "mb:chocolate-chip-brownie:6a31a1ac-ea82-4253-901d-eb9ba96ebf6a",
+    "mb:black-cherry-switch:584fd266-d451-4dbf-b7a2-63950acff643",
+    "mb:bottled-water:3f7a7d83-62da-41c1-8ae1-5c77562597d1",
+    "mb:coca-cola:7c782b37-ab99-4b8f-91c9-9d2538016b20",
+    "mb:mango-passionfruit-bubble-tea:782f90a5-24ca-4c69-a5a8-068178ff643a",
+    "mb:yes-utensils:ba930475-4235-499a-8803-41d8c51312c3",
+    "mb:sparkling-apple-izze:a1f295e2-573a-4950-9f4e-7ea6e258069b",
+    "mb:caesar-dressing:8fdae9b8-0a7c-44e6-9fdb-0876323303f7",
+    "mb:caesar-dressing:ef6c3f83-23bb-4b18-ac67-61fb9d3f1c75",
+    "mb:caesar-dressing:b92b31cb-e512-4881-99ba-a654ccb37a6b",
+    "mb:charred-broccoli:10a0fe08-c51a-4b56-a7a2-d1fdf515fe65"
+  ],
+  "auxiliary_ingredient_ids": [
+    "mb:basil-garlic-crunch-pasta-salad:aeb848ca-ddf0-47b4-9aae-6426d5d81515",
+    "mb:bottled-water:89174f81-f169-4a45-927a-5dd5bf488d25",
+    "mb:caesar-dressing:cd6dfb2e-559f-481f-b92a-9b08bfea8e85",
+    "mb:cannellini-bean-salad:3ff40f07-9587-43b8-b93e-ba9b783cf304",
+    "mb:cinnamon-caramel-cookie:4277bb0b-a634-4e0c-81ae-7c02380235ab",
+    "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-7928:9d9495ee-a04f-4c0a-b11b-8cb3ea1a0a47",
+    "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-4d18:f6e76b94-c8a9-48ea-98fc-b02608b617d2",
+    "mb:crunchy-fritos-please-a-ae575779af514bb5bbfef8f2a002e3db-4595:a7ddc0f4-4f47-47da-9443-62ebcdb58cab",
+    "mb:crunchy-seed-praline:d0c1e92c-07f6-4b9b-8bbd-cb6bc5966a6b",
+    "mb:farmstand-blueberry-streusel-bar:214905a1-92f0-4690-bd8e-eaa70f7dc141",
+    "mb:farmstand-cornbread:edd22cf0-f882-4d69-944f-118eafc25652",
+    "mb:farmstand-garlic-flatbread:032fd0d3-86fe-48b9-b6b8-d23093bf725d",
+    "mb:farmstand-ranch-dressing:ef849e99-35b1-46aa-ad2c-91a7bcc2946c",
+    "mb:farro-couscous-salad:9778de67-c83f-4c76-b6f9-6d7c75e24fa6",
+    "mb:garlicky-chicken-salad:8da1311e-a8a2-43ad-be0c-46b609222e09",
+    "mb:ginger-lemon-kombucha:5c38971e-b7f5-4fb8-9a99-bec7aac31e64",
+    "mb:lemon-vinaigrette:3789d2fa-47df-4430-9a16-1b55c61fefe7",
+    "mb:mediterranean-chili-dressing:c2b99eb2-5f3f-4bc9-9921-22f10d3b8353",
+    "mb:miso-ginger-dressing:b352de32-a731-45b3-8df6-92f54713524d",
+    "mb:pistachio-lemon-cookie:cf01b77e-b28d-4f21-8352-d5bf5b3ddcd1",
+    "mb:smoky-chipotle-crema:b993c737-d35d-479c-a90f-3621d7889481",
+    "mb:sparkling-blackberry-izze:72cd4e05-6cde-487c-84d9-7154c56b0519",
+    "mb:sparkling-pomegranate-izze:62a9d59c-9021-4ff0-9cc7-9a4211854893",
+    "mb:tzatziki:d679a38b-d340-4c12-be25-a5217048cf3f",
+    "mb:yia-yia-s-creamy-hummus:cc87724b-2831-4a30-863f-55289c7f5d57",
+    "mb:smoked-romesco-broccoli-carrot:1a31ea3c-3b84-4412-95c0-2ec857cf29aa",
+    "mb:side-of-guacamole-a-ae575779af514bb5bbfef8f2a002e3db-ab91:a82dd020-dc48-42ee-bdbc-abf91da95788",
+    "mb:cornbread-cookie:bb55a39e-218b-4a46-889e-b878754bf2b6",
+    "mb:spiced-tahini:590268a5-198d-4c36-9388-1ff07e1c49cb",
+    "mb:zesty-cilantro-crema:b8ef3542-5a47-4215-be70-5c9aafbc2987",
+    "mb:farmstand-ranch-dressing:cb6477d9-1d07-4cb1-a31b-f75ee9f9f1af",
+    "mb:caesar-dressing:1f2cc7b4-5037-44ef-aea6-06a2f06f7de8",
+    "mb:ginger-carrot-dressing:d91398be-58fb-433f-b4ab-be6ac3721307",
+    "mb:crunchy-seeds:08ec6fa9-528e-4872-a340-9dae28eb505e",
+    "mb:lemon-vinaigrette:a1eb5260-4f94-4e95-b6ac-bb0fc783f1e4",
+    "mb:tzatziki:76caf9af-4ba6-4ef5-8cd2-0c9ac9d305c8",
+    "mb:smoky-chipotle-crema:eae089b7-ee6c-473f-b167-d7cab8f4f736",
+    "mb:mediterranean-chili-dressing:75aa95c7-f347-4c23-b0f7-75dc3f6ae6f8",
+    "mb:add-included-caesar-dressing:bb6561d1-7a27-4682-ad2f-15ad6efc9af8",
+    "mb:chili-crisp-crunch:ad1d421b-091e-43db-a6bd-ccd01df29d4b",
+    "mb:caesar-dressing-a-ae575779af514bb5bbfef8f2a002e3db-1ee0:e5227f0c-a632-4087-a503-79f1d329040b",
+    "mb:corn-bread-cookie:84fd25ac-7778-415d-b909-d164b68363fa",
+    "mb:zesty-cilantro-crema:41b71894-fee9-4b74-8f16-47263d66a361",
+    "mb:spiced-tahini:ad689597-2ad1-4774-a882-7420a5f26862",
+    "mb:chili-crisp-crunch:5828e7ef-8d1f-4f5d-8330-b227bc8f8032",
+    "mb:yes-utensils-a-ae575779af514bb5bbfef8f2a002e3db-0b79:bb553c18-203a-431e-852c-29b0a6e04ec9",
+    "mb:passionfruit-iced-green-tea:bf54a79a-1829-4b6c-8c3f-f999c6bbc2a8",
+    "mb:iced-lychee-hibiscus-tea:b063dadc-84dc-4b27-a6d8-27807e7cd579",
+    "mb:cherry-lime-sparkling-water:5d079370-7240-4d01-8392-60824028b85a",
+    "mb:high-tide-yuzu-sparkling-water:a14bfe62-6ae6-47fe-a3dc-ef79d0a25238",
+    "mb:open-water-aluminum-bottle-16-oz:0321a0d3-655c-4b88-94ee-7abd941fd051",
+    "mb:coke-can-12-oz:4cca769d-cdbc-4b4c-abd2-36cc25c514d0",
+    "mb:diet-coke-can-12-oz:ea726e5a-e0bc-43f4-8025-2c373e140074",
+    "mb:passionfruit-iced-green-tea:f01ddb0c-1c73-4783-8d52-bd3584a2f3f6",
+    "mb:iced-lychee-hibiscus-tea:f07e5f8a-3829-420c-bfa7-575d2814ddd9",
+    "mb:cherry-lime-sparkling-water:ce2be0d2-0ad4-43ed-8d9f-2412f0c51367",
+    "mb:high-tide-yuzu-sparkling-water:19ac603e-ed9b-4fd0-9698-0f7925bc244b",
+    "mb:open-water-aluminum-bottle-16-oz:3d15e83b-3fb1-468e-ac89-823bb6d39d73",
+    "mb:coke-can-12-oz:9905cb33-f8dc-4ab5-864a-c4d79082fa5a",
+    "mb:diet-coke-can-12-oz:4f6d5d39-58c2-4836-82f7-68da0389d6d9",
+    "mb:bottled-water:3fb64620-4fd3-42dd-8c2b-2ec296cac11a",
+    "mb:chocolate-chip-sea-salt-cookie:554662b7-1f32-43b3-ae3f-14ccc99a111c",
+    "mb:double-double-cookie:10f20be6-07f3-4b12-948e-77b36094f07a",
+    "mb:basic-b:05924cf2-6138-47e3-87e0-a91c848ed02d",
+    "mb:mango-passionfruit-bubble-tea:376273d1-590e-4fc9-8ce6-cfc511902114",
+    "mb:strawberry-lemonade-bubble-tea:b49e9e5e-08f1-4478-83b0-2e98375e7946",
+    "mb:black-cherry-switch:0f6e1252-d95e-45fd-a5a3-b8f7ec03a23a",
+    "mb:orange-tangerine-switch:e3018e63-994c-420d-b999-e31c6d2dfb6c",
+    "mb:strawberry-watermelon-switch:85ff1c42-55cd-4563-a7b8-994dc593700c",
+    "mb:coca-cola:a412fd64-ca59-483b-8d57-75603d0d6bfa",
+    "mb:chocolate-chip-brownie:30dc24d3-5b99-4d80-a826-62b165ea4b22",
+    "mb::a2fef08e-6617-41d2-89f3-2c11c1a6dbd2",
+    "mb:basic-b:f8587c75-627b-44b9-8bc2-fb10ae342853",
+    "mb:basil-crunch-pasta-salad:3519ea54-694d-41ba-8c6e-ec56300ae716",
+    "mb:chicken-salad:a24b86c2-be92-4641-b4f9-49d580cfd59b",
+    "mb:farmstand-cornbread:11ce0380-178f-4f46-a738-df223c9fe9dc",
+    "mb:farmstand-flatbread:d4c5823e-9095-45e4-93c4-e1b907d88846",
+    "mb:farro-couscous-salad:3702db54-afdd-4046-9001-c6886ddb34f6",
+    "mb:smoked-romesco-broccoli-carrot:86d71c1c-63f4-43b2-aeb5-9f163cb27e57",
+    "mb:yia-yia-s-creamy-hummus:edf0c03a-838c-4830-915e-e67ebc066c6c",
+    "mb:chocolate-chip-brownie:3007ead9-163a-433c-9139-b854269d9f6a",
+    "mb:black-cherry-switch:3d262f6b-bcdb-4246-9c43-a7ed998fb99d",
+    "mb:bottled-water:ccfbad9c-e257-4063-bf66-e8097bbaced5",
+    "mb:coca-cola:b5878e25-c8b2-48ca-aa22-65fb8e8223f5",
+    "mb:mango-passionfruit-bubble-tea:20437bba-aeac-4b7c-9d30-9f372ba176b6",
+    "mb:yes-utensils:c120e133-b98e-4367-89f9-6ac52d419e56",
+    "mb:basil-crunch-pasta-salad:46002226-cc63-4cac-bb30-e4f08f732d2c",
+    "mb:chicken-salad:9d49dd32-e78e-4be2-9f1d-9a882be5c959",
+    "mb:farmstand-cornbread:3d24969b-6d75-4854-87ce-9c2e837e6890",
+    "mb:farmstand-flatbread:b8a0c023-08ca-40a8-adf7-68198ee5808f",
+    "mb:farro-couscous-salad:d27e0e85-a9ef-4763-ab37-10a1bf2e1283",
+    "mb:smoked-romesco-broccoli-carrot:6fa32a7b-ea46-4658-874d-b070e1f0e219",
+    "mb:yia-yia-s-creamy-hummus:8c86b3c5-32a0-4abd-bbb7-f9401158ee52",
+    "mb:chocolate-chip-brownie:12ae1e44-c259-4e35-9e0a-aa54c45e626a",
+    "mb:black-cherry-switch:7b2d736e-2a81-44a5-8970-a3dc835d2362",
+    "mb:bottled-water:cc650575-c2e6-4fb7-8d06-0bc4903dadad",
+    "mb:coca-cola:5520f8bf-5b3b-4f8d-b82f-f5e6264c963c",
+    "mb:mango-passionfruit-bubble-tea:ddcec001-6f20-4ab5-b031-159279e0f140",
+    "mb:yes-utensils:7f3b4fa0-9a5e-4333-9f62-e1900879c752",
+    "mb:basil-crunch-pasta-salad:aa8f1f75-7178-4ec6-8452-c2c3f1d8650e",
+    "mb:chicken-salad:466754dc-e37c-4586-a9d0-60759e0bfd43",
+    "mb:farmstand-cornbread:c4b592ab-752b-463c-aaed-00c0a095491c",
+    "mb:farmstand-flatbread:8b356a60-60bb-41a4-be19-cf9fd47eab7f",
+    "mb:farro-couscous-salad:ce42a3c0-2642-453a-9355-d378642e3ead",
+    "mb:smoked-romesco-broccoli-carrot:b25c137e-43a3-4be6-979c-bf7978f5a2f7",
+    "mb:yia-yia-s-creamy-hummus:7eb4ccbc-49f4-4984-ad88-26a68142889c",
+    "mb:chocolate-chip-brownie:57320dde-4b41-4340-9094-5da91902326b",
+    "mb:black-cherry-switch:ce5f8509-c7fa-4c88-b376-3a3ee8b0da14",
+    "mb:bottled-water:67cf1341-9447-41bf-97fd-4999b9e3bb9c",
+    "mb:coca-cola:64c342d7-4e6b-464b-a5ab-84dd2e5ae2e5",
+    "mb:mango-passionfruit-bubble-tea:ebc7522f-a209-48a6-9638-c9b118121868",
+    "mb:yes-utensils:5ffdb568-23a2-4067-8e7e-833a500f4d46",
+    "mb:crunchy-fritos:729fb9de-0f07-4812-92ba-12bc49d2c055",
+    "mb:basil-crunch-pasta-salad:693d89e3-e2e6-4414-983e-c472530ba849",
+    "mb:chicken-salad:ce9c0b88-0311-4b05-bf21-308e23c752c0",
+    "mb:farmstand-cornbread:43b167e4-4d4d-4a93-bd91-0bcdd5f5efea",
+    "mb:farmstand-flatbread:86389a56-25c1-4c60-9f73-1b0bd2b51815",
+    "mb:farro-couscous-salad:344beca4-237b-4f23-a85f-64836d387ea2",
+    "mb:smoked-romesco-broccoli-carrot:7f25c84f-38ab-4bfd-9d11-13362d57014d",
+    "mb:yia-yia-s-creamy-hummus:b1cee724-3613-434a-973e-69e19e6c6a50",
+    "mb:chocolate-chip-brownie:919a3dd4-61bc-44d1-b087-4cdc8f1fff14",
+    "mb:black-cherry-switch:1368e0ae-3927-48f3-bac5-470698907550",
+    "mb:bottled-water:785b8879-a789-4b0f-91a3-4b52196da5d8",
+    "mb:coca-cola:8fe4fa98-b372-44e7-9519-59e1d1064e8e",
+    "mb:mango-passionfruit-bubble-tea:b7d4dcba-fcd3-4f84-af09-b8adcab1b5d8",
+    "mb:yes-utensils:3d3a462f-eea7-420b-8f71-5a0f7fed5c5a",
+    "mb:basil-crunch-pasta-salad:26f1b232-fe13-48bb-a481-ecd785bc9221",
+    "mb:chicken-salad:be76946c-8706-4cb2-8af4-4ed9f940f0d0",
+    "mb:farmstand-cornbread:d2ea963f-56c7-467d-998d-c8cb502e5ed5",
+    "mb:farmstand-flatbread:c4f755b2-a4c2-4293-b2ea-492cb4feeb51",
+    "mb:farro-couscous-salad:fc6c8455-3c14-41ab-860e-d7160428ba28",
+    "mb:smoked-romesco-broccoli-carrot:57680030-5eb8-4dae-a88e-db8be9a212f7",
+    "mb:yia-yia-s-creamy-hummus:03ddafd4-1494-4634-b923-4e20a08ab389",
+    "mb:chocolate-chip-brownie:f92c6ea0-84cc-4ca4-92ae-34ce4b6c7301",
+    "mb:black-cherry-switch:9f7c492f-2623-4048-8184-9931ec28bb9d",
+    "mb:bottled-water:7443d694-5ce6-4811-92ac-a9ad49029d5c",
+    "mb:coca-cola:12066945-bcf8-47ac-899d-b6eb47b883c5",
+    "mb:mango-passionfruit-bubble-tea:1d4374ec-96ec-4901-952b-eabf2ff74688",
+    "mb:yes-utensils:6a5fcfb8-78a2-468f-9bdb-0374608f389c",
+    "mb:basil-crunch-pasta-salad:98e09757-c407-44ee-818e-4da9b40462f6",
+    "mb:chicken-salad:cbd515ae-92da-4363-afd3-5eea777f81ef",
+    "mb:farmstand-cornbread:2882b3f8-0921-4188-91c5-113f22cf62ec",
+    "mb:farmstand-flatbread:fd4c3024-ca94-4a04-b61f-4f45d59d6f12",
+    "mb:farro-couscous-salad:e0a3984c-4c18-4587-843f-b8e6fef1e5da",
+    "mb:smoked-romesco-broccoli-carrot:6b7a31de-b907-41e7-8558-5bf6df4c7656",
+    "mb:yia-yia-s-creamy-hummus:6bcb936a-ab82-45c7-9d8b-f267fb219898",
+    "mb:chocolate-chip-brownie:0569c1ce-da7d-40a1-9394-2877766ca4ce",
+    "mb:black-cherry-switch:d7a654aa-afdc-49be-9e4c-e1f8040f530d",
+    "mb:bottled-water:94a0a02f-a623-4804-bfe3-897ac53d00b5",
+    "mb:coca-cola:4a5c55dd-146a-411b-a700-cc89dbdb3e97",
+    "mb:mango-passionfruit-bubble-tea:6be18685-4682-4b9b-8245-0fd2cc14aa10",
+    "mb:yes-utensils:c7f2fa70-1b0a-49ca-a652-265365911421",
+    "mb:basil-crunch-pasta-salad:e829cd42-111e-4a8c-a0c7-db6df205a681",
+    "mb:chicken-salad:600e02b9-ef77-4a50-984c-8232dec7898a",
+    "mb:farmstand-cornbread:0d4ea006-d512-4d2d-8932-3595c940bd7c",
+    "mb:farmstand-flatbread:3b07b431-0757-43f7-ba74-ca6503341577",
+    "mb:farro-couscous-salad:6dca942a-8ad6-42a5-b159-93cef24d6498",
+    "mb:smoked-romesco-broccoli-carrot:10b6845f-9a6d-4379-9798-daf2e229f027",
+    "mb:yia-yia-s-creamy-hummus:3138bf1c-eb2e-4f12-918a-0cb2fa318d9b",
+    "mb:chocolate-chip-brownie:f59992b6-db5f-4ba8-852b-0c9fc57e9eb0",
+    "mb:black-cherry-switch:21026a2a-9080-431c-bdda-98e010f7fb96",
+    "mb:bottled-water:04d32c9b-e001-446f-bbff-08161570f4f4",
+    "mb:coca-cola:7760f87d-dc25-43f6-9afd-6c8e786a0105",
+    "mb:mango-passionfruit-bubble-tea:c78257e3-eff3-4ab3-b05b-b807029fa8f5",
+    "mb:yes-utensils:732125a9-521c-4247-b1d3-b69359401625",
+    "mb:pistachio-lemon-cookie:f1c2fced-0b4b-4716-a36d-b4fe0153e09c",
+    "mb:churro-cookie:8ab7a95d-fc62-4993-ad51-071ed8394487",
+    "mb:crunchy-fritos:06459d71-6741-467e-865d-06f1fbbe97ba",
+    "mb:basil-crunch-pasta-salad:c6f5da57-39d7-45a9-a517-a707d632ded8",
+    "mb:chicken-salad:091af08a-84ed-4729-be24-830504ea7e4a",
+    "mb:farmstand-cornbread:dc535ee8-c907-4fc7-b596-af6d2eaa9c2a",
+    "mb:farmstand-flatbread:50282607-3f92-4691-b422-40d993ba847c",
+    "mb:farro-couscous-salad:ccd2c2c6-72fb-4aeb-94d7-1ed4150c2646",
+    "mb:smoked-romesco-broccoli-carrot:2b010ee5-3b3c-4351-9bca-56774e9f8f18",
+    "mb:yia-yia-s-creamy-hummus:f09f621e-7698-4184-8351-47b67e8b8aef",
+    "mb:chocolate-chip-brownie:6a31a1ac-ea82-4253-901d-eb9ba96ebf6a",
+    "mb:black-cherry-switch:584fd266-d451-4dbf-b7a2-63950acff643",
+    "mb:bottled-water:3f7a7d83-62da-41c1-8ae1-5c77562597d1",
+    "mb:coca-cola:7c782b37-ab99-4b8f-91c9-9d2538016b20",
+    "mb:mango-passionfruit-bubble-tea:782f90a5-24ca-4c69-a5a8-068178ff643a",
+    "mb:yes-utensils:ba930475-4235-499a-8803-41d8c51312c3",
+    "mb:sparkling-apple-izze:a1f295e2-573a-4950-9f4e-7ea6e258069b",
+    "mb:caesar-dressing:8fdae9b8-0a7c-44e6-9fdb-0876323303f7",
+    "mb:caesar-dressing:ef6c3f83-23bb-4b18-ac67-61fb9d3f1c75",
+    "mb:caesar-dressing:b92b31cb-e512-4881-99ba-a654ccb37a6b",
+    "mb:charred-broccoli:10a0fe08-c51a-4b56-a7a2-d1fdf515fe65"
+  ],
+  "product_rules": [
+    {
+      "type": "ProportionalReductionForPortionTarget",
+      "parameter": 1.0,
+      "item_ids": [
+        "mb:asian-mix-daikon-cabbage-carrot-a-ae575779af514bb5bbfef8f2a002e3db-1d38:acd8aaf3-35b4-45a8-a3e5-4f56438d9cb5",
+        "mb:romaine-a-ae575779af514bb5bbfef8f2a002e3db-7501:b62b7600-abcd-49c7-8357-3480a05451ab",
+        "mb:white-rice-a-ae575779af514bb5bbfef8f2a002e3db-cddd:d9affe6f-2b31-4dac-91ae-fdaa5167ef87",
+        "mb:brown-rice-lentils:2f290bf0-e8ba-462f-b554-f24529cf36dd",
+        "mb:massaged-kale:f2fe2f39-72b9-44d3-9de6-c2c6153233d7"
+      ]
+    }
+  ],
+  "dynamic_portion_increases": [
+    {
+      "apply_for": [
+        {
+          "ingredient_names": {
+            "must_have": [
+              "Romaine Base"
+            ],
+            "must_not_have": [
+              "Massaged Kale",
+              "White Rice",
+              "Brown Rice and Lentils",
+              "Mexican Rice"
+            ]
+          },
+          "filter_op": "ExactlyOne",
+          "minimum_product_weight_g": 365.0
+        },
+        {
+          "ingredient_names": {
+            "must_have": [
+              "Massaged Kale"
+            ],
+            "must_not_have": [
+              "Romaine Base",
+              "White Rice",
+              "Brown Rice and Lentils",
+              "Mexican Rice"
+            ]
+          },
+          "filter_op": "ExactlyOne",
+          "minimum_product_weight_g": 300.0
+        },
+        {
+          "ingredient_names": {
+            "must_have": [
+              "White Rice",
+              "Brown Rice and Lentils",
+              "Mexican Rice"
+            ],
+            "must_not_have": [
+              "Romaine Base",
+              "Massaged Kale"
+            ]
+          },
+          "filter_op": "Any",
+          "minimum_product_weight_g": 455.0
+        },
+        {
+          "ingredient_names": {
+            "must_have": [],
+            "must_not_have": []
+          },
+          "filter_op": "Any",
+          "minimum_product_weight_g": 400.0
+        }
+      ],
+      "ingredients": [
+        {
+          "ingredient_name": "Romaine Base",
+          "step_increment_g": 3.5,
+          "max_dispense_weight_g": 100.0
+        },
+        {
+          "ingredient_name": "Massaged Kale",
+          "step_increment_g": 3.5,
+          "max_dispense_weight_g": 60.0
+        },
+        {
+          "ingredient_name": "White Rice",
+          "step_increment_g": 3.5,
+          "max_dispense_weight_g": 200.0
+        },
+        {
+          "ingredient_name": "Brown Rice and Lentils",
+          "step_increment_g": 3.5,
+          "max_dispense_weight_g": 200.0
+        },
+        {
+          "ingredient_name": "Mexican Rice",
+          "step_increment_g": 3.5,
+          "max_dispense_weight_g": 200.0
+        },
+        {
+          "ingredient_name": "Asian Salad",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 200.0
+        },
+        {
+          "ingredient_name": "Chicken Salad",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 110.0
+        },
+        {
+          "ingredient_name": "Bean Salad",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 100.0
+        },
+        {
+          "ingredient_name": "Pasta Salad",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 100.0
+        },
+        {
+          "ingredient_name": "Chicken Herby",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 125.0
+        },
+        {
+          "ingredient_name": "Chicken Tex-Mex",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 125.0
+        },
+        {
+          "ingredient_name": "Broccoli",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 125.0
+        },
+        {
+          "ingredient_name": "Couscous",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 70.0
+        },
+        {
+          "ingredient_name": "Broccoli",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 75.0
+        },
+        {
+          "ingredient_name": "Black Beans",
+          "step_increment_g": 0.7,
+          "max_dispense_weight_g": 85.0
+        },
+        {
+          "ingredient_name": "Corn",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 70.0
+        },
+        {
+          "ingredient_name": "Cheese",
+          "step_increment_g": 0.3,
+          "max_dispense_weight_g": 40.0
+        },
+        {
+          "ingredient_name": "Cucumbers Plain",
+          "step_increment_g": 0.3,
+          "max_dispense_weight_g": 70.0
+        },
+        {
+          "ingredient_name": "Tomatoes",
+          "step_increment_g": 0.3,
+          "max_dispense_weight_g": 70.0
+        },
+        {
+          "ingredient_name": "Feta",
+          "step_increment_g": 0.3,
+          "max_dispense_weight_g": 50.0
+        }
+      ],
+      "ingredient_combined_limits": [],
+      "excluded_ingredients": [
+        "Caesar",
+        "Ranch",
+        "Citrus Vin",
+        "Chipotle Crema",
+        "Feta Cup",
+        "Marinated Tomatoes",
+        "Harissa",
+        "Miso Ginger",
+        "Red Pepper",
+        "Tzatziki",
+        "Cilantro Crema",
+        "Salsa Macha",
+        "Spicy Tahini",
+        "Seeds",
+        "Utensils"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:1a31ea3c-3b84-4412-95c0-2ec857cf29aa"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-garlicky-chicken-a-ae575779af514bb5bbfef8f2a002e3db-fb78:67d4d46b-8095-4d34-b19c-916b6c9612a7"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad-a-ae575779af514bb5bbfef8f2a002e3db-33d4:d9894b7a-8c93-4413-bd34-6dee366c2775"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot-a-ae575779af514bb5bbfef8f2a002e3db-aa93:4ece0a9f-0f46-4fbd-a645-00113047bb48"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cannellini-bean-salad-a-ae575779af514bb5bbfef8f2a002e3db-9f42:19dc555e-dc5b-446b-b3d1-709a282c95fd"
+      ],
+      "recipe_id": "50171f95-be41-4559-846b-358ca18e7a3f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad-a-ae575779af514bb5bbfef8f2a002e3db-d9fa:14bc70db-d29c-46de-ad35-3fa82431be16"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:89174f81-f169-4a45-927a-5dd5bf488d25"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:ginger-lemon-kombucha:5c38971e-b7f5-4fb8-9a99-bec7aac31e64"
+      ],
+      "recipe_id": "b886608c-4741-4947-bea9-8ebf6e9ea3ac",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sparkling-blackberry-izze:72cd4e05-6cde-487c-84d9-7154c56b0519"
+      ],
+      "recipe_id": "4e17ade2-091c-426a-aeae-7bf9106e37b9",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sparkling-pomegranate-izze:62a9d59c-9021-4ff0-9cc7-9a4211854893"
+      ],
+      "recipe_id": "63a652df-abd1-4c0d-85e6-514b96f0254b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-blueberry-streusel-bar:214905a1-92f0-4690-bd8e-eaa70f7dc141"
+      ],
+      "recipe_id": "7e4ba356-e8bb-4e74-a93e-072507971633",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pistachio-lemon-cookie:cf01b77e-b28d-4f21-8352-d5bf5b3ddcd1"
+      ],
+      "recipe_id": "21301c1f-cd00-42be-8460-bc4f8b69bceb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad:aeb848ca-ddf0-47b4-9aae-6426d5d81515"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cannellini-bean-salad:3ff40f07-9587-43b8-b93e-ba9b783cf304"
+      ],
+      "recipe_id": "8a2acad6-f04f-4ad3-ab17-a0f12a4acc6d",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:9778de67-c83f-4c76-b6f9-6d7c75e24fa6"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:garlicky-chicken-salad:8da1311e-a8a2-43ad-be0c-46b609222e09"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:cc87724b-2831-4a30-863f-55289c7f5d57"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:asian-mix-daikon-cabbage-carrot-a-ae575779af514bb5bbfef8f2a002e3db-1d38:acd8aaf3-35b4-45a8-a3e5-4f56438d9cb5"
+      ],
+      "recipe_id": "16fea0a4-ce8a-4443-9e0b-c8ad15c5385a",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:romaine-a-ae575779af514bb5bbfef8f2a002e3db-7501:b62b7600-abcd-49c7-8357-3480a05451ab"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 50.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad-a-ae575779af514bb5bbfef8f2a002e3db-f066:30135cac-dcbf-46c0-b2f9-948505d7eeb2"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot-a-ae575779af514bb5bbfef8f2a002e3db-6c59:a093e548-71d1-4735-bb14-408112614472"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cannellini-bean-salad-a-ae575779af514bb5bbfef8f2a002e3db-8d9f:f86eea75-dc46-4038-a7f0-8fd0af7be99f"
+      ],
+      "recipe_id": "50171f95-be41-4559-846b-358ca18e7a3f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad-a-ae575779af514bb5bbfef8f2a002e3db-29c8:bedf09f1-cedb-4dd2-a053-ac14db3c978c"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-herb-roasted-chicken:a12a78b2-5aa5-49fc-bded-2124562626d8",
+        "mb:single-portion-roasted-chicken-a-ae575779af514bb5bbfef8f2a002e3db-a704:5c12fb1a-24b8-48c1-b104-3c935e975641"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cucumbers:686e6cbc-dbd7-4c11-acd9-e6c1869a9a77",
+        "mb:cucumbers:47841ab9-6c1b-420a-b98e-e185c50d569a"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans-a-ae575779af514bb5bbfef8f2a002e3db-4642:19b38d82-2cef-48a8-b56a-0ca40266d166",
+        "mb:black-beans-a-ae575779af514bb5bbfef8f2a002e3db-3b67:5fc9844a-9e59-4eeb-92a2-a5ce9cef3208"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese-a-ae575779af514bb5bbfef8f2a002e3db-6408:804b703b-64f4-4251-a8fe-6efb20023c5f",
+        "mb:cheddar-cheese-a-ae575779af514bb5bbfef8f2a002e3db-12b2:850b559f-ebff-4569-b498-ebbb9c53fe60"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-ranch-dressing:ef849e99-35b1-46aa-ad2c-91a7bcc2946c",
+        "mb:farmstand-ranch-dressing-a-ae575779af514bb5bbfef8f2a002e3db-a47d:58917919-55fd-42c6-a648-973cc7c87567",
+        "mb:farmstand-ranch-dressing:cb6477d9-1d07-4cb1-a31b-f75ee9f9f1af"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:lemon-vinaigrette-a-ae575779af514bb5bbfef8f2a002e3db-53e2:cdbbee0d-4fdf-4607-a4c5-7fe37ebbc77a"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmhouse-corn-mix-a-ae575779af514bb5bbfef8f2a002e3db-a927:5284157d-355b-4ec5-8b06-f84f0733e9ee",
+        "mb:farmhouse-corn-mix-a-ae575779af514bb5bbfef8f2a002e3db-54b2:6df14c0f-1968-4ee6-9311-ad0f541b8a3e"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:miso-ginger-dressing-a-ae575779af514bb5bbfef8f2a002e3db-8fe5:4ed7ceb0-10fd-4847-870e-154175176b9c",
+        "mb:miso-ginger-dressing:b352de32-a731-45b3-8df6-92f54713524d",
+        "mb:ginger-carrot-dressing:d91398be-58fb-433f-b4ab-be6ac3721307"
+      ],
+      "recipe_id": "3fecb786-b45e-4209-9294-3c719192efb2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:spiced-tahini:64fc0a76-1d01-4f64-8adb-fdeca4b4d7cc",
+        "mb:spiced-tahini:590268a5-198d-4c36-9388-1ff07e1c49cb"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:72978a64-c281-4c65-866d-f72381b4ac8d",
+        "mb:zesty-cilantro-crema:b8ef3542-5a47-4215-be70-5c9aafbc2987"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-4d18:f6e76b94-c8a9-48ea-98fc-b02608b617d2",
+        "mb:crunchy-fritos-please-a-ae575779af514bb5bbfef8f2a002e3db-4595:a7ddc0f4-4f47-47da-9443-62ebcdb58cab",
+        "mb:crunchy-fritos-a-ae575779af514bb5bbfef8f2a002e3db-7928:9d9495ee-a04f-4c0a-b11b-8cb3ea1a0a47"
+      ],
+      "recipe_id": "04af7cc3-3d2a-4519-9390-5a7987b8c30a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:side-of-guacamole-a-ae575779af514bb5bbfef8f2a002e3db-ab91:a82dd020-dc48-42ee-bdbc-abf91da95788"
+      ],
+      "recipe_id": "171048e5-befc-4155-91e8-edbb11c35826",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:marinated-tomatoes-a-ae575779af514bb5bbfef8f2a002e3db-d732:77eda270-3378-4f9a-b6ad-bb2d117c5be3"
+      ],
+      "recipe_id": "4b695de0-84c9-4608-b95d-7392a00e09bf",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:caesar-dressing-a-ae575779af514bb5bbfef8f2a002e3db-1ee0:e5227f0c-a632-4087-a503-79f1d329040b",
+        "mb:caesar-dressing:cd6dfb2e-559f-481f-b92a-9b08bfea8e85",
+        "mb:caesar-dressing:1f2cc7b4-5037-44ef-aea6-06a2f06f7de8"
+      ],
+      "recipe_id": "514bfe21-f6fa-43b0-90d8-5c7c662d038b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tzatziki-a-ae575779af514bb5bbfef8f2a002e3db-450d:ab9a2c39-b554-49e3-9594-d9c461eb831b",
+        "mb:tzatziki:d679a38b-d340-4c12-be25-a5217048cf3f",
+        "mb:tzatziki:76caf9af-4ba6-4ef5-8cd2-0c9ac9d305c8"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:crunchy-seed-praline:d0c1e92c-07f6-4b9b-8bbd-cb6bc5966a6b",
+        "mb:crunchy-seeds:08ec6fa9-528e-4872-a340-9dae28eb505e"
+      ],
+      "recipe_id": "ade264bd-0036-44fd-999c-46c71fd99523",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:lemon-vinaigrette:3789d2fa-47df-4430-9a16-1b55c61fefe7",
+        "mb:lemon-vinaigrette:a1eb5260-4f94-4e95-b6ac-bb0fc783f1e4"
+      ],
+      "recipe_id": "04c4bdba-3e51-439e-9ce0-3c2fc6874bdc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cornbread-cookie:bb55a39e-218b-4a46-889e-b878754bf2b6"
+      ],
+      "recipe_id": "631a7e89-4f08-4e5f-a749-f179c012df07",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoky-chipotle-crema:eae089b7-ee6c-473f-b167-d7cab8f4f736"
+      ],
+      "recipe_id": "160606ad-dded-4df3-b5d1-fc7888f74dd8",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mediterranean-chili-dressing:75aa95c7-f347-4c23-b0f7-75dc3f6ae6f8"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils-a-ae575779af514bb5bbfef8f2a002e3db-0b79:bb553c18-203a-431e-852c-29b0a6e04ec9"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 67.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 90.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 81.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:old-hank-s-chicken-caesar:d182443b-109e-4a3d-be2c-3af063e13dc7:seeds"
+      ],
+      "recipe_id": "ade264bd-0036-44fd-999c-46c71fd99523",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-garlicky-chicken-a-ae575779af514bb5bbfef8f2a002e3db-dc79:c317783e-5e19-4ced-bbc5-02b67847fd3a"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 135.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 90.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:tzatziki"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 75.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 72.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:broccoli"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:cheese"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 33.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:broccoli"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:seeds"
+      ],
+      "recipe_id": "ade264bd-0036-44fd-999c-46c71fd99523",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:ranch"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 67.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:corn"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:cheese"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:tzatziki"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:brown-rice-and-lentils"
+      ],
+      "recipe_id": "418c325d-838e-45ed-bbfc-ae5fcadf2c94",
+      "per_portion_weight_g": 136.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:chicken-herby"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 80.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:black-beans"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 90.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:cheese"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:mexican-rice"
+      ],
+      "recipe_id": "47dd5852-b5cd-4975-97ea-c763989f9705",
+      "per_portion_weight_g": 136.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:chicken-tex-mex"
+      ],
+      "recipe_id": "f79151ce-708f-4bd2-92c3-b19987bfb669",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:chipotle-crema"
+      ],
+      "recipe_id": "160606ad-dded-4df3-b5d1-fc7888f74dd8",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice-a-ae575779af514bb5bbfef8f2a002e3db-cddd:d9affe6f-2b31-4dac-91ae-fdaa5167ef87"
+      ],
+      "recipe_id": "33fbbb2e-60a3-4ebc-89d8-b98bcee4fff7",
+      "per_portion_weight_g": 136.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:brown-rice-lentils:2f290bf0-e8ba-462f-b554-f24529cf36dd"
+      ],
+      "recipe_id": "418c325d-838e-45ed-bbfc-ae5fcadf2c94",
+      "per_portion_weight_g": 136.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-roasted-chicken-a-ae575779af514bb5bbfef8f2a002e3db-6dcd:0e1346c2-529e-4b98-a64f-75285c050ca8"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 152.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:add-extra-tex-mex-chicken:723fbb2d-fce4-4891-ad5c-22c9649ba144"
+      ],
+      "recipe_id": "f79151ce-708f-4bd2-92c3-b19987bfb669",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:salsa-matcha"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:cilantro-crema"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:add-included-caesar-dressing:bb6561d1-7a27-4682-ad2f-15ad6efc9af8"
+      ],
+      "recipe_id": "514bfe21-f6fa-43b0-90d8-5c7c662d038b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:cowboy-carlos-taco-salad:74ad5292-7737-470f-9e3c-63c3129c7bff:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 28.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:ad1d421b-091e-43db-a6bd-ccd01df29d4b"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:add-single-portion-seasoned-chicken-breast-included:39e99cc0-ab32-461c-916e-fce3c039dcf0"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:add-double-portion-seasoned-chicken-breast:843dcb19-65af-4788-9c8b-f9fdce7acb29"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 152.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:no-chicken-breast:156c6341-4e26-4120-bb4a-27b335d0d82e"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:2db43019-eb90-4aa5-b3a9-9af57cfe8aa0:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 36.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:harissa"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:rosa-s-taco-bowl-supreme:37703420-888e-4b20-9b44-c8879da2ee14:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pico-de-gallo:e2434298-48bf-4c42-9b2a-eb1964f02886"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:corn-bread-cookie:84fd25ac-7778-415d-b909-d164b68363fa"
+      ],
+      "recipe_id": "631a7e89-4f08-4e5f-a749-f179c012df07",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:41b71894-fee9-4b74-8f16-47263d66a361"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:spiced-tahini:ad689597-2ad1-4774-a882-7420a5f26862"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:marinated-tomatoes-a-ae575779af514bb5bbfef8f2a002e3db-74c8:15ddbab5-837b-4ea0-b25d-a95cc7141949"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:f8cb7f99-af36-4577-9f57-a18501dd42dd"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mediterranean-chili-dressing-a-ae575779af514bb5bbfef8f2a002e3db-7a6b:e86f3036-958d-4287-96b6-eebeac6d8bcd"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cinnamon-caramel-cookie:4277bb0b-a634-4e0c-81ae-7c02380235ab"
+      ],
+      "recipe_id": "596678fb-720e-44f4-94cc-ced80b19013b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:edd22cf0-f882-4d69-944f-118eafc25652"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mediterranean-chili-dressing:c2b99eb2-5f3f-4bc9-9921-22f10d3b8353"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:5828e7ef-8d1f-4f5d-8330-b227bc8f8032"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoky-chipotle-crema:b993c737-d35d-479c-a90f-3621d7889481"
+      ],
+      "recipe_id": "160606ad-dded-4df3-b5d1-fc7888f74dd8",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-bowl:71c7625a-7ea4-45a4-873b-33161e32a9e6:feta"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:feta"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese-a-ae575779af514bb5bbfef8f2a002e3db-4051:e4792fac-34c4-426d-b435-b85cad80acd8"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese-a-ae575779af514bb5bbfef8f2a002e3db-f6d2:94065d6c-3c1f-47d2-8348-ae2888eeff12"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-garlic-flatbread:032fd0d3-86fe-48b9-b6b8-d23093bf725d"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cherry-lime-sparkling-water:5d079370-7240-4d01-8392-60824028b85a"
+      ],
+      "recipe_id": "c011a455-1678-4d76-a173-f600483ed3a4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cherry-lime-sparkling-water:ce2be0d2-0ad4-43ed-8d9f-2412f0c51367"
+      ],
+      "recipe_id": "c011a455-1678-4d76-a173-f600483ed3a4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:high-tide-yuzu-sparkling-water:19ac603e-ed9b-4fd0-9698-0f7925bc244b"
+      ],
+      "recipe_id": "3d658d0b-f918-4eee-9fae-5cd9ac241f5b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:open-water-aluminum-bottle-16-oz:3d15e83b-3fb1-468e-ac89-823bb6d39d73"
+      ],
+      "recipe_id": "60d918e9-011c-40a7-9076-aa18c9182f30",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coke-can-12-oz:9905cb33-f8dc-4ab5-864a-c4d79082fa5a"
+      ],
+      "recipe_id": "4315d6f4-3ca8-481a-86f5-2b140f7caa21",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:diet-coke-can-12-oz:4f6d5d39-58c2-4836-82f7-68da0389d6d9"
+      ],
+      "recipe_id": "8c434157-cd5b-4f75-95e4-1f8b19d08579",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:diet-coke-can-12-oz:ea726e5a-e0bc-43f4-8025-2c373e140074"
+      ],
+      "recipe_id": "8c434157-cd5b-4f75-95e4-1f8b19d08579",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:high-tide-yuzu-sparkling-water:a14bfe62-6ae6-47fe-a3dc-ef79d0a25238"
+      ],
+      "recipe_id": "3d658d0b-f918-4eee-9fae-5cd9ac241f5b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:open-water-aluminum-bottle-16-oz:0321a0d3-655c-4b88-94ee-7abd941fd051"
+      ],
+      "recipe_id": "60d918e9-011c-40a7-9076-aa18c9182f30",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coke-can-12-oz:4cca769d-cdbc-4b4c-abd2-36cc25c514d0"
+      ],
+      "recipe_id": "4315d6f4-3ca8-481a-86f5-2b140f7caa21",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:passionfruit-iced-green-tea:bf54a79a-1829-4b6c-8c3f-f999c6bbc2a8"
+      ],
+      "recipe_id": "a4c6134d-bb6d-4b6a-93a3-a8c995569a8d",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:iced-lychee-hibiscus-tea:b063dadc-84dc-4b27-a6d8-27807e7cd579"
+      ],
+      "recipe_id": "61cbe180-5462-4238-8c6b-680f97eac291",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:passionfruit-iced-green-tea:f01ddb0c-1c73-4783-8d52-bd3584a2f3f6"
+      ],
+      "recipe_id": "a4c6134d-bb6d-4b6a-93a3-a8c995569a8d",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:iced-lychee-hibiscus-tea:f07e5f8a-3829-420c-bfa7-575d2814ddd9"
+      ],
+      "recipe_id": "61cbe180-5462-4238-8c6b-680f97eac291",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:asian-salad"
+      ],
+      "recipe_id": "16fea0a4-ce8a-4443-9e0b-c8ad15c5385a",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 72.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:feta"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 27.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 142.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:salsa-macha"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-farmstand-salad:a447d6ff-e840-49d9-8d26-466f74124b22:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:3fb64620-4fd3-42dd-8c2b-2ec296cac11a"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-sea-salt-cookie:554662b7-1f32-43b3-ae3f-14ccc99a111c"
+      ],
+      "recipe_id": "43562e2b-d29a-4727-9806-c0064c6b6397",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-double-cookie:10f20be6-07f3-4b12-948e-77b36094f07a"
+      ],
+      "recipe_id": "8b00863f-5c67-4e97-919c-08891a1a26f3",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basic-b:05924cf2-6138-47e3-87e0-a91c848ed02d"
+      ],
+      "recipe_id": "f871059e-7295-4fda-8a96-4b4bb5ce87f5",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:376273d1-590e-4fc9-8ce6-cfc511902114"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:strawberry-lemonade-bubble-tea:b49e9e5e-08f1-4478-83b0-2e98375e7946"
+      ],
+      "recipe_id": "e94d3cc6-2d27-410a-8974-4720c9f51b4a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:0f6e1252-d95e-45fd-a5a3-b8f7ec03a23a"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:orange-tangerine-switch:e3018e63-994c-420d-b999-e31c6d2dfb6c"
+      ],
+      "recipe_id": "08be9c06-c335-4a4a-b1a7-76938b4f3cc2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:strawberry-watermelon-switch:85ff1c42-55cd-4563-a7b8-994dc593700c"
+      ],
+      "recipe_id": "c4fe7bf0-8bf9-4dc3-a044-bb7f99735b2f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:a412fd64-ca59-483b-8d57-75603d0d6bfa"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:miso-sesame-crunch:b2feaeb2-bbbb-4523-af96-ee9919511ae5:massaged-kale"
+      ],
+      "recipe_id": "be3a1108-c219-4b4d-8e6b-f78b307f79ce",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:d6008d76-e49d-4efa-96ee-1e49fe6563ff:massaged-kale"
+      ],
+      "recipe_id": "be3a1108-c219-4b4d-8e6b-f78b307f79ce",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:2a4b47d8-5386-41fa-8863-4f7cd3f32894:massaged-kale"
+      ],
+      "recipe_id": "be3a1108-c219-4b4d-8e6b-f78b307f79ce",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:massaged-kale:f2fe2f39-72b9-44d3-9de6-c2c6153233d7"
+      ],
+      "recipe_id": "be3a1108-c219-4b4d-8e6b-f78b307f79ce",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:30dc24d3-5b99-4d80-a826-62b165ea4b22"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb::a2fef08e-6617-41d2-89f3-2c11c1a6dbd2"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basic-b:f8587c75-627b-44b9-8bc2-fb10ae342853"
+      ],
+      "recipe_id": "f871059e-7295-4fda-8a96-4b4bb5ce87f5",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 135.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:f09f90d0-ede7-4308-855c-8878dcb63fc3:salsa-macha"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:4d29f1fe-7d06-417a-8508-51d6f828ac81"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:a24b86c2-be92-4641-b4f9-49d580cfd59b"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:3519ea54-694d-41ba-8c6e-ec56300ae716"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:11ce0380-178f-4f46-a738-df223c9fe9dc"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:d4c5823e-9095-45e4-93c4-e1b907d88846"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:3702db54-afdd-4046-9001-c6886ddb34f6"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:86d71c1c-63f4-43b2-aeb5-9f163cb27e57"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:edf0c03a-838c-4830-915e-e67ebc066c6c"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:3007ead9-163a-433c-9139-b854269d9f6a"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:3d262f6b-bcdb-4246-9c43-a7ed998fb99d"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:ccfbad9c-e257-4063-bf66-e8097bbaced5"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:b5878e25-c8b2-48ca-aa22-65fb8e8223f5"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:20437bba-aeac-4b7c-9d30-9f372ba176b6"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:c120e133-b98e-4367-89f9-6ac52d419e56"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:broccoli"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:ranch"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 33.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:f6f771bb-28d3-42ae-9f10-0a8b44638c2f:seeds"
+      ],
+      "recipe_id": "ade264bd-0036-44fd-999c-46c71fd99523",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:a8eac4ca-0659-4dfc-a4eb-a21bb3b57770"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:46002226-cc63-4cac-bb30-e4f08f732d2c"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:9d49dd32-e78e-4be2-9f1d-9a882be5c959"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:3d24969b-6d75-4854-87ce-9c2e837e6890"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:b8a0c023-08ca-40a8-adf7-68198ee5808f"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:d27e0e85-a9ef-4763-ab37-10a1bf2e1283"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:6fa32a7b-ea46-4658-874d-b070e1f0e219"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:8c86b3c5-32a0-4abd-bbb7-f9401158ee52"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:12ae1e44-c259-4e35-9e0a-aa54c45e626a"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:7b2d736e-2a81-44a5-8970-a3dc835d2362"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:cc650575-c2e6-4fb7-8d06-0bc4903dadad"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:5520f8bf-5b3b-4f8d-b82f-f5e6264c963c"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:ddcec001-6f20-4ab5-b031-159279e0f140"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:7f3b4fa0-9a5e-4333-9f62-e1900879c752"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 90.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:feta"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:harissa"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:3591d578-f66b-41e7-a767-5ca62781ca46:tzatziki"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-chicken-salad:dd66eb99-fa46-4732-9b74-2e991e1ab46e"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 95.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:9ac88466-cb46-4375-ac6d-0dc56660b4d3"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 95.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:aa8f1f75-7178-4ec6-8452-c2c3f1d8650e"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:466754dc-e37c-4586-a9d0-60759e0bfd43"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:c4b592ab-752b-463c-aaed-00c0a095491c"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:8b356a60-60bb-41a4-be19-cf9fd47eab7f"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:ce42a3c0-2642-453a-9355-d378642e3ead"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:b25c137e-43a3-4be6-979c-bf7978f5a2f7"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:7eb4ccbc-49f4-4984-ad88-26a68142889c"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:57320dde-4b41-4340-9094-5da91902326b"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:ce5f8509-c7fa-4c88-b376-3a3ee8b0da14"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:67cf1341-9447-41bf-97fd-4999b9e3bb9c"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:64c342d7-4e6b-464b-a5ab-84dd2e5ae2e5"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:ebc7522f-a209-48a6-9638-c9b118121868"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:5ffdb568-23a2-4067-8e7e-833a500f4d46"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad:48eb8293-6644-4929-8ffd-87633d10e7fc"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans:859bfb76-d245-47ea-97aa-6d39d710c834"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:e4f1c4a5-9a8a-44f2-acdd-c08925897e5f"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cucumbers:3e39dbc5-6b89-4225-9c8f-8e9b6250ca3d"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmhouse-corn-mix:0dae3b8e-8a2d-461e-8f14-2afdf1bf6a31"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:e85df87f-1bf0-4cab-bdd0-66e230643ee5"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese:cc7e71ae-9e00-4b7f-aa7a-032cfd697d54"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:marinated-tomatoes:1cbf3ae3-291a-40be-81b0-1ee6c38d2e43"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:bed815d4-05e2-49b1-bc11-6058e4d2ef6a"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad:8aa19e10-8fcf-4886-91cb-9f8265c3534f"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans:72f573dc-6b0d-47cf-9cf5-3c1b11a53ffc"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:baacd84f-d6fa-4350-ba14-7efd6bcbbd53"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:crunchy-fritos:729fb9de-0f07-4812-92ba-12bc49d2c055"
+      ],
+      "recipe_id": "04af7cc3-3d2a-4519-9390-5a7987b8c30a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cucumbers:7d220ea7-fffc-4010-bc56-51a68045c668"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmhouse-corn-mix:81a546b9-8597-4c64-a8ca-51b2de431155"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:2ac936ca-63a4-45e4-a3c7-fed32d941d6e"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese:ba0c7823-4c59-4f99-915a-83cea17481a6"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pico-de-gallo:b2a05388-8600-4caa-b030-577f3594bd42"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:87c1b4b0-1600-48b2-9cb0-6928c2f3aa0f"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-ranch-dressing:2990f38d-a8ab-4997-928d-4d56ae736e47"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:herb-tahini-dressing:b0805ae7-a452-4f98-974a-cbc91474f7f8"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tzatziki:a65eabba-754a-43c4-9a3f-82ad60244697"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:a52ccd94-5e29-4017-ab0e-3e53e2082b2c"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-roasted-chicken:2f197639-4768-4421-9b71-bd5523b1c10e"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 152.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-roasted-chicken:f9ce2bae-e59f-4662-9636-1205880d952a"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:46aeb739-df42-48ac-b824-bcb04bf02bde"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:citrus-vinaigrette:c7e0296e-d790-44d1-8c2f-a8ac9d9e76e4"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-ranch-dressing:50de7703-e390-4ea9-a270-9bf25c331d7b"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:herb-tahini-dressing:795ac9ba-806d-4c3e-8292-af6689bd5b56"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mediterranean-chili-dressing:23ac4f7f-2947-460f-a47a-b3f41954b716"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tzatziki:2e50f73f-f915-47b1-a400-585046d76ede"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:6f85c733-c191-4261-b2ae-b8495c94a96f"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:693d89e3-e2e6-4414-983e-c472530ba849"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:ce9c0b88-0311-4b05-bf21-308e23c752c0"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:43b167e4-4d4d-4a93-bd91-0bcdd5f5efea"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:86389a56-25c1-4c60-9f73-1b0bd2b51815"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:344beca4-237b-4f23-a85f-64836d387ea2"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:7f25c84f-38ab-4bfd-9d11-13362d57014d"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:b1cee724-3613-434a-973e-69e19e6c6a50"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:919a3dd4-61bc-44d1-b087-4cdc8f1fff14"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:brown-rice-lentils:4d3bcf16-ecd7-42b0-82e2-aa88946d4dce"
+      ],
+      "recipe_id": "418c325d-838e-45ed-bbfc-ae5fcadf2c94",
+      "per_portion_weight_g": 125.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:4f2099aa-cdee-4ce5-9ef8-dc2d2abde7d5"
+      ],
+      "recipe_id": "33fbbb2e-60a3-4ebc-89d8-b98bcee4fff7",
+      "per_portion_weight_g": 125.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:1368e0ae-3927-48f3-bac5-470698907550"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:785b8879-a789-4b0f-91a3-4b52196da5d8"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:8fe4fa98-b372-44e7-9519-59e1d1064e8e"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:b7d4dcba-fcd3-4f84-af09-b8adcab1b5d8"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:3d3a462f-eea7-420b-8f71-5a0f7fed5c5a"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 135.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chili-crisp-crunch-salad:87fc20af-a636-4d47-b017-e73c1dd040eb:salsa-macha"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:ee3ecfdd-bbef-41e4-af34-956e82448ce1"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:26f1b232-fe13-48bb-a481-ecd785bc9221"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:be76946c-8706-4cb2-8af4-4ed9f940f0d0"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:d2ea963f-56c7-467d-998d-c8cb502e5ed5"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:c4f755b2-a4c2-4293-b2ea-492cb4feeb51"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:fc6c8455-3c14-41ab-860e-d7160428ba28"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:57680030-5eb8-4dae-a88e-db8be9a212f7"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:03ddafd4-1494-4634-b923-4e20a08ab389"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:f92c6ea0-84cc-4ca4-92ae-34ce4b6c7301"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:9f7c492f-2623-4048-8184-9931ec28bb9d"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:7443d694-5ce6-4811-92ac-a9ad49029d5c"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:12066945-bcf8-47ac-899d-b6eb47b883c5"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:1d4374ec-96ec-4901-952b-eabf2ff74688"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:6a5fcfb8-78a2-468f-9bdb-0374608f389c"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:broccoli"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:chicken-salad"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:ranch"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 33.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:farmstand-ranch-salad:983005c6-ccbc-49cf-8a4e-06a5414aeaef:seeds"
+      ],
+      "recipe_id": "ade264bd-0036-44fd-999c-46c71fd99523",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:2649ac1e-84fe-47ae-8dab-6bc593bfe29e"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:98e09757-c407-44ee-818e-4da9b40462f6"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:cbd515ae-92da-4363-afd3-5eea777f81ef"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:2882b3f8-0921-4188-91c5-113f22cf62ec"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:fd4c3024-ca94-4a04-b61f-4f45d59d6f12"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:e0a3984c-4c18-4587-843f-b8e6fef1e5da"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:6b7a31de-b907-41e7-8558-5bf6df4c7656"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:6bcb936a-ab82-45c7-9d8b-f267fb219898"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:0569c1ce-da7d-40a1-9394-2877766ca4ce"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:d7a654aa-afdc-49be-9e4c-e1f8040f530d"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:94a0a02f-a623-4804-bfe3-897ac53d00b5"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:4a5c55dd-146a-411b-a700-cc89dbdb3e97"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:6be18685-4682-4b9b-8245-0fd2cc14aa10"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:c7f2fa70-1b0a-49ca-a652-265365911421"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:couscous"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 90.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:feta"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:harissa"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 54.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:yiayia-s-mediterranean-garden:d0ed3a2b-b4da-4183-a123-68063f36061b:tzatziki"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-chicken-salad:06cf9b92-4b6c-4a84-95fc-c6b7c9b8039c"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 152.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-chicken-salad:c8ef05fb-a0b7-4d03-91c6-823a3fb3440e"
+      ],
+      "recipe_id": "efb09bbf-1ad4-4565-b8f4-ef38db4c6f3b",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:e829cd42-111e-4a8c-a0c7-db6df205a681"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:600e02b9-ef77-4a50-984c-8232dec7898a"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:0d4ea006-d512-4d2d-8932-3595c940bd7c"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:3b07b431-0757-43f7-ba74-ca6503341577"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:6dca942a-8ad6-42a5-b159-93cef24d6498"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:10b6845f-9a6d-4379-9798-daf2e229f027"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:3138bf1c-eb2e-4f12-918a-0cb2fa318d9b"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:f59992b6-db5f-4ba8-852b-0c9fc57e9eb0"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:21026a2a-9080-431c-bdda-98e010f7fb96"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:04d32c9b-e001-446f-bbff-08161570f4f4"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:7760f87d-dc25-43f6-9afd-6c8e786a0105"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:c78257e3-eff3-4ab3-b05b-b807029fa8f5"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:732125a9-521c-4247-b1d3-b69359401625"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad:52ade545-e9ca-40eb-957f-d56ea2a8f31c"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans:6545f567-1bd0-47ec-861e-f63f516512c6"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:b0c8a8d0-b03a-4190-9001-6a81646737f8"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cucumbers:aba1558f-e757-41c0-9955-c9b2c7cd96af"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmhouse-corn-mix:d129650b-0857-4634-a3fb-8c2a14b44ca9"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:968595c2-b901-4d51-9170-f976c878847d"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese:7b30ea4f-beb6-4594-b71b-8b9bd1db3434"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:marinated-tomatoes:74c552ab-6d0e-4af6-a39c-6ad58c6170a5"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:2798b5c2-ee7f-49cb-80e5-dc47ac4c457e"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-garlic-crunch-pasta-salad:c837ba58-69ac-478a-9a4d-273b0b1ad2b6"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans:6d31639e-3dd0-482d-962e-c410a5768544"
+      ],
+      "recipe_id": "db60d42a-245e-4a9a-ab5c-cc36c6fa2090",
+      "per_portion_weight_g": 63.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:0448fe8e-9877-452f-b9b5-31d808e168f7"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:crunchy-fritos:06459d71-6741-467e-865d-06f1fbbe97ba"
+      ],
+      "recipe_id": "04af7cc3-3d2a-4519-9390-5a7987b8c30a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cucumbers:e88eb007-09f7-428b-9a38-e1f86e796842"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmhouse-corn-mix:de692e33-7e34-403a-8869-9b652f8e067b"
+      ],
+      "recipe_id": "00f9b5f8-14da-4754-9343-b31e92000165",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:8fa3017b-d868-4471-a3f2-169b635faf42"
+      ],
+      "recipe_id": "2d083ec0-8e77-4819-b46e-25415a85a476",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:feta-cheese:c841c391-212b-42cb-ae5f-eef7c6d30429"
+      ],
+      "recipe_id": "c9d8feeb-8136-40a8-8d56-c0538fbc3f39",
+      "per_portion_weight_g": 22.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pico-de-gallo:6484e17e-468c-43b3-886f-84881bd7ef6d"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:cc003b91-48a0-4fa0-b0aa-c2599876bd2a"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 47.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:32632f6f-81bf-4644-b17c-117db7109c0a"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:herb-tahini-dressing:736f65e3-2e44-4213-b289-32b30b4da1ff"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tzatziki:d7c1a2d4-d147-4634-a964-0d449b8db2a0"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:1c8caa52-af29-4f02-a0b6-73c18981b386"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:double-portion-roasted-chicken:6844ec15-07b8-454b-913e-df8a83579cce"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 152.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:single-portion-roasted-chicken:98bef296-8283-4e53-b4c3-98aa0f3a931c"
+      ],
+      "recipe_id": "ba2e624b-da94-41a4-bc05-9be4605ec266",
+      "per_portion_weight_g": 76.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chili-crisp-crunch:3634aaab-1a66-463e-9649-ab12d12c3eed"
+      ],
+      "recipe_id": "dc6f57c5-1747-448c-b763-9572fc568c0f",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:citrus-vinaigrette:9305ba7d-1227-485b-80e0-bf32a417b839"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-ranch-dressing:b9e97d01-57b3-4721-8522-4713fef9c125"
+      ],
+      "recipe_id": "af6ff6fe-5a1a-4ff5-b7ad-1f5cbee06167",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:herb-tahini-dressing:4b9d6238-4513-439b-a8de-24ffbe35c3da"
+      ],
+      "recipe_id": "81a79b8f-dc7a-4213-82b5-2c491e518cdf",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mediterranean-chili-dressing:904aa1f0-104c-4648-a17e-c1867e05e9a4"
+      ],
+      "recipe_id": "2305f4d5-7620-463e-882c-7babc19046f2",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tzatziki:43cc93e9-8e92-4b88-bd4b-64d65b844567"
+      ],
+      "recipe_id": "923ca469-99f6-4883-b40c-ef448c8e3f0c",
+      "per_portion_weight_g": 45.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:zesty-cilantro-crema:1e5a5f80-7c0b-473b-a40b-3a169c2ebc23"
+      ],
+      "recipe_id": "9dd6b38b-93cd-457f-9af8-7dbb43340718",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:basil-crunch-pasta-salad:c6f5da57-39d7-45a9-a517-a707d632ded8"
+      ],
+      "recipe_id": "6e918413-5c41-4549-84c8-4fdb8ed23271",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-salad:091af08a-84ed-4729-be24-830504ea7e4a"
+      ],
+      "recipe_id": "a61449bc-b1c0-408e-8d21-2dfc96d87ebe",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-cornbread:dc535ee8-c907-4fc7-b596-af6d2eaa9c2a"
+      ],
+      "recipe_id": "dbcc5287-20f9-45c1-9d10-14632d29051c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farmstand-flatbread:50282607-3f92-4691-b422-40d993ba847c"
+      ],
+      "recipe_id": "dcc93a05-363e-413c-83e7-c78384fe7c09",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:farro-couscous-salad:ccd2c2c6-72fb-4aeb-94d7-1ed4150c2646"
+      ],
+      "recipe_id": "6de90e4c-e459-4e7e-af33-27fb170f69b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:smoked-romesco-broccoli-carrot:2b010ee5-3b3c-4351-9bca-56774e9f8f18"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yia-yia-s-creamy-hummus:f09f621e-7698-4184-8351-47b67e8b8aef"
+      ],
+      "recipe_id": "a7f7dcac-b550-4482-8c2d-cddba804728f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:6a31a1ac-ea82-4253-901d-eb9ba96ebf6a"
+      ],
+      "recipe_id": "3cee353e-e619-4282-8a66-572131646d1a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:brown-rice-lentils:1a87fd25-0fc2-454e-b117-a5e7bbeb115d"
+      ],
+      "recipe_id": "418c325d-838e-45ed-bbfc-ae5fcadf2c94",
+      "per_portion_weight_g": 125.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:5ff22488-e607-44c8-8435-ef39015b1eca"
+      ],
+      "recipe_id": "33fbbb2e-60a3-4ebc-89d8-b98bcee4fff7",
+      "per_portion_weight_g": 125.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-cherry-switch:584fd266-d451-4dbf-b7a2-63950acff643"
+      ],
+      "recipe_id": "24f0665c-8789-457f-bff4-b961e9f8b49a",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:3f7a7d83-62da-41c1-8ae1-5c77562597d1"
+      ],
+      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:7c782b37-ab99-4b8f-91c9-9d2538016b20"
+      ],
+      "recipe_id": "1773d8c5-a180-49b1-9723-20075c9ddbb4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mango-passionfruit-bubble-tea:782f90a5-24ca-4c69-a5a8-068178ff643a"
+      ],
+      "recipe_id": "fd62ffca-9f36-487f-a034-e34a736067fc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-utensils:ba930475-4235-499a-8803-41d8c51312c3"
+      ],
+      "recipe_id": "1074e5e4-da86-4a7d-9a81-2034d9c112b0",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sparkling-apple-izze:a1f295e2-573a-4950-9f4e-7ea6e258069b"
+      ],
+      "recipe_id": "ebc21456-7807-49c3-9ead-12371d33de03",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:caesar-dressing:8fdae9b8-0a7c-44e6-9fdb-0876323303f7"
+      ],
+      "recipe_id": "514bfe21-f6fa-43b0-90d8-5c7c662d038b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:caesar-dressing:ef6c3f83-23bb-4b18-ac67-61fb9d3f1c75"
+      ],
+      "recipe_id": "514bfe21-f6fa-43b0-90d8-5c7c662d038b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:asian-salad:cb05af72-f16f-4a67-9444-acd245766a49"
+      ],
+      "recipe_id": "16fea0a4-ce8a-4443-9e0b-c8ad15c5385a",
+      "per_portion_weight_g": 35.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:caesar-dressing:b92b31cb-e512-4881-99ba-a654ccb37a6b"
+      ],
+      "recipe_id": "514bfe21-f6fa-43b0-90d8-5c7c662d038b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pistachio-lemon-cookie:f1c2fced-0b4b-4716-a36d-b4fe0153e09c"
+      ],
+      "recipe_id": "21301c1f-cd00-42be-8460-bc4f8b69bceb",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:churro-cookie:8ab7a95d-fc62-4993-ad51-071ed8394487"
+      ],
+      "recipe_id": "596678fb-720e-44f4-94cc-ced80b19013b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:charred-broccoli:10a0fe08-c51a-4b56-a7a2-d1fdf515fe65"
+      ],
+      "recipe_id": "3fc1227a-cc84-455c-9359-2e34b9fe5176",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:romaine-base"
+      ],
+      "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:pasta-salad"
+      ],
+      "recipe_id": "9d471ca4-2fc7-4a45-86ce-d86fcbdbd57f",
+      "per_portion_weight_g": 80.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:broccoli"
+      ],
+      "recipe_id": "a9c0d3a0-a581-4321-bb01-a7044c86617f",
+      "per_portion_weight_g": 80.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:cheese"
+      ],
+      "recipe_id": "a50c87e7-1bd7-48e7-acc7-f0e28c4ff63e",
+      "per_portion_weight_g": 25.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:citrus-vin"
+      ],
+      "recipe_id": "9b23c694-a484-4720-bff6-8438463fa11d",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:cucumbers-plain"
+      ],
+      "recipe_id": "6d50ad37-df27-44c9-8828-c3b6a4b44add",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pesto-chopped-salad:38d0b2a3-994f-4dfc-a5c4-1fc0daffda9b:tomatoes"
+      ],
+      "recipe_id": "8f4d4395-82ce-494e-9a43-bca0cb10929b",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    }
+  ],
+  "menu_package_version": {
+    "version_identifier": "mb:Qi3F4e7qUxJgQgHn4WOwMf",
+    "last_modification_time": 1789597259111000000
+  },
+  "robot_brand_id": "kitchen-solutions"
+}

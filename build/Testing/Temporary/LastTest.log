@@ -1,0 +1,109 @@
+Start testing: Sep 25 09:14 EDT
+----------------------------------------------------------
+1/1 Testing: verify
+1/1 Test: verify
+Command: "/home/ntesta/Projects/bowl_fill_simulator/build/bowlfill-verify"
+Directory: /home/ntesta/Projects/bowl_fill_simulator/build
+"verify" start time: Sep 25 09:14 EDT
+Output:
+----------------------------------------------------------
+Curve fitting (robot arm, against the published power-law fits)
+  ok   Massaged Kale K                                     1.106
+  ok   Massaged Kale p                                     0.718
+  ok   Massaged Kale R2                                    0.958
+  ok   Massaged Kale range lo                             47.000
+  ok   Massaged Kale range hi                             99.000
+  ok   Massaged Kale n                                     6.000
+  ok   Mexican Rice K                                      0.298
+  ok   Mexican Rice p                                      0.723
+  ok   Mexican Rice R2                                     0.921
+  ok   Mexican Rice range lo                             183.000
+  ok   Mexican Rice range hi                             300.000
+  ok   Mexican Rice n                                      6.000
+  ok   Romaine Base K                                      0.311
+  ok   Romaine Base p                                      0.938
+  ok   Romaine Base R2                                     0.983
+  ok   Romaine Base range lo                              67.000
+  ok   Romaine Base range hi                             141.000
+  ok   Romaine Base n                                      6.000
+  ok   Massaged Kale hand K                                1.318
+  ok   Massaged Kale pooled n                             12.000
+
+Menu loading
+  ok   brands parsed                                       5.000
+  ok   Farmstand floors                                    4.000
+  ok   Farmstand ingredients                              28.000
+  ok   Farmstand recipes                                  10.000
+  ok   Meat + Rice floors                                  0.000
+  ok   Meat + Rice recipes                                 1.000
+  ok   Farmstand romaine portion                          35.000
+  ok   Farmstand romaine step                              3.500
+  ok   Farmstand romaine max                             100.000
+  ok   Farmstand Mexican Rice source                  template
+  ok   Farmstand Mexican Rice portion                    136.000
+  ok   Cowgirl Mexican Rice portion                      180.000
+
+Floor matching (first rule wins, must_not_have vetoes)
+  ok   Farmstand romaine only                            365.000
+  ok   Farmstand kale only                               300.000
+  ok   Farmstand grain only                              455.000
+  ok   Farmstand green + grain                           400.000
+  ok   Farmstand two greens (ExactlyOne fails)           400.000
+  ok   Meat + Rice matches no floor
+
+End-to-end recipes (against the HTML simulator's output)
+  -- The Hungry Cowgirl / The Hungry Cowgirl Bowl
+  ok      final oz                                        28.579
+  ok      verdict                                     Fits
+  -- The Hungry Cowgirl / Pollo Verde Asado Bowl
+  ok      final oz                                         4.375
+  ok      verdict                                     Saturated
+  -- The Hungry Siren / The Hungry Siren Bowl
+  ok      final oz                                        26.551
+  ok      verdict                                     Fits
+  -- Farmstand / Farmstand Ranch Salad
+  ok      final oz                                        41.548
+  ok      verdict                                     OverAtStart
+  -- Pita Dust / The Oasis
+  ok      final oz                                        27.910
+  ok      verdict                                     Fits
+  -- Meat + Rice / Meat Rice Meat
+  ok      final oz                                        27.579
+  ok      verdict                                     NoFloor
+
+Build-your-own default (Farmstand, romaine + first protein)
+  ok   floor                                             365.000
+  ok   final g                                           225.000
+  ok   final oz                                           27.662
+  ok   verdict                                        Saturated
+
+Compression model (reduces to the plain fit at zero load)
+  ok   kale 110 g, nothing on top                         32.300
+  ok   kale 110 g under 150 g                             22.286
+
+CSV ingest
+  ok   built-in rows                                      36.000
+  ok   built-in ingredients                                3.000
+  ok   upload accepted
+  ok   rows added                                          7.000
+  ok   ingredients after                                   5.000
+  ok   new curves reported                            Quinoa, Sweet Potato
+  ok   kale robot n after                                  8.000
+  ok   kale curve refitted
+  ok   Sweet Potato fitted: K=0.202 p=0.786 R2=1.000
+  ok   Sweet Potato in measured range                     10.348
+  ok   single-point ingredient produces no curve
+  ok   rows after reset                                   36.000
+  ok   ingredients after reset                             3.000
+  ok   bad columns rejected: Missing required columns: g, oz.
+
+70 checks, 0 failures
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"verify" end time: Sep 25 09:14 EDT
+"verify" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 25 09:14 EDT
