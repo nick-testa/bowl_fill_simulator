@@ -39,8 +39,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0"
-      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0"
+      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN"
+      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -51,10 +51,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0'
+        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN'
         
-        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_3a6c1
-        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   -v -MD -MT CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -c /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_4d6bd
+        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   -v -MD -MT CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -c /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp
         clang version 21.1.6
         Target: x86_64-unknown-linux-gnu
         Thread model: posix
@@ -66,7 +66,7 @@ events:
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
          (in-process)
-         "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-21" -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0 -v -fcoverage-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0 -resource-dir /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21 -dependency-file CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/x86_64-pc-linux-gnu -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -x c++ /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp
+         "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-21" -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN -v -fcoverage-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN -resource-dir /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21 -dependency-file CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/x86_64-pc-linux-gnu -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -x c++ /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp
         clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-unknown-linux-gnu
         ignoring nonexistent directory "/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include"
         ignoring nonexistent directory "/include"
@@ -80,7 +80,7 @@ events:
          /usr/include
         End of search list.
         
-        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_3a6c1   && :
+        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++  -v -Wl,-v CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_4d6bd   && :
         clang version 21.1.6
         Target: x86_64-unknown-linux-gnu
         Thread model: posix
@@ -91,7 +91,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/ld" --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_3a6c1 /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/../lib/x86_64-unknown-linux-gnu -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/lib/x86_64-unknown-linux-gnu -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16 -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtendS.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crtn.o
+         "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/ld" --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_4d6bd /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/../lib/x86_64-unknown-linux-gnu -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/lib/x86_64-unknown-linux-gnu -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16 -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtendS.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crtn.o
         LLD 21.1.6 (compatible with GNU linkers)
         
         
@@ -132,10 +132,10 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(\\.[a-z]+)?))("|,| |$)]
-        ignore line: [Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0']
+        ignore line: [Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN']
         ignore line: []
-        ignore line: [Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_3a6c1]
-        ignore line: [[1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   -v -MD -MT CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -c /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_4d6bd]
+        ignore line: [[1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   -v -MD -MT CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -c /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-unknown-linux-gnu]
         ignore line: [Thread model: posix]
@@ -150,7 +150,7 @@ events:
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
         ignore line: [ (in-process)]
-        ignore line: [ "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-21" -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0 -v -fcoverage-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-m4wRR0 -resource-dir /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21 -dependency-file CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/x86_64-pc-linux-gnu -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -x c++ /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [ "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-21" -cc1 -triple x86_64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -debugger-tuning=gdb -fdebug-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN -v -fcoverage-compilation-dir=/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-3CBOrN -resource-dir /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21 -dependency-file CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16 -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/x86_64-pc-linux-gnu -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../include/c++/16/backward -internal-isystem /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -x c++ /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang -cc1 version 21.1.6 based upon LLVM 21.1.6 default target x86_64-unknown-linux-gnu]
         ignore line: [ignoring nonexistent directory "/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../x86_64-pc-linux-gnu/include"]
         ignore line: [ignoring nonexistent directory "/include"]
@@ -164,7 +164,7 @@ events:
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
         ignore line: []
-        ignore line: [[2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++  -v -Wl -v CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_3a6c1   && :]
+        ignore line: [[2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++  -v -Wl -v CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_4d6bd   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-unknown-linux-gnu]
         ignore line: [Thread model: posix]
@@ -178,7 +178,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/ld" --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_3a6c1 /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/../lib/x86_64-unknown-linux-gnu -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/lib/x86_64-unknown-linux-gnu -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16 -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtendS.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crtn.o]
+        link line: [ "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/ld" --hash-style=gnu --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_4d6bd /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/../lib/x86_64-unknown-linux-gnu -L/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/lib/x86_64-unknown-linux-gnu -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16 -L/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtendS.o /usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crtn.o]
           arg [/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/ld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--eh-frame-hdr] ==> ignore
@@ -188,7 +188,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_3a6c1] ==> ignore
+          arg [cmTC_4d6bd] ==> ignore
           arg [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o] ==> obj [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/Scrt1.o]
           arg [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o] ==> obj [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/../../../../lib64/crti.o]
           arg [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o] ==> obj [/usr/lib64/gcc/x86_64-pc-linux-gnu/16/crtbeginS.o]
@@ -201,7 +201,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_3a6c1.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [CMakeFiles/cmTC_4d6bd.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
           arg [-lstdc++] ==> lib [stdc++]
           arg [-lm] ==> lib [m]
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -254,8 +254,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-tQwDQA"
-      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-tQwDQA"
+      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-Ud5Fe4"
+      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-Ud5Fe4"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -266,11 +266,11 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-tQwDQA'
+        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-Ud5Fe4'
         
-        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_e3076
-        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++20 -MD -MT CMakeFiles/cmTC_e3076.dir/src.cxx.o -MF CMakeFiles/cmTC_e3076.dir/src.cxx.o.d -o CMakeFiles/cmTC_e3076.dir/src.cxx.o -c /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-tQwDQA/src.cxx
-        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   CMakeFiles/cmTC_e3076.dir/src.cxx.o -o cmTC_e3076   && :
+        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_a9a21
+        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu++20 -MD -MT CMakeFiles/cmTC_a9a21.dir/src.cxx.o -MF CMakeFiles/cmTC_a9a21.dir/src.cxx.o.d -o CMakeFiles/cmTC_a9a21.dir/src.cxx.o -c /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-Ud5Fe4/src.cxx
+        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   CMakeFiles/cmTC_a9a21.dir/src.cxx.o -o cmTC_a9a21   && :
         
       exitCode: 0
   -
@@ -288,8 +288,8 @@ events:
     checks:
       - "Performing Test HAVE_STDATOMIC"
     directories:
-      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-1Fmjoy"
-      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-1Fmjoy"
+      source: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-d6DPfm"
+      binary: "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-d6DPfm"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: ""
@@ -300,11 +300,11 @@ events:
       variable: "HAVE_STDATOMIC"
       cached: true
       stdout: |
-        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-1Fmjoy'
+        Change Dir: '/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-d6DPfm'
         
-        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_6e18b
-        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++ -DHAVE_STDATOMIC  -std=gnu++20 -MD -MT CMakeFiles/cmTC_6e18b.dir/src.cxx.o -MF CMakeFiles/cmTC_6e18b.dir/src.cxx.o.d -o CMakeFiles/cmTC_6e18b.dir/src.cxx.o -c /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-1Fmjoy/src.cxx
-        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   CMakeFiles/cmTC_6e18b.dir/src.cxx.o -o cmTC_6e18b   && :
+        Run Build Command(s): /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/ninja -v cmTC_157f9
+        [1/2] /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++ -DHAVE_STDATOMIC  -std=gnu++20 -MD -MT CMakeFiles/cmTC_157f9.dir/src.cxx.o -MF CMakeFiles/cmTC_157f9.dir/src.cxx.o.d -o CMakeFiles/cmTC_157f9.dir/src.cxx.o -c /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/CMakeScratch/TryCompile-d6DPfm/src.cxx
+        [2/2] : && /home/ntesta/Projects/lab37/.toolchain/sysroot/bin/clang++   CMakeFiles/cmTC_157f9.dir/src.cxx.o -o cmTC_157f9   && :
         
       exitCode: 0
 ...

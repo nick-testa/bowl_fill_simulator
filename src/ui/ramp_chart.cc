@@ -1,5 +1,6 @@
 #include "ramp_chart.hh"
 #include "theme.hh"
+#include "units.hh"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -129,15 +130,16 @@ void RampChart::paintEvent(QPaintEvent *)
     if (cap_y > kTop)
         p.fillRect(QRectF(kLeft, kTop, pw, cap_y - kTop), pal.over_soft);
 
+    // Ticks are chosen in the displayed unit so they land on round numbers there,
+    // then mapped back to canonical ounces for positioning.
     p.setFont(theme::mono(8));
-    p.setPen(pal.rule);
-    for (double v : span_ticks(0, oz_max, 5)) {
-        const double y = Y(v);
+    for (double shown : span_ticks(0, units::from_oz(oz_max), 5)) {
+        const double y = Y(units::to_oz(shown));
         p.setPen(pal.rule);
         p.drawLine(QPointF(kLeft, y), QPointF(kLeft + pw, y));
         p.setPen(pal.ink_faint);
         p.drawText(QRectF(0, y - 8, kLeft - 8, 16), Qt::AlignRight | Qt::AlignVCenter,
-                   QString::number(v, 'f', (v > 0 && v < 10) ? 1 : 0));
+                   QString::number(shown, 'f', (shown > 0 && shown < 10 && !units::metric()) ? 1 : 0));
     }
     for (double v : span_ticks(g_min, g_max, 5)) {
         p.setPen(pal.ink_faint);
@@ -175,7 +177,7 @@ void RampChart::paintEvent(QPaintEvent *)
     p.setPen(cp);
     p.drawLine(QPointF(kLeft, cap_y), QPointF(kLeft + pw, cap_y));
     tag(p, QPointF(kLeft + pw, cap_y - 10), Qt::AlignRight,
-        QString("volume limit %1 oz").arg(cap, 0, 'f', cap < 10 ? 1 : 0), pal.over);
+        QString("volume limit %1").arg(units::volume(cap, true)), pal.over);
 
     if (result_.highest_safe_floor_g) {
         const double g = *result_.highest_safe_floor_g;
@@ -235,7 +237,7 @@ void RampChart::paintEvent(QPaintEvent *)
     p.save();
     p.translate(14, kTop + ph / 2);
     p.rotate(-90);
-    p.drawText(QRectF(-100, -8, 200, 16), Qt::AlignCenter, "bowl volume (fl oz)");
+    p.drawText(QRectF(-100, -8, 200, 16), Qt::AlignCenter, units::volume_axis_label());
     p.restore();
 }
 
@@ -275,10 +277,10 @@ void RampChart::mouseMoveEvent(QMouseEvent *event)
     if (best >= 0) {
         const Frame &f = frames[best];
         QToolTip::showText(event->globalPosition().toPoint(),
-                           QString("pass %1\n%2 g\n%3 oz")
+                           QString("pass %1\n%2 g\n%3")
                                .arg(best)
                                .arg(f.grams, 0, 'f', 0)
-                               .arg(f.ounces, 0, 'f', 1),
+                               .arg(units::volume(f.ounces, true)),
                            this);
     }
 }

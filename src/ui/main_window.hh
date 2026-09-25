@@ -47,6 +47,7 @@ private slots:
     void on_reset_curves();
     void show_csv_help();
     void toggle_theme();
+    void set_units(bool metric);
 
 private:
     void build_ui();
@@ -89,6 +90,11 @@ private:
     QPushButton *split_ = nullptr;
     QPushButton *compress_ = nullptr;
     QPushButton *theme_ = nullptr;
+    QPushButton *unit_oz_ = nullptr;
+    QPushButton *unit_ml_ = nullptr;
+    QLabel *capacity_label_ = nullptr;
+    QLabel *rate_header_ = nullptr;
+    QLabel *intro_ = nullptr;
 
     QWidget *protein_picks_ = nullptr;
     QWidget *topping_picks_ = nullptr;

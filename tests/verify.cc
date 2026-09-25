@@ -318,6 +318,34 @@ int main()
         expect_near("rows after reset", c2.observations().size(), 36, 0.01);
         expect_near("ingredients after reset", c2.ingredients().size(), 3, 0.01);
 
+        // A metric sheet is the same measurement in another unit: it must land on the
+        // same curve as an ounces sheet would, not a curve 29.6x larger.
+        CurveSet mc;
+        QString mnote;
+        int madded = 0;
+        ++checks;
+        if (!mc.load_csv(assets + "/tests/metric.csv", &mnote, &madded)) {
+            ++failures;
+            std::printf("  FAIL metric CSV rejected: %s\n", qPrintable(mnote));
+        } else {
+            std::printf("  ok   metric CSV accepted\n");
+        }
+        expect_near("metric rows", madded, 2, 0.01);
+        // 710 ml is 24.0 fl oz; the stored observation must be in fluid ounces.
+        ++checks;
+        if (mc.observations().empty()) {
+            ++failures;
+            std::printf("  FAIL no metric observations\n");
+        } else {
+            const double got = mc.observations().front().ounces;
+            if (std::fabs(got - 710.0 / 29.5735295625) > 0.01) {
+                ++failures;
+                std::printf("  FAIL metric not converted: %.3f\n", got);
+            } else {
+                std::printf("  ok   710 ml stored as %.2f fl oz\n", got);
+            }
+        }
+
         // A file missing the required columns is rejected with a useful message.
         CurveSet c3;
         QString why;

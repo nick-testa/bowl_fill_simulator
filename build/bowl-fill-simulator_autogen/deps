@@ -17,6 +17,8 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.hh \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/__stdarg___gnuc_va_list.h \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/__stddef_header_macro.h \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/__stddef_max_align_t.h \

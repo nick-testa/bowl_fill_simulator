@@ -1,10 +1,10 @@
-Start testing: Sep 25 09:14 EDT
+Start testing: Sep 25 15:30 EDT
 ----------------------------------------------------------
 1/1 Testing: verify
 1/1 Test: verify
 Command: "/home/ntesta/Projects/bowl_fill_simulator/build/bowlfill-verify"
 Directory: /home/ntesta/Projects/bowl_fill_simulator/build
-"verify" start time: Sep 25 09:14 EDT
+"verify" start time: Sep 25 15:30 EDT
 Output:
 ----------------------------------------------------------
 Curve fitting (robot arm, against the published power-law fits)
@@ -95,15 +95,18 @@ CSV ingest
   ok   single-point ingredient produces no curve
   ok   rows after reset                                   36.000
   ok   ingredients after reset                             3.000
-  ok   bad columns rejected: Missing required columns: g, oz.
+  ok   metric CSV accepted
+  ok   metric rows                                         2.000
+  ok   710 ml stored as 24.01 fl oz
+  ok   bad columns rejected: Missing required columns: g, oz (or ml).
 
-70 checks, 0 failures
+73 checks, 0 failures
 <end of output>
-Test time =   0.02 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"verify" end time: Sep 25 09:14 EDT
+"verify" end time: Sep 25 15:30 EDT
 "verify" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Sep 25 09:14 EDT
+End testing: Sep 25 15:30 EDT

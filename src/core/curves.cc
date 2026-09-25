@@ -122,6 +122,8 @@ double Fit::marginal_oz_per_100g(double grams) const
 }
 
 QStringList CurveSet::required_columns() { return {"ingredient", "g", "oz"}; }
+// 1 US fluid ounce, exact by definition.
+const double CurveSet::kMlPerFlOz = 29.5735295625;
 QStringList CurveSet::optional_columns() { return {"method"}; }
 
 QString CurveSet::format_help()
@@ -134,6 +136,9 @@ QString CurveSet::format_help()
         "<code>mass</code>, <code>grams</code>, <code>mass_g</code>)<br>"
         "&nbsp;&nbsp;<code>oz</code> &mdash; volume in fluid ounces (also accepts "
         "<code>volume</code>, <code>ounces</code>, <code>volume_oz</code>)<br>"
+        "&nbsp;&nbsp;<code>ml</code> &mdash; <i>or</i> volume in millilitres (also "
+        "<code>millilitres</code>, <code>volume_ml</code>, <code>cc</code>), converted "
+        "on import<br>"
         "&nbsp;&nbsp;<code>method</code> &mdash; <i>optional</i>: "
         "<code>robot</code> or <code>hand</code>, defaults to robot<br><br>"
         "<pre>method,ingredient,g,oz\n"
@@ -175,14 +180,21 @@ bool CurveSet::load_csv(const QString &path, QString *error, int *rows_added,
         else if (h == "g" || h == "mass" || h == "grams" || h == "mass_g") col["g"] = i;
         else if (h == "oz" || h == "volume" || h == "ounces" || h == "volume_oz"
                  || h == "fl_oz") col["oz"] = i;
+        // A metric sheet is the same measurement in another unit, so take it and
+        // convert on the way in; the model stays canonical in fluid ounces.
+        else if (h == "ml" || h == "millilitres" || h == "milliliters"
+                 || h == "volume_ml" || h == "cc") col["ml"] = i;
         else if (h == "method" || h == "fill" || h == "source") col["method"] = i;
     }
+    const bool metric_input = !col.count("oz") && col.count("ml");
+    if (metric_input) col["oz"] = col.at("ml");
+
     QStringList missing;
     for (const QString &need : required_columns())
         if (!col.count(need)) missing << need;
     if (!missing.isEmpty()) {
         if (error)
-            *error = QString("Missing required column%1: %2.\nFound: %3")
+            *error = QString("Missing required column%1: %2 (or ml).\nFound: %3")
                          .arg(missing.size() > 1 ? "s" : "", missing.join(", "),
                               heads.join(", "));
         return false;
@@ -203,6 +215,7 @@ bool CurveSet::load_csv(const QString &path, QString *error, int *rows_added,
         o.ingredient = canonical_ingredient(cells[col.at("ingredient")]);
         o.grams = cells[col.at("g")].trimmed().toDouble(&ok_g);
         o.ounces = cells[col.at("oz")].trimmed().toDouble(&ok_oz);
+        if (metric_input) o.ounces /= kMlPerFlOz;
         // method is optional, and a ragged row may simply stop before it.
         o.method = (col.count("method") && col.at("method") < cells.size())
                        ? method_from(cells[col.at("method")])

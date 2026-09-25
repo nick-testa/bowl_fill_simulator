@@ -654,6 +654,12 @@
 			"MU",
 			"YPKJ5OE7LN/moc_theme.cpp",
 			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.hh",
+			"MU",
+			"YPKJ5OE7LN/moc_units.cpp",
+			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
@@ -750,6 +756,11 @@
 		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.cc",
+			"MU",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.cc",
 			"MU",
 			null
 		]

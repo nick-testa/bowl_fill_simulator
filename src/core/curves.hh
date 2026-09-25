@@ -53,6 +53,7 @@ public:
     static QStringList required_columns();
     static QStringList optional_columns();
     static QString format_help();
+    static const double kMlPerFlOz;
 
     bool load_csv(const QString &path, QString *error, int *rows_added = nullptr,
                   QStringList *new_ingredients = nullptr);

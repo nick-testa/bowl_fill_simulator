@@ -4,6 +4,7 @@
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
 #include "theme.hh"
+#include "units.hh"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -20,6 +21,7 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSettings>
 #include <QSplitter>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -30,6 +32,13 @@
 
 namespace bowlfill {
 namespace {
+
+const char *const kIntroText =
+    "The dynamic portion algorithm optimises on <i>mass</i> — it steps every "
+    "ingredient until the bowl clears its recipe's gram floor. Bowls fail at the "
+    "lidder on <i>volume</i>. Ramp settings, portion weights and floors are read "
+    "from the menu dumps in <code>menus/</code>; mass→volume is "
+    "<code>%1 = K·g^p</code>, fitted to the measured bowls.";
 
 constexpr double kFlatProteinRate = 3.5;   // oz/100 g; nothing here was measured
 constexpr double kFlatToppingRate = 4.5;
@@ -109,7 +118,23 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     if (!curves_.load_csv(asset_dir_ + "/data/mass_to_volume.csv", &err))
         load_warnings_ << QString("mass_to_volume.csv: %1").arg(err);
 
+    // Restore the display preferences before the first paint, so nothing is built
+    // in one unit and relabelled in the other.
+    QSettings prefs;
+    if (prefs.contains("units/metric"))
+        units::set(prefs.value("units/metric").toBool() ? units::Volume::Millilitres
+                                                        : units::Volume::FluidOunces);
+    if (prefs.contains("theme/dark")) theme::set_dark(prefs.value("theme/dark").toBool());
+
     build_ui();
+    if (units::metric()) {
+        const QSignalBlocker block(capacity_);
+        capacity_->setDecimals(0);
+        capacity_->setSingleStep(25);
+        capacity_->setValue(units::from_oz(32));
+        if (capacity_label_) capacity_label_->setText("bowl capacity (ml)");
+        override_table_->setHorizontalHeaderItem(4, new QTableWidgetItem("ml/100g"));
+    }
     reload_theme();
     populate_brand();
 
@@ -142,18 +167,26 @@ void MainWindow::build_ui()
     auto *h1 = new QLabel("Bowl Fill Simulator");
     h1->setObjectName("h1");
     titles->addWidget(h1);
-    titles->addWidget(make_label(
-        "The dynamic portion algorithm optimises on <i>mass</i> — it steps every "
-        "ingredient until the bowl clears its recipe's gram floor. Bowls fail at the "
-        "lidder on <i>volume</i>. Ramp settings, portion weights and floors are read "
-        "from the menu dumps in <code>menus/</code>; mass→volume is "
-        "<code>oz = K·g^p</code>, fitted to the measured bowls.",
-        "note"));
+    intro_ = make_label(QString(kIntroText).arg(units::suffix()), "note");
+    titles->addWidget(intro_);
     header->addLayout(titles, 1);
 
+    auto *prefs = new QHBoxLayout;
+    prefs->setSpacing(4);
+    unit_oz_ = make_toggle("fl oz");
+    unit_ml_ = make_toggle("ml");
+    unit_oz_->setToolTip("Show volumes in US fluid ounces");
+    unit_ml_->setToolTip("Show volumes in millilitres (1 fl oz = 29.5735 ml)");
+    unit_oz_->setChecked(!units::metric());
+    unit_ml_->setChecked(units::metric());
+    connect(unit_oz_, &QPushButton::clicked, this, [this] { set_units(false); });
+    connect(unit_ml_, &QPushButton::clicked, this, [this] { set_units(true); });
+    prefs->addWidget(unit_oz_);
+    prefs->addWidget(unit_ml_);
     theme_ = new QPushButton("◐  Theme");
     connect(theme_, &QPushButton::clicked, this, &MainWindow::toggle_theme);
-    header->addWidget(theme_, 0, Qt::AlignTop);
+    prefs->addWidget(theme_);
+    header->addLayout(prefs, 0);
     root->addLayout(header);
 
     auto *splitter = new QSplitter(Qt::Horizontal);
@@ -277,6 +310,7 @@ QWidget *MainWindow::build_controls()
     override_table_ = new QTableWidget(0, 5);
     override_table_->setHorizontalHeaderLabels(
         {"ingredient", "start g", "step g", "max g", "oz/100g"});
+    rate_header_ = nullptr;
     override_table_->verticalHeader()->setVisible(false);
     override_table_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     for (int c = 1; c < 5; ++c)
@@ -293,10 +327,12 @@ QWidget *MainWindow::build_controls()
 
     // ---- bowl -------------------------------------------------------------
     v->addWidget(make_label("BOWL", "eyebrow"));
-    capacity_ = make_spin(1, 200, 1, 0);
+    capacity_ = make_spin(1, 6000, 1, 0);
     capacity_->setValue(32);
     connect(capacity_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    v->addWidget(field("bowl capacity oz", capacity_));
+    auto *cap_field = field("bowl capacity (fl oz)", capacity_);
+    capacity_label_ = cap_field->findChild<QLabel *>();
+    v->addWidget(cap_field);
 
     compress_ = make_toggle("Compress the base under this load");
     connect(compress_, &QPushButton::clicked, this, &MainWindow::on_selection_changed);
@@ -419,8 +455,8 @@ QWidget *MainWindow::build_results()
     bv->setSpacing(8);
     bv->addWidget(make_label("Where the volume goes", "h2"));
     breakdown_ = new QTableWidget(0, 7);
-    breakdown_->setHorizontalHeaderLabels({"ingredient", "oz/+100g at end", "start g",
-                                           "final g", "added g", "added oz", "share"});
+    breakdown_->setHorizontalHeaderLabels({"ingredient", "rate at end", "start g",
+                                           "final g", "added g", "added vol", "share"});
     breakdown_->verticalHeader()->setVisible(false);
     breakdown_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     breakdown_->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -455,7 +491,39 @@ void MainWindow::reload_theme()
 void MainWindow::toggle_theme()
 {
     theme::set_dark(!theme::is_dark());
+    QSettings().setValue("theme/dark", theme::is_dark());
     reload_theme();
+    recompute();
+}
+
+void MainWindow::set_units(bool metric)
+{
+    const auto want = metric ? units::Volume::Millilitres : units::Volume::FluidOunces;
+    if (want == units::current()) return;
+
+    // The capacity box and the per-ingredient rates hold values in the displayed
+    // unit, so convert what is already in them rather than reinterpreting the number.
+    const double cap_oz = units::to_oz(capacity_->value());
+    units::set(want);
+    unit_oz_->setChecked(!metric);
+    unit_ml_->setChecked(metric);
+    QSettings().setValue("units/metric", metric);
+
+    {
+        const QSignalBlocker block(capacity_);
+        capacity_->setDecimals(metric ? 0 : 1);
+        capacity_->setSingleStep(metric ? 25 : 1);
+        capacity_->setValue(units::from_oz(cap_oz));
+    }
+    if (capacity_label_)
+        capacity_label_->setText(QString("bowl capacity (%1)")
+                                     .arg(metric ? "ml" : "fl oz"));
+    override_table_->setHorizontalHeaderItem(
+        4, new QTableWidgetItem(QString("%1/100g").arg(units::suffix())));
+
+    if (intro_)
+        intro_->setText(QString(kIntroText).arg(units::suffix()));
+    rebuild_override_rows();   // the rate spin boxes are re-seeded in the new unit
     recompute();
 }
 
@@ -725,15 +793,19 @@ void MainWindow::rebuild_override_rows()
 
         const char *fields[4] = {"start", "step", "max", "rate"};
         for (int c = 0; c < 4; ++c) {
-            auto *spin = make_spin(0, 2000, c == 1 ? 0.1 : 1, c == 1 || c == 3 ? 2 : 0);
-            spin->setValue(value_for(name, fields[c]));
+            const bool is_rate = (c == 3);
+            auto *spin = make_spin(0, is_rate ? 6000 : 2000, c == 1 ? 0.1 : 1,
+                                   c == 1 ? 2 : is_rate ? (units::metric() ? 1 : 2) : 0);
+            // Rates are held canonically in oz/100 g; the box shows the chosen unit.
+            spin->setValue(is_rate ? units::from_oz(value_for(name, "rate"))
+                                   : value_for(name, fields[c]));
             const QString f = fields[c];
             connect(spin, &QDoubleSpinBox::valueChanged, this, [this, name, f](double v) {
                 Override &o = overrides_[name];
                 if (f == "start") o.start_g = v;
                 else if (f == "step") o.step_g = v;
                 else if (f == "max") o.max_g = v;
-                else o.rate = v;
+                else o.rate = units::to_oz(v);
                 recompute();
             });
             override_table_->setCellWidget(r, c + 1, spin);
@@ -862,7 +934,7 @@ void MainWindow::recompute()
 
     SimSettings settings;
     settings.floor_g = floor_->value();
-    settings.bowl_capacity_oz = capacity_->value();
+    settings.bowl_capacity_oz = units::to_oz(capacity_->value());
     settings.compress = compress_->isChecked();
     settings.load_transfer = load_transfer_->value();
 
@@ -887,43 +959,45 @@ void MainWindow::recompute()
                      "ever ramps. "
                    : "No filter in this menu matches this combination of ingredients, so "
                      "the algorithm returns without touching the bowl. ")
-              + QString("As ordered it is %1 oz at %2 g, %3% of the bowl.")
-                    .arg(fmt(last.ounces)).arg(std::round(last.grams))
+              + QString("As ordered it is %1 at %2 g, %3% of the bowl.")
+                    .arg(units::volume(last.ounces, true)).arg(std::round(last.grams))
                     .arg(std::round(last.ounces / cap * 100));
         if (r.crossed_at_g) { accent_border = pal.over; accent_fill = pal.over_soft;
                               head_colour = pal.over; }
         break;
     case Verdict::FitsMassBound:
         head = "Mass limit binds first. The bowl fits.";
-        sub = QString("Clears %1 g at %2 g and %3 oz — %4 oz under the %5 oz limit.")
+        sub = QString("Clears %1 g at %2 g and %3 — %4 under the %5 limit.")
                   .arg(std::round(settings.floor_g)).arg(std::round(last.grams))
-                  .arg(fmt(last.ounces)).arg(fmt(cap - last.ounces))
-                  .arg(fmt(cap, cap < 10 ? 1 : 0));
+                  .arg(units::volume(last.ounces, true),
+                       units::volume(cap - last.ounces, true),
+                       units::volume(cap, true));
         accent_border = pal.accent; accent_fill = pal.accent_soft; head_colour = pal.accent;
         break;
     case Verdict::Saturated:
         head = "Neither limit reached — the ingredients saturate first";
-        sub = QString("Everything is at its max%1 the %2 g floor, at %3 oz with %4 oz "
-                      "spare.")
+        sub = QString("Everything is at its max%1 the %2 g floor, at %3 with %4 spare.")
                   .arg(shortfall >= 1 ? QString(" %1 g short of").arg(std::round(shortfall))
                                       : QString(", landing on"))
-                  .arg(std::round(settings.floor_g)).arg(fmt(last.ounces))
-                  .arg(fmt(cap - last.ounces));
+                  .arg(std::round(settings.floor_g))
+                  .arg(units::volume(last.ounces, true),
+                       units::volume(cap - last.ounces, true));
         break;
     case Verdict::OverAtStart:
         head = "Over the bowl before the ramp starts";
-        sub = QString("The ordered portions alone come to %1 oz at %2 g — past %3 oz "
-                      "with no ramping at all. No weight floor can fix this; the "
-                      "portions themselves have to come down.")
-                  .arg(fmt(r.first().ounces)).arg(std::round(r.first().grams))
-                  .arg(fmt(cap, cap < 10 ? 1 : 0));
+        sub = QString("The ordered portions alone come to %1 at %2 g — past %3 with no "
+                      "ramping at all. No weight floor can fix this; the portions "
+                      "themselves have to come down.")
+                  .arg(units::volume(r.first().ounces, true))
+                  .arg(std::round(r.first().grams))
+                  .arg(units::volume(cap, true));
         accent_border = pal.over; accent_fill = pal.over_soft; head_colour = pal.over;
         break;
     case Verdict::OverWhileRamping:
         head = "Volume limit binds first";
-        sub = QString("The bowl passes %1 oz at %2 g, %3 g before the ramp stops at "
+        sub = QString("The bowl passes %1 at %2 g, %3 g before the ramp stops at "
                       "%4 g. A floor near %5 would keep it inside the bowl.")
-                  .arg(fmt(cap, cap < 10 ? 1 : 0))
+                  .arg(units::volume(cap, true))
                   .arg(std::round(*r.crossed_at_g))
                   .arg(std::round(last.grams - *r.crossed_at_g))
                   .arg(std::round(last.grams))
@@ -942,9 +1016,9 @@ void MainWindow::recompute()
 
     // ---- stat tiles -------------------------------------------------------
     stat_value_[0]->setText(QString("%1 g").arg(std::round(last.grams)));
-    stat_value_[1]->setText(QString("%1 oz").arg(fmt(last.ounces)));
+    stat_value_[1]->setText(units::volume(last.ounces, true));
     stat_value_[2]->setText(QString("%1 %").arg(std::round(last.ounces / cap * 100)));
-    stat_value_[3]->setText(QString("%1 oz").arg(fmt(r.squeezed_oz())));
+    stat_value_[3]->setText(units::volume(r.squeezed_oz(), true));
     stat_tile_[3]->setVisible(settings.compress);
     stat_value_[4]->setText(
         r.crossed_at_g ? (r.highest_safe_floor_g
@@ -969,15 +1043,15 @@ void MainWindow::recompute()
         QString name = it.name;
         if (it.kind != Kind::Base) name += QString("  (%1)").arg(to_string(it.kind));
         if (settings.compress && squeeze > 0.05)
-            name += QString("  −%1 oz").arg(fmt(squeeze));
+            name += QString("  −%1").arg(units::volume(squeeze, true));
         auto *cell = new QTableWidgetItem(name);
         if (it.kind == Kind::Base) cell->setForeground(theme::series_colour(it.name));
         const QString cols[6] = {
-            fmt(it.marginal_oz_per_100g(it.final_g), 2),
+            units::rate(it.marginal_oz_per_100g(it.final_g)),
             QString::number(std::round(it.start_g)),
             QString::number(std::round(it.final_g)),
             added_g > 0.05 ? QString("+%1").arg(std::round(added_g)) : "—",
-            added_oz > 0.05 ? QString("+%1").arg(fmt(added_oz)) : "—",
+            added_oz > 0.05 ? QString("+%1").arg(units::volume(added_oz)) : "—",
             QString("%1%").arg(std::round(last.per_item_oz[i] / total_oz * 100)),
         };
         breakdown_->setItem(static_cast<int>(i), 0, cell);
@@ -1022,19 +1096,23 @@ void MainWindow::recompute()
         foot_note_->setText(
             (ratio > 1.15
                  ? QString("At the mass the ramp ends on, <b>%1</b> costs <b>%2×</b> the "
-                           "volume per added gram that %3 does (%4 vs %5 oz per +100 g). ")
+                           "volume per added gram that %3 does (%4 vs %5 %6 per +100 g). ")
                        .arg(worst->name).arg(fmt(ratio, 2)).arg(best->name)
-                       .arg(fmt(cost(worst))).arg(fmt(cost(best)))
+                       .arg(units::rate(cost(worst)), units::rate(cost(best)),
+                            units::suffix())
                  : QString("At the mass the ramp ends on, everything that ramps costs "
-                           "about the same per added gram (%1 vs %2 oz per +100 g). ")
-                       .arg(fmt(cost(best))).arg(fmt(cost(worst))))
+                           "about the same per added gram (%1 vs %2 %3 per +100 g). ")
+                       .arg(units::rate(cost(best)), units::rate(cost(worst)),
+                            units::suffix()))
             + scaling
-            + QString(" Each pass costs %1 oz of bowl.").arg(fmt(oz_per_pass, 2)));
+            + QString(" Each pass costs %1 of bowl.")
+                  .arg(units::volume(oz_per_pass, true)));
     } else if (ramped.size() == 1) {
-        foot_note_->setText(QString("Only <b>%1</b> ramps: %2 oz of bowl spent to gain "
+        foot_note_->setText(QString("Only <b>%1</b> ramps: %2 of bowl spent to gain "
                                     "%3 g, over %4 passes.")
                                 .arg(ramped[0]->name)
-                                .arg(fmt(last.per_item_oz[0] - r.first().per_item_oz[0]))
+                                .arg(units::volume(
+                                    last.per_item_oz[0] - r.first().per_item_oz[0], true))
                                 .arg(std::round(ramped[0]->final_g - ramped[0]->start_g))
                                 .arg(r.passes));
     } else {
@@ -1053,9 +1131,11 @@ void MainWindow::recompute()
         QString text;
         if (f) {
             const double mid = (base_start_[i]->value() + base_max_[i]->value()) / 2;
-            text = QString("oz = %1·g^%2 · <b>%3</b> oz per +100 g at %4 g<br>")
-                       .arg(fmt(f->K, 3)).arg(fmt(f->p, 3))
-                       .arg(fmt(f->marginal_oz_per_100g(mid))).arg(std::round(mid));
+            text = QString("%1 = %2·g^%3 · <b>%4</b> %1 per +100 g at %5 g<br>")
+                       .arg(units::suffix())
+                       .arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
+                       .arg(units::rate(f->marginal_oz_per_100g(mid)))
+                       .arg(std::round(mid));
             text += QString("<b>menu</b> portion %1 g, min %2 g<br>")
                         .arg(ing->weights.empty()
                                  ? QString("—")

@@ -185,6 +185,16 @@ build CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o: CXX_COMPILER__bowl-f
   TARGET_COMPILE_PDB = CMakeFiles/bowl-fill-simulator.dir/
   TARGET_PDB = bowl-fill-simulator.pdb
 
+build CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o: CXX_COMPILER__bowl-fill-simulator_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/ui/units.cc || cmake_object_order_depends_target_bowl-fill-simulator
+  DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
+  DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++ -isystem /usr/include/qt6/QtWidgets -isystem /usr/include/qt6/QtGui
+  OBJECT_DIR = CMakeFiles/bowl-fill-simulator.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowl-fill-simulator.dir/src/ui
+  TARGET_COMPILE_PDB = CMakeFiles/bowl-fill-simulator.dir/
+  TARGET_PDB = bowl-fill-simulator.pdb
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target bowl-fill-simulator
@@ -193,7 +203,7 @@ build CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o: CXX_COMPILER__bowl-f
 #############################################
 # Link the executable bowl-fill-simulator
 
-build bowl-fill-simulator: CXX_EXECUTABLE_LINKER__bowl-fill-simulator_Release CMakeFiles/bowl-fill-simulator.dir/bowl-fill-simulator_autogen/mocs_compilation.cpp.o CMakeFiles/bowl-fill-simulator.dir/src/main.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/main_window.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/ramp_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/curve_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/bowl_diagram.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o | libbowlfill_core.a /usr/lib/libQt6Widgets.so.6.11.2 /usr/lib/libQt6Gui.so.6.11.2 /usr/lib/libGLX.so /usr/lib/libOpenGL.so /usr/lib/libQt6Core.so.6.11.2 || bowl-fill-simulator_autogen bowl-fill-simulator_autogen_timestamp_deps libbowlfill_core.a
+build bowl-fill-simulator: CXX_EXECUTABLE_LINKER__bowl-fill-simulator_Release CMakeFiles/bowl-fill-simulator.dir/bowl-fill-simulator_autogen/mocs_compilation.cpp.o CMakeFiles/bowl-fill-simulator.dir/src/main.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/main_window.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/ramp_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/curve_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/bowl_diagram.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o | libbowlfill_core.a /usr/lib/libQt6Widgets.so.6.11.2 /usr/lib/libQt6Gui.so.6.11.2 /usr/lib/libGLX.so /usr/lib/libOpenGL.so /usr/lib/libQt6Core.so.6.11.2 || bowl-fill-simulator_autogen bowl-fill-simulator_autogen_timestamp_deps libbowlfill_core.a
   DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/link.d
   FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -Xlinker --dependency-file=CMakeFiles/bowl-fill-simulator.dir/link.d

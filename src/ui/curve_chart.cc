@@ -1,5 +1,6 @@
 #include "curve_chart.hh"
 #include "theme.hh"
+#include "units.hh"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -78,12 +79,13 @@ void CurveChart::paintEvent(QPaintEvent *)
     auto Y = [&](double oz) { return kTop + ph - oz / oz_max * ph; };
 
     p.setFont(theme::mono(8));
-    for (double v : ticks(oz_max, 4)) {
+    for (double shown : ticks(units::from_oz(oz_max), 4)) {
+        const double y = Y(units::to_oz(shown));
         p.setPen(pal.rule);
-        p.drawLine(QPointF(kLeft, Y(v)), QPointF(kLeft + pw, Y(v)));
+        p.drawLine(QPointF(kLeft, y), QPointF(kLeft + pw, y));
         p.setPen(pal.ink_faint);
-        p.drawText(QRectF(0, Y(v) - 8, kLeft - 8, 16), Qt::AlignRight | Qt::AlignVCenter,
-                   QString::number(std::round(v)));
+        p.drawText(QRectF(0, y - 8, kLeft - 8, 16), Qt::AlignRight | Qt::AlignVCenter,
+                   QString::number(std::round(shown)));
     }
     for (double v : ticks(g_max, 5)) {
         p.setPen(pal.ink_faint);
@@ -150,7 +152,7 @@ void CurveChart::paintEvent(QPaintEvent *)
     p.save();
     p.translate(13, kTop + ph / 2);
     p.rotate(-90);
-    p.drawText(QRectF(-100, -8, 200, 16), Qt::AlignCenter, "volume (fl oz)");
+    p.drawText(QRectF(-100, -8, 200, 16), Qt::AlignCenter, units::curve_axis_label());
     p.restore();
 }
 
@@ -181,10 +183,10 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
     }
     if (best)
         QToolTip::showText(event->globalPosition().toPoint(),
-                           QString("%1 · %2\n%3 g → %4 oz")
+                           QString("%1 · %2\n%3 g → %4")
                                .arg(best->ingredient, to_string(best->method))
                                .arg(best->grams, 0, 'f', 0)
-                               .arg(best->ounces, 0, 'f', 1),
+                               .arg(units::volume(best->ounces, true)),
                            this);
     else
         QToolTip::hideText();

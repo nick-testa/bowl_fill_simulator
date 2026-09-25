@@ -1,5 +1,6 @@
 #include "bowl_diagram.hh"
 #include "theme.hh"
+#include "units.hh"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -206,7 +207,8 @@ void BowlDiagram::paintEvent(QPaintEvent *)
         p.setFont(theme::mono(8, QFont::Bold));
         p.setPen(pal.over);
         p.drawText(QRectF(cx - rim_hw, rim_y - overflow_px - 20, rim_w, 14),
-                   Qt::AlignCenter, QString("+%1 oz over the rim").arg(total - cap, 0, 'f', 1));
+                   Qt::AlignCenter,
+                   QString("+%1 over the rim").arg(units::volume(total - cap, true)));
     }
 
     // ---- labels down the side ---------------------------------------------
@@ -248,8 +250,8 @@ void BowlDiagram::paintEvent(QPaintEvent *)
             p.setFont(theme::mono(8));
             p.drawText(QRectF(label_x + kLabelWidth - value_w, ly, value_w, kRowHeight),
                        Qt::AlignRight | Qt::AlignVCenter,
-                       QString("%1 oz · %2%")
-                           .arg(s.ounces, 0, 'f', 1)
+                       QString("%1 · %2%")
+                           .arg(units::volume(s.ounces, true))
                            .arg(std::round(s.ounces / total * 100)));
             p.setFont(theme::sans(9));
             ly += kRowHeight;
@@ -260,9 +262,8 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     p.setFont(theme::mono(9, QFont::Bold));
     p.setPen(over ? pal.over : pal.ink);
     p.drawText(QRectF(0, height() - footer_h + 2, width(), 16), Qt::AlignCenter,
-               QString("%1 oz of a %2 oz bowl · %3%")
-                   .arg(total, 0, 'f', 1)
-                   .arg(cap, 0, 'f', cap < 10 ? 1 : 0)
+               QString("%1 of a %2 bowl · %3%")
+                   .arg(units::volume(total, true), units::volume(cap, true))
                    .arg(std::round(total / cap * 100)));
     p.setFont(theme::mono(8));
     p.setPen(pal.ink_faint);

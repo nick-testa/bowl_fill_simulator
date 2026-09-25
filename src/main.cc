@@ -1,5 +1,6 @@
 #include "ui/main_window.hh"
 #include "ui/theme.hh"
+#include "ui/units.hh"
 
 #include <QApplication>
 #include <QGuiApplication>
@@ -39,6 +40,8 @@ int main(int argc, char **argv)
     parser.addOption(shot);
     QCommandLineOption dark("dark", "Force the dark palette.");
     parser.addOption(dark);
+    QCommandLineOption unit("units", "Volume units: oz or ml.", "u");
+    parser.addOption(unit);
     QCommandLineOption scale("scale",
                              "Render at this device pixel ratio, e.g. 2 for a sharp "
                              "screenshot. Applied before the window is built.", "n");
@@ -52,6 +55,10 @@ int main(int argc, char **argv)
 
     bowlfill::theme::follow_system();
     if (parser.isSet(dark)) bowlfill::theme::set_dark(true);
+    if (parser.isSet(unit))
+        bowlfill::units::set(parser.value(unit).startsWith("m")
+                                 ? bowlfill::units::Volume::Millilitres
+                                 : bowlfill::units::Volume::FluidOunces);
 
     bowlfill::MainWindow window(QDir(parser.value(assets)).absolutePath());
     if (parser.isSet(pick)) {

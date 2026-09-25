@@ -89,6 +89,7 @@ hand,mexican rice,150,11
 
 - `ingredient`, `g`, `oz` are required, in any order and any case.
   `mass`/`grams`/`mass_g` and `volume`/`ounces`/`volume_oz`/`fl_oz` also work.
+- `ml` may be supplied instead of `oz` and is converted on import.
 - `method` is optional and defaults to `robot`.
 - Names match loosely, so `kale`, `Kale` and `Massaged Kale` land in one bucket.
 - An ingredient not seen before gets a curve of its own once it has two points at
@@ -131,10 +132,30 @@ romaine +6%, rice unchanged — so pooling is available but a poor idea for kale
 ./build/bowlfill-verify     # or: ctest --test-dir build
 ```
 
-70 checks, asserted against the HTML simulator this was ported from: the fitted
+73 checks, asserted against the HTML simulator this was ported from: the fitted
 curves, menu parsing including the template/standalone split, floor matching, six
 end-to-end recipes, the compression model's zero-load identity, and CSV ingest
-including malformed input.
+including metric input and malformed input.
+
+## Units
+
+The **fl oz / ml** toggle sits beside the theme button in the header — both are
+display preferences, and both are remembered between runs.
+
+The model works entirely in **US fluid ounces**: the measured data is recorded that
+way and every fitted `K` is expressed in it. Converting inside the model would mean
+re-deriving the curves, so conversion happens only at the point of display, and
+anything typed into the UI is converted straight back before it reaches the model.
+Switching units therefore cannot change a result — only how it reads.
+
+Everything moves together: the verdict, the stat tiles, both charts' axes and
+tooltips, the bowl diagram, the breakdown table, the fitted-curve line
+(`ml = 9.196·g^0.938` is the same curve as `oz = 0.311·g^0.938`), the bowl-capacity
+box and the per-ingredient rate column.
+
+**CSV import accepts either.** A sheet with an `ml` column (or `millilitres`,
+`volume_ml`, `cc`) is converted on the way in, so a metric measurement lands on the
+same curve an imperial one would. `1 fl oz = 29.5735295625 ml`, exact by definition.
 
 ## Command line
 
@@ -143,6 +164,7 @@ including malformed input.
 --select "Brand|Recipe"
 --size WxH
 --scale n           render at this device pixel ratio
+--units oz|ml
 --dark
 --screenshot <file> render to PNG and exit
 ```

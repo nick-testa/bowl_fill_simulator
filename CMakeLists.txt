@@ -52,6 +52,7 @@ qt_add_executable(bowl-fill-simulator
   src/ui/curve_chart.cc
   src/ui/bowl_diagram.cc
   src/ui/theme.cc
+  src/ui/units.cc
 )
 target_link_libraries(bowl-fill-simulator PRIVATE bowlfill_core Qt6::Widgets)
 target_compile_options(bowl-fill-simulator PRIVATE -Wall -Wextra)
