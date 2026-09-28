@@ -40,8 +40,9 @@ found has no Wayland plugin and `WAYLAND_DISPLAY` is set.
 ```
 menus/     bridge-service menu dumps, one per brand, read at startup
 data/      mass_to_volume.csv — the 36 measured bowls that seed the curves
+           ingredient_costs.csv — placeholder prices for the COGS readout
 photos/    reference photographs of known masses in a bowl
-src/core/  simulation, curve fitting and menu parsing (no widgets)
+src/core/  simulation, the adaptive solver, curve fitting and menu parsing (no widgets)
 src/ui/    Qt widgets, charts drawn with QPainter
 tests/     verify.cc, checked against the HTML simulator's output
 ```
@@ -132,10 +133,55 @@ romaine +6%, rice unchanged — so pooling is available but a poor idea for kale
 ./build/bowlfill-verify     # or: ctest --test-dir build
 ```
 
-73 checks, asserted against the HTML simulator this was ported from: the fitted
+94 checks, asserted against the HTML simulator this was ported from: the fitted
 curves, menu parsing including the template/standalone split, floor matching, six
 end-to-end recipes, the compression model's zero-load identity, and CSV ingest
-including metric input and malformed input.
+including metric input and malformed input — plus the Adaptive solver: the 4:1:2
+identity, all three Day-in-the-Life scenarios, tolerance and clamp bounds,
+monotonicity, and that solving for volume ignores price.
+
+## Two dispense models
+
+The **Legacy ramp / Adaptive** switch at the top of the settings panel chooses which
+algorithm runs. They are different shapes of thing, not two tunings of one.
+
+**Legacy ramp** is what `dynamic_portion_algorithm.cc` does today: add a flat
+`step_increment_g` to every ingredient, pass after pass, until a *mass* floor is
+cleared. It has no volume term at all.
+
+**Adaptive** is what the Adaptive Dispense user stories propose: solve directly for a
+*volume* target, holding each ingredient inside a tolerance band. The whole adjustment
+is a single scalar — every ingredient moves the same fraction of its own band:
+
+```
+g_i(a) = clamp( nominal_i × (1 + a·tolerance_i),  min_i, max_i )
+```
+
+Total volume is monotone in `a`, so it is found by bisection: no optimiser, no local
+minima. The default tolerances are **base ±20%, protein ±5%, topping ±10%**, which is
+the document's tolerance table and its "4:1:2 ratio steps for base/protein/topping"
+stated twice — 20:5:10 reduces to 4:1:2, so a base moves four times as far as a
+protein by construction.
+
+Three outcomes, matching the Day in the Life scenarios:
+
+| status | meaning |
+| --- | --- |
+| **no adjustment** | nominal already sits inside the acceptable band, so nothing is touched |
+| **adjusted** | solved onto the target within tolerance |
+| **underfilled** | cannot reach the target even at full positive tolerance; dispensed short and flagged |
+| **still over at max reduction** | will not fit even at full negative tolerance; the nominal spec itself has to change |
+
+**Sauce cups** occupy real space in the bowl — up to two at 50 ml each — so the tiles
+report both *food fill* and *with sauce cups*.
+
+**COGS is reported, never solved for.** The document is explicit: "understand the
+impact on COGS, not optimize up front on COGS." Prices come from
+`data/ingredient_costs.csv`, and **every number in that file is a placeholder** —
+order-of-magnitude guesses from the ingredient name, chosen so the relative ordering
+is sensible. Good enough to see whether a change moves COGS the right way; not good
+enough to quote. Unlisted ingredients fall back to a per-kind default and are flagged
+in the UI with `~cost`.
 
 ## Units
 
@@ -165,6 +211,7 @@ same curve an imperial one would. `1 fl oz = 29.5735295625 ml`, exact by definit
 --size WxH
 --scale n           render at this device pixel ratio
 --units oz|ml
+--mode legacy|adaptive
 --dark
 --screenshot <file> render to PNG and exit
 ```

@@ -656,6 +656,12 @@
 			null
 		],
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.hh",
+			"MU",
+			"YPKJ5OE7LN/moc_tolerance_chart.cpp",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.hh",
 			"MU",
 			"YPKJ5OE7LN/moc_units.cpp",
@@ -756,6 +762,11 @@
 		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.cc",
+			"MU",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.cc",
 			"MU",
 			null
 		],

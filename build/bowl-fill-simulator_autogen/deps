@@ -3,6 +3,7 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeCXXCompiler.cmake \
 	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeSystem.cmake \
 	/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/moc_predefs.h \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/menu_model.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \
@@ -17,6 +18,8 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/units.hh \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/__stdarg___gnuc_va_list.h \

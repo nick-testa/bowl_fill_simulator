@@ -626,6 +626,12 @@
 	"HEADERS" : 
 	[
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh",
+			"MU",
+			"PRMOGMWJPH/moc_adaptive.cpp",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh",
 			"MU",
 			"PRMOGMWJPH/moc_curves.cpp",
@@ -697,6 +703,11 @@
 	"SETTINGS_FILE" : "/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/bowlfill_core_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.cc",
+			"MU",
+			null
+		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.cc",
 			"MU",

@@ -5,9 +5,12 @@
 namespace bowlfill::units {
 namespace {
 Volume g_unit = Volume::FluidOunces;
+bool g_from_cli = false;
 }
 
 void set(Volume v) { g_unit = v; }
+void set_from_cli(Volume v) { g_unit = v; g_from_cli = true; }
+bool chosen_on_cli() { return g_from_cli; }
 Volume current() { return g_unit; }
 bool metric() { return g_unit == Volume::Millilitres; }
 

@@ -17,6 +17,10 @@ enum class Volume { FluidOunces, Millilitres };
 constexpr double kMlPerFlOz = 29.5735295625;   // US fluid ounce, exact by definition
 
 void set(Volume v);
+/// Marks the unit as explicitly chosen on the command line, so a saved preference
+/// does not silently overwrite it at startup.
+void set_from_cli(Volume v);
+bool chosen_on_cli();
 Volume current();
 bool metric();
 

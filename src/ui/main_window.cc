@@ -3,6 +3,7 @@
 #include "bowl_diagram.hh"
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
+#include "tolerance_chart.hh"
 #include "theme.hh"
 #include "units.hh"
 
@@ -28,6 +29,7 @@
 #include <QRegularExpression>
 
 #include <algorithm>
+#include <numeric>
 #include <cmath>
 
 namespace bowlfill {
@@ -117,11 +119,14 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     QString err;
     if (!curves_.load_csv(asset_dir_ + "/data/mass_to_volume.csv", &err))
         load_warnings_ << QString("mass_to_volume.csv: %1").arg(err);
+    QString cost_err;
+    if (!costs_.load_csv(asset_dir_ + "/data/ingredient_costs.csv", &cost_err))
+        load_warnings_ << QString("ingredient_costs.csv: %1").arg(cost_err);
 
     // Restore the display preferences before the first paint, so nothing is built
     // in one unit and relabelled in the other.
     QSettings prefs;
-    if (prefs.contains("units/metric"))
+    if (prefs.contains("units/metric") && !units::chosen_on_cli())
         units::set(prefs.value("units/metric").toBool() ? units::Volume::Millilitres
                                                         : units::Volume::FluidOunces);
     if (prefs.contains("theme/dark")) theme::set_dark(prefs.value("theme/dark").toBool());
@@ -212,6 +217,25 @@ QWidget *MainWindow::build_controls()
     v->setContentsMargins(15, 15, 15, 15);
     v->setSpacing(13);
 
+    // ---- dispense model ---------------------------------------------------
+    v->addWidget(make_label("DISPENSE MODEL", "eyebrow"));
+    auto *modes = new QHBoxLayout;
+    modes->setSpacing(4);
+    mode_legacy_ = make_toggle("Legacy ramp");
+    mode_adaptive_ = make_toggle("Adaptive");
+    mode_legacy_->setChecked(true);
+    mode_legacy_->setToolTip("What dynamic_portion_algorithm.cc does today: flat gram "
+                             "steps added until a mass floor is cleared.");
+    mode_adaptive_->setToolTip("What the user stories propose: solve directly for a "
+                              "volume target, holding each ingredient inside its "
+                              "tolerance band.");
+    connect(mode_legacy_, &QPushButton::clicked, this, [this] { set_mode(false); });
+    connect(mode_adaptive_, &QPushButton::clicked, this, [this] { set_mode(true); });
+    modes->addWidget(mode_legacy_);
+    modes->addWidget(mode_adaptive_);
+    v->addLayout(modes);
+    v->addWidget(hline());
+
     // ---- menu -------------------------------------------------------------
     v->addWidget(make_label("MENU", "eyebrow"));
     brand_ = new QComboBox;
@@ -227,13 +251,22 @@ QWidget *MainWindow::build_controls()
     v->addWidget(brand_note_);
     v->addWidget(hline());
 
-    // ---- weight floor -----------------------------------------------------
+    // ---- weight floor (legacy only) ---------------------------------------
+    legacy_group_ = new QWidget;
+    legacy_group_->setObjectName("clear");
+    auto *lg = new QVBoxLayout(legacy_group_);
+    lg->setContentsMargins(0, 0, 0, 0);
+    lg->setSpacing(9);
+    v->addWidget(legacy_group_);
+    QVBoxLayout *vsave = v;
+    v = lg;
     v->addWidget(make_label("WEIGHT FLOOR", "eyebrow"));
     floor_ = make_spin(0, 5000, 5, 0);
     connect(floor_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
     v->addWidget(field("minimum_product_weight_g — matched from the menu", floor_));
     floor_note_ = make_label("", "note");
     v->addWidget(floor_note_);
+    v = vsave;
     v->addWidget(hline());
 
     // ---- measurement source ----------------------------------------------
@@ -325,6 +358,57 @@ QWidget *MainWindow::build_controls()
     v->addWidget(override_table_);
     v->addWidget(hline());
 
+    // ---- adaptive-only controls -------------------------------------------
+    adaptive_group_ = new QWidget;
+    adaptive_group_->setObjectName("clear");
+    auto *ag = new QVBoxLayout(adaptive_group_);
+    ag->setContentsMargins(0, 0, 0, 0);
+    ag->setSpacing(9);
+    ag->addWidget(make_label("ADAPTIVE TARGET", "eyebrow"));
+
+    auto *trow = new QHBoxLayout;
+    trow->setSpacing(8);
+    target_fill_ = make_spin(10, 100, 1, 0);
+    target_fill_->setValue(85);
+    band_low_ = make_spin(0, 100, 1, 0);
+    band_low_->setValue(75);
+    trow->addWidget(field("target fill %", target_fill_));
+    trow->addWidget(field("leave alone above %", band_low_));
+    ag->addLayout(trow);
+
+    ag->addWidget(make_label("TOLERANCES (US-3)", "eyebrow"));
+    auto *tolrow = new QHBoxLayout;
+    tolrow->setSpacing(8);
+    tol_base_ = make_spin(0, 100, 1, 0);      tol_base_->setValue(20);
+    tol_protein_ = make_spin(0, 100, 1, 0);   tol_protein_->setValue(5);
+    tol_topping_ = make_spin(0, 100, 1, 0);   tol_topping_->setValue(10);
+    tolrow->addWidget(field("base ±%", tol_base_));
+    tolrow->addWidget(field("protein ±%", tol_protein_));
+    tolrow->addWidget(field("topping ±%", tol_topping_));
+    ag->addLayout(tolrow);
+
+    auto *srow = new QHBoxLayout;
+    srow->setSpacing(8);
+    sauce_cups_ = make_spin(0, 2, 1, 0);
+    sauce_cups_->setValue(2);
+    menu_price_ = make_spin(0, 100, 0.25, 2);
+    menu_price_->setValue(12.95);
+    cogs_target_ = make_spin(0, 100, 1, 0);
+    cogs_target_->setValue(23);
+    srow->addWidget(field("sauce cups (50 ml)", sauce_cups_));
+    srow->addWidget(field("menu price", menu_price_));
+    srow->addWidget(field("COGS target %", cogs_target_));
+    ag->addLayout(srow);
+
+    adaptive_note_ = make_label("", "note");
+    ag->addWidget(adaptive_note_);
+    for (QDoubleSpinBox *sp : {target_fill_, band_low_, tol_base_, tol_protein_,
+                               tol_topping_, sauce_cups_, menu_price_, cogs_target_})
+        connect(sp, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+    v->addWidget(adaptive_group_);
+    adaptive_group_->setVisible(false);
+    v->addWidget(hline());
+
     // ---- bowl -------------------------------------------------------------
     v->addWidget(make_label("BOWL", "eyebrow"));
     capacity_ = make_spin(1, 6000, 1, 0);
@@ -411,6 +495,7 @@ QWidget *MainWindow::build_results()
         tv->setSpacing(2);
         auto *k = new QLabel(keys[i]);
         k->setObjectName("statKey");
+        stat_key_[i] = k;
         stat_value_[i] = new QLabel("—");
         stat_value_[i]->setObjectName("statValue");
         tv->addWidget(k);
@@ -427,7 +512,19 @@ QWidget *MainWindow::build_results()
     cv->addWidget(make_label("Volume against mass, one point per ramp pass", "h2"));
     ramp_chart_ = new RampChart;
     cv->addWidget(ramp_chart_);
+    ramp_panel_ = chart_panel;
     v->addWidget(chart_panel);
+
+    auto *tolp = make_panel();
+    auto *tv = new QVBoxLayout(tolp);
+    tv->setContentsMargins(15, 13, 15, 13);
+    tv->setSpacing(8);
+    tv->addWidget(make_label("How far each ingredient moved inside its tolerance", "h2"));
+    tol_chart_ = new ToleranceChart;
+    tv->addWidget(tol_chart_);
+    tol_panel_ = tolp;
+    tolp->setVisible(false);
+    v->addWidget(tolp);
 
     auto *visual = make_panel();
     auto *xv = new QHBoxLayout(visual);
@@ -493,6 +590,27 @@ void MainWindow::toggle_theme()
     theme::set_dark(!theme::is_dark());
     QSettings().setValue("theme/dark", theme::is_dark());
     reload_theme();
+    recompute();
+}
+
+void MainWindow::set_mode(bool adaptive)
+{
+    adaptive_ = adaptive;
+    mode_legacy_->setChecked(!adaptive);
+    mode_adaptive_->setChecked(adaptive);
+    legacy_group_->setVisible(!adaptive);
+    adaptive_group_->setVisible(adaptive);
+    static const char *legacy_keys[5] = {"RAMP STOPS AT", "FINAL VOLUME", "FILL",
+                                         "SQUEEZED OUT", "HIGHEST SAFE FLOOR"};
+    static const char *adaptive_keys[5] = {"TOTAL MASS", "FOOD VOLUME", "FOOD FILL",
+                                           "WITH SAUCE CUPS", "COGS"};
+    for (int i = 0; i < 5; ++i)
+        stat_key_[i]->setText(adaptive ? adaptive_keys[i] : legacy_keys[i]);
+    ramp_panel_->setVisible(!adaptive);
+    tol_panel_->setVisible(adaptive);
+    // The 50:50 split and the compression toggle both describe the legacy path.
+    split_->setVisible(!adaptive);
+    split_note_->setVisible(!adaptive);
     recompute();
 }
 
@@ -932,6 +1050,23 @@ void MainWindow::recompute()
     const Menu *m = menu();
     if (!m) return;
 
+    if (adaptive_) {
+        AdaptiveSettings a;
+        a.bowl_capacity_oz = units::to_oz(capacity_->value());
+        a.target_fill = target_fill_->value() / 100.0;
+        a.band_low = band_low_->value() / 100.0;
+        a.band_high = a.target_fill;
+        a.tolerances.base = tol_base_->value() / 100.0;
+        a.tolerances.protein = tol_protein_->value() / 100.0;
+        a.tolerances.topping = tol_topping_->value() / 100.0;
+        a.sauce_cups = static_cast<int>(sauce_cups_->value());
+        a.menu_price = menu_price_->value();
+        a.cogs_target = cogs_target_->value() / 100.0;
+        last_adaptive_ = solve_adaptive(assemble_bowl(), a, &costs_);
+        render_adaptive();
+        return;
+    }
+
     SimSettings settings;
     settings.floor_g = floor_->value();
     settings.bowl_capacity_oz = units::to_oz(capacity_->value());
@@ -1026,6 +1161,9 @@ void MainWindow::recompute()
                               : QString("none"))
                        : QString("no limit"));
     stat_value_[4]->setStyleSheet(QString("color:%1;").arg(pal.mass.name()));
+    for (int i = 0; i < 5; ++i) stat_key_[i]->setText(
+        QStringList{"RAMP STOPS AT", "FINAL VOLUME", "FILL", "SQUEEZED OUT",
+                    "HIGHEST SAFE FLOOR"}[i]);
 
     // ---- breakdown --------------------------------------------------------
     double total_oz = 0;
@@ -1160,43 +1298,7 @@ void MainWindow::recompute()
         base_fit_[i]->setText(text);
     }
 
-    // ---- photos -----------------------------------------------------------
-    static const std::map<QString, QString> kPhotoPrefix = {
-        {"Romaine Base", "Romaine"}, {"Massaged Kale", "Kale"},
-        {"Mexican Rice", "MexicanRice"}, {"White Rice", "MexicanRice"},
-        {"Brown Rice and Lentils", "MexicanRice"}};
-    QDir photo_dir(asset_dir_ + "/photos");
-    int slot = 0;
-    for (const BowlItem &it : r.items) {
-        if (it.kind != Kind::Base || slot > 1) continue;
-        auto pit = kPhotoPrefix.find(it.name);
-        if (pit == kPhotoPrefix.end()) continue;
-        // Photos exist at fixed masses; show the nearest one to the simulated weight.
-        double best = -1, best_d = 1e18;
-        for (const QString &f : photo_dir.entryList({pit->second + "_*g.jpg"}, QDir::Files)) {
-            const double g = QStringView(f).mid(pit->second.size() + 1,
-                                                f.size() - pit->second.size() - 6).toDouble();
-            if (std::fabs(g - it.final_g) < best_d) { best_d = std::fabs(g - it.final_g); best = g; }
-        }
-        if (best < 0) continue;
-        QPixmap pm(photo_dir.filePath(QString("%1_%2g.jpg").arg(pit->second)
-                                          .arg(best, 0, 'f', 0)));
-        if (pm.isNull()) continue;
-        photo_[slot]->setPixmap(pm.scaled(photo_[slot]->width(), photo_[slot]->height(),
-                                          Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        photo_caption_[slot]->setText(
-            QString("<b>%1</b><br>%2 g simulated · %3 g photo%4")
-                .arg(it.name).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
-                .arg(pit->second == "MexicanRice" && it.name != "Mexican Rice"
-                         ? "<br><span style='color:" + pal.over.name()
-                               + "'>proxy series</span>"
-                         : ""));
-        ++slot;
-    }
-    for (int i = slot; i < 2; ++i) {
-        photo_[i]->clear();
-        photo_caption_[i]->setText(i == 0 ? "No measured photo series for this base." : "");
-    }
+    render_photos(r.items);
 
     ramp_chart_->set_show_uncompressed(settings.compress);
     ramp_chart_->set_result(r);
@@ -1264,6 +1366,211 @@ void MainWindow::on_reset_curves()
 {
     curves_.reset_to_builtin(asset_dir_ + "/data/mass_to_volume.csv");
     recompute();
+}
+
+
+//
+// ############################################################################
+// Adaptive Dispense rendering
+//
+
+///
+/// Shared by both models: the reference photo nearest each base's dispensed weight.
+///
+void MainWindow::render_photos(const std::vector<BowlItem> &items)
+{
+    const theme::Palette &pal = theme::palette();
+    static const std::map<QString, QString> kPhotoPrefix = {
+        {"Romaine Base", "Romaine"}, {"Massaged Kale", "Kale"},
+        {"Mexican Rice", "MexicanRice"}, {"White Rice", "MexicanRice"},
+        {"Brown Rice and Lentils", "MexicanRice"}};
+    QDir photo_dir(asset_dir_ + "/photos");
+    int slot = 0;
+    for (const BowlItem &it : items) {
+        if (it.kind != Kind::Base || slot > 1) continue;
+        auto pit = kPhotoPrefix.find(it.name);
+        if (pit == kPhotoPrefix.end()) continue;
+        // Photos exist at fixed masses; show the nearest one to the simulated weight.
+        double best = -1, best_d = 1e18;
+        for (const QString &f : photo_dir.entryList({pit->second + "_*g.jpg"}, QDir::Files)) {
+            const double g = QStringView(f).mid(pit->second.size() + 1,
+                                                f.size() - pit->second.size() - 6).toDouble();
+            if (std::fabs(g - it.final_g) < best_d) { best_d = std::fabs(g - it.final_g); best = g; }
+        }
+        if (best < 0) continue;
+        QPixmap pm(photo_dir.filePath(QString("%1_%2g.jpg").arg(pit->second)
+                                          .arg(best, 0, 'f', 0)));
+        if (pm.isNull()) continue;
+        photo_[slot]->setPixmap(pm.scaled(photo_[slot]->width(), photo_[slot]->height(),
+                                          Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        photo_caption_[slot]->setText(
+            QString("<b>%1</b><br>%2 g simulated · %3 g photo%4")
+                .arg(it.name).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
+                .arg(pit->second == "MexicanRice" && it.name != "Mexican Rice"
+                         ? "<br><span style='color:" + pal.over.name()
+                               + "'>proxy series</span>"
+                         : ""));
+        ++slot;
+    }
+    for (int i = slot; i < 2; ++i) {
+        photo_[i]->clear();
+        photo_caption_[i]->setText(i == 0 ? "No measured photo series for this base." : "");
+    }
+
+}
+
+void MainWindow::render_adaptive()
+{
+    const AdaptiveResult &r = last_adaptive_;
+    const AdaptiveSettings &a = r.settings;
+    const theme::Palette &pal = theme::palette();
+    const double cap = a.bowl_capacity_oz;
+
+    QString head, sub;
+    QColor border = pal.rule_strong, fill = pal.panel_sunk, head_colour = pal.ink;
+    switch (r.status) {
+    case AdaptiveStatus::NoAdjustment:
+        head = "No adjustment required";
+        sub = QString("The recipe as written lands at %1 — %2% of the bowl, inside the "
+                      "%3–%4% band — so nominal quantities are dispensed unchanged.")
+                  .arg(units::volume(r.food_volume_oz, true))
+                  .arg(std::round(r.food_fill() * 100))
+                  .arg(std::round(a.band_low * 100))
+                  .arg(std::round(a.band_high * 100));
+        border = pal.accent; fill = pal.accent_soft; head_colour = pal.accent;
+        break;
+    case AdaptiveStatus::Adjusted:
+        head = QString("Adjusted to target — every ingredient moved %1% of its band")
+                   .arg(std::fabs(r.alpha) * 100, 0, 'f', 0);
+        sub = QString("Solved to %1, %2% of the bowl. %3 %4 of its allowance; "
+                      "protein moved least by design.")
+                  .arg(units::volume(r.food_volume_oz, true))
+                  .arg(std::round(r.food_fill() * 100))
+                  .arg(r.alpha < 0 ? "Reduced by" : "Increased by")
+                  .arg(QString("%1%").arg(std::fabs(r.alpha) * 100, 0, 'f', 0));
+        border = pal.accent; fill = pal.accent_soft; head_colour = pal.accent;
+        break;
+    case AdaptiveStatus::StillOver:
+        head = "Will not fit, even at full reduction";
+        sub = QString("Every ingredient is at the bottom of its tolerance and the bowl "
+                      "still comes to %1 against a %2 target. The bands are not wide "
+                      "enough to rescue this recipe — the nominal spec has to change.")
+                  .arg(units::volume(r.food_volume_oz, true))
+                  .arg(units::volume(a.target_fill * cap, true));
+        border = pal.over; fill = pal.over_soft; head_colour = pal.over;
+        break;
+    case AdaptiveStatus::Underfilled:
+        head = "Underfilled — cannot reach the target";
+        sub = QString("Every ingredient is at the top of its tolerance and the bowl "
+                      "only reaches %1 against a %2 target. Dispensed safely short and "
+                      "flagged, per US-6.")
+                  .arg(units::volume(r.food_volume_oz, true))
+                  .arg(units::volume(a.target_fill * cap, true));
+        break;
+    case AdaptiveStatus::NoIngredients:
+        head = "Nothing in the bowl";
+        break;
+    }
+    verdict_head_->setText(head);
+    verdict_head_->setStyleSheet(QString("color:%1;").arg(head_colour.name()));
+    verdict_sub_->setText(sub);
+    verdict_panel_->setStyleSheet(
+        QString("QFrame#panel{background:%1;border:1px solid %2;border-radius:10px;}")
+            .arg(fill.name(), border.name()));
+
+    // Tiles: food, occupancy including the cups, and COGS against the guardrail.
+    stat_value_[0]->setText(QString("%1 g").arg(
+        std::round(std::accumulate(r.items.begin(), r.items.end(), 0.0,
+                                   [](double t, const AdaptiveItem &i) {
+                                       return t + i.final_g;
+                                   }))));
+    stat_value_[1]->setText(units::volume(r.food_volume_oz, true));
+    stat_value_[2]->setText(QString("%1 %").arg(std::round(r.food_fill() * 100)));
+    stat_tile_[3]->setVisible(true);
+    stat_value_[3]->setText(QString("%1 %").arg(std::round(r.occupancy() * 100)));
+    const bool ok = r.cogs_within_guardrail();
+    stat_value_[4]->setText(a.menu_price > 0
+                                ? QString("%1 %").arg(r.cogs_ratio() * 100, 0, 'f', 1)
+                                : QString("—"));
+    stat_value_[4]->setStyleSheet(
+        QString("color:%1;").arg((ok ? pal.accent : pal.over).name()));
+
+    // Breakdown, in the same columns but reading nominal -> dispensed.
+    breakdown_->setRowCount(static_cast<int>(r.items.size()));
+    double total_oz = std::max(0.001, r.food_volume_oz);
+    for (size_t i = 0; i < r.items.size(); ++i) {
+        const AdaptiveItem &it = r.items[i];
+        QString name = it.name;
+        if (it.kind != Kind::Base) name += QString("  (%1)").arg(to_string(it.kind));
+        if (it.clamped) name += "  clamped";
+        if (!it.cost_known) name += "  ~cost";
+        auto *cell = new QTableWidgetItem(name);
+        if (it.kind == Kind::Base) cell->setForeground(theme::series_colour(it.name));
+        else if (it.clamped) cell->setForeground(pal.over);
+        breakdown_->setItem(static_cast<int>(i), 0, cell);
+        const QString cols[6] = {
+            QString("%1%2%").arg(it.delta_pct() > 0.05 ? "+" : "")
+                            .arg(it.delta_pct(), 0, 'f', 1),
+            QString::number(std::round(it.nominal_g)),
+            QString::number(std::round(it.final_g)),
+            QString("%1").arg(std::round(it.final_g - it.nominal_g)),
+            units::volume(it.volume_oz),
+            QString("$%1").arg(it.cost, 0, 'f', 2),
+        };
+        for (int c = 0; c < 6; ++c) {
+            auto *v = new QTableWidgetItem(cols[c]);
+            v->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            breakdown_->setItem(static_cast<int>(i), c + 1, v);
+        }
+    }
+    breakdown_->setHorizontalHeaderLabels({"ingredient", "change", "nominal g",
+                                           "dispense g", "Δg", "volume", "cost"});
+    breakdown_->resizeColumnsToContents();
+    breakdown_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    (void)total_oz;
+
+    QString note = QString("Sauce cups take %1 of the bowl, leaving %2 for food. ")
+                       .arg(units::volume(a.sauce_volume_oz(), true))
+                       .arg(units::volume(a.food_capacity_oz(), true));
+    if (a.menu_price > 0)
+        note += QString("COGS is <b>%1%</b> of $%2 against a %3% guardrail — <b>%4</b>. ")
+                    .arg(r.cogs_ratio() * 100, 0, 'f', 1)
+                    .arg(a.menu_price, 0, 'f', 2)
+                    .arg(std::round(a.cogs_target * 100))
+                    .arg(ok ? "within" : "over");
+    if (!r.cost_complete)
+        note += QString("<span style='color:%1'>Some ingredients fell back to a "
+                        "per-kind default price.</span> ").arg(pal.over.name());
+    note += "All prices in <code>data/ingredient_costs.csv</code> are placeholders.";
+    foot_note_->setText(note);
+    adaptive_note_->setText(
+        QString("Tolerances are one requirement stated twice: %1:%2:%3 is the "
+                "\"4:1:2 ratio steps\" from the document. Volume is solved for; COGS is "
+                "reported, never optimised.")
+            .arg(std::round(tol_base_->value()))
+            .arg(std::round(tol_protein_->value()))
+            .arg(std::round(tol_topping_->value())));
+
+    tol_chart_->set_result(r);
+
+    // The diagram and photos still describe the dispensed bowl, so feed them a
+    // SimResult built from the solved quantities.
+    SimResult shim;
+    shim.settings.bowl_capacity_oz = cap;
+    shim.items = assemble_bowl();
+    Frame f;
+    for (size_t i = 0; i < shim.items.size() && i < r.items.size(); ++i) {
+        shim.items[i].final_g = r.items[i].final_g;
+        f.per_item_oz.push_back(r.items[i].volume_oz);
+        f.per_item_oz_uncompressed.push_back(r.items[i].volume_oz);
+        f.grams += r.items[i].final_g;
+        f.ounces += r.items[i].volume_oz;
+    }
+    f.ounces_uncompressed = f.ounces;
+    shim.frames.push_back(f);
+    diagram_->set_result(shim);
+    render_photos(shim.items);
+    curve_chart_->set_curves(&curves_, method());
 }
 
 }  // namespace bowlfill

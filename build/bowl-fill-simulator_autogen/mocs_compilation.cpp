@@ -3,3 +3,4 @@
 #include "YPKJ5OE7LN/moc_curve_chart.cpp"
 #include "YPKJ5OE7LN/moc_main_window.cpp"
 #include "YPKJ5OE7LN/moc_ramp_chart.cpp"
+#include "YPKJ5OE7LN/moc_tolerance_chart.cpp"

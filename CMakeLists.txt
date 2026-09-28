@@ -40,6 +40,7 @@ add_library(bowlfill_core STATIC
   src/core/menu_loader.cc
   src/core/curves.cc
   src/core/simulator.cc
+  src/core/adaptive.cc
 )
 target_include_directories(bowlfill_core PUBLIC src)
 target_link_libraries(bowlfill_core PUBLIC Qt6::Core)
@@ -52,6 +53,7 @@ qt_add_executable(bowl-fill-simulator
   src/ui/curve_chart.cc
   src/ui/bowl_diagram.cc
   src/ui/theme.cc
+  src/ui/tolerance_chart.cc
   src/ui/units.cc
 )
 target_link_libraries(bowl-fill-simulator PRIVATE bowlfill_core Qt6::Widgets)

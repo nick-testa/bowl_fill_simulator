@@ -42,6 +42,8 @@ int main(int argc, char **argv)
     parser.addOption(dark);
     QCommandLineOption unit("units", "Volume units: oz or ml.", "u");
     parser.addOption(unit);
+    QCommandLineOption mode("mode", "Dispense model: legacy or adaptive.", "m");
+    parser.addOption(mode);
     QCommandLineOption scale("scale",
                              "Render at this device pixel ratio, e.g. 2 for a sharp "
                              "screenshot. Applied before the window is built.", "n");
@@ -56,11 +58,12 @@ int main(int argc, char **argv)
     bowlfill::theme::follow_system();
     if (parser.isSet(dark)) bowlfill::theme::set_dark(true);
     if (parser.isSet(unit))
-        bowlfill::units::set(parser.value(unit).startsWith("m")
+        bowlfill::units::set_from_cli(parser.value(unit).startsWith("m")
                                  ? bowlfill::units::Volume::Millilitres
                                  : bowlfill::units::Volume::FluidOunces);
 
     bowlfill::MainWindow window(QDir(parser.value(assets)).absolutePath());
+    if (parser.isSet(mode) && parser.value(mode).startsWith("a")) window.select_adaptive();
     if (parser.isSet(pick)) {
         const QStringList parts = parser.value(pick).split('|');
         window.select(parts.value(0), parts.value(1));

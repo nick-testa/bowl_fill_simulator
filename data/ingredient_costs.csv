@@ -1,0 +1,60 @@
+# Ingredient cost, used for the COGS readout in Adaptive Dispense mode.
+#
+# EVERY NUMBER IN HERE IS A PLACEHOLDER. They are order-of-magnitude guesses from the
+# ingredient name against typical US food-service wholesale pricing, chosen so the
+# relative ordering is sensible (protein >> dairy > produce > grain). They are good
+# enough to show whether a spec change moves COGS the right way and by roughly how
+# much. They are NOT good enough to quote. Replace with real landed cost and delete
+# this notice.
+#
+# cost_per_kg is the cost of the ingredient AS DISPENSED, i.e. after any cooking,
+# prep and trim loss. Cooked rice is cheaper per kg than dry rice because it has
+# absorbed water; cooked chicken is dearer than raw because it has lost some.
+#
+# columns: ingredient, cost_per_kg, note
+# Lines beginning with # are ignored. Unknown ingredients fall back to the per-kind
+# default at the bottom and are flagged in the UI.
+
+ingredient,cost_per_kg,note
+Romaine Base,2.60,chopped romaine
+Massaged Kale,5.20,prepped and dressed
+White Rice,1.10,cooked weight
+Mexican Rice,1.70,cooked weight with seasoning
+Brown Rice and Lentils,2.30,cooked weight
+
+Chicken Herby,11.50,cooked weight
+Chicken Tex-Mex,11.50,cooked weight
+Braised Beef,17.00,cooked weight
+Beef Shawarma,17.00,cooked weight
+Seared Pork,10.50,cooked weight
+Broccoli,4.20,counted as a protein on the menu
+
+Black Beans,2.60,cooked weight
+Corn,2.40,
+Couscous,2.60,cooked weight
+Tomatoes,3.60,diced
+Cucumbers Plain,2.90,
+Cheese,9.50,shredded
+Feta,11.00,crumbled
+Seeds,13.00,seed and nut mix
+Asian Salad,3.80,prepared side
+Bean Salad,3.80,prepared side
+Pasta Salad,3.20,prepared side
+Chicken Salad,9.50,prepared side with protein
+
+Ranch,6.00,dressing
+Salsa Roja,4.50,
+Salsa Macha,8.50,oil and nut based
+Salsa Matcha,8.50,likely a spelling variant of Salsa Macha
+Sour Cream,5.00,
+Cilantro Crema,6.00,
+Chipotle Crema,6.20,
+Tzatziki,6.50,
+Harissa,9.00,
+Spicy Tahini,9.50,
+Citrus Vin,5.50,vinaigrette
+
+# Fallbacks for anything not listed above.
+*base,2.00,default
+*protein,12.00,default
+*topping,5.00,default

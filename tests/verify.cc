@@ -3,6 +3,7 @@
 /// from. Any drift here means the port changed behaviour, which is the one thing
 /// this rewrite must not do.
 ///
+#include "core/adaptive.hh"
 #include "core/curves.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
@@ -360,6 +361,137 @@ int main()
             std::printf("  ok   bad columns rejected: %s\n",
                         qPrintable(why.split('\n').first()));
         }
+    }
+
+    std::printf("\nAdaptive Dispense solver\n");
+    {
+        CostTable costs;
+        QString cerr;
+        ++checks;
+        if (!costs.load_csv(assets + "/data/ingredient_costs.csv", &cerr)) {
+            ++failures;
+            std::printf("  FAIL cost table: %s\n", qPrintable(cerr));
+        } else {
+            std::printf("  ok   cost table loaded, %d priced ingredients\n", costs.size());
+        }
+        // 100 g of romaine at 2.60/kg.
+        bool known = false;
+        expect_near("cost of 100 g romaine",
+                    costs.cost_of("Romaine Base", Kind::Base, 100, &known), 0.26, 0.001);
+        ++checks;
+        if (!known) { ++failures; std::printf("  FAIL romaine should be a real entry\n"); }
+        else std::printf("  ok   romaine priced from the table\n");
+        bool unknown_known = true;
+        costs.cost_of("Nonesuch", Kind::Protein, 100, &unknown_known);
+        ++checks;
+        if (unknown_known) { ++failures; std::printf("  FAIL unlisted should fall back\n"); }
+        else std::printf("  ok   unlisted ingredient falls back and is flagged\n");
+
+        // The tolerance table and the "4:1:2 ratio steps" are one requirement.
+        Tolerances t;
+        expect_near("base:protein ratio", t.base / t.protein, 4.0, 1e-9);
+        expect_near("topping:protein ratio", t.topping / t.protein, 2.0, 1e-9);
+
+        AdaptiveSettings as;
+        as.bowl_capacity_oz = 32.0;
+        as.sauce_cups = 2;
+        expect_near("two sauce cups in oz", as.sauce_volume_oz(), 3.381, 0.01);
+
+        auto recipe_items = [&](const Menu &m, const char *name) {
+            auto it = std::find_if(m.recipes.begin(), m.recipes.end(),
+                                   [&](const Recipe &r) { return r.name == name; });
+            return bowl_from_recipe(m, *it, curves, Method::Robot);
+        };
+
+        // Scenario 2: a bowl a little over the band is pulled back onto target.
+        std::vector<BowlItem> cow = recipe_items(*cowgirl, "The Hungry Cowgirl Bowl");
+        AdaptiveResult ar = solve_adaptive(cow, as, &costs);
+        expect_eq("cowgirl status", to_string(ar.status), "adjusted");
+        expect_near("cowgirl lands on target", ar.food_volume_oz,
+                    as.target_fill * 32.0, 0.05);
+        ++checks;
+        if (ar.alpha >= 0) { ++failures; std::printf("  FAIL expected a reduction\n"); }
+        else std::printf("  ok   alpha negative (%.3f), a reduction\n", ar.alpha);
+
+        // Protein must move least and base most -- the point of the tolerance table.
+        double base_move = 0, protein_move = 0;
+        for (const AdaptiveItem &i : ar.items) {
+            if (i.kind == Kind::Base) base_move = std::fabs(i.delta_pct());
+            if (i.kind == Kind::Protein) protein_move = std::fabs(i.delta_pct());
+        }
+        ++checks;
+        if (protein_move > 5.001 || base_move > 20.001) {
+            ++failures;
+            std::printf("  FAIL tolerance exceeded: base %.1f%%, protein %.1f%%\n",
+                        base_move, protein_move);
+        } else {
+            std::printf("  ok   within tolerance: base %.1f%%, protein %.1f%%\n",
+                        base_move, protein_move);
+        }
+        ++checks;
+        if (base_move <= protein_move) {
+            ++failures;
+            std::printf("  FAIL base should absorb more than protein\n");
+        } else {
+            std::printf("  ok   base absorbs %.1fx what protein does\n",
+                        base_move / protein_move);
+        }
+
+        // Scenario 1: a bowl already inside the visual band is left alone. The Ranch
+        // Salad's nominal is 37.8 oz, so a 47 oz bowl puts it at ~80%.
+        std::vector<BowlItem> ranch = recipe_items(*farmstand, "Farmstand Ranch Salad");
+        AdaptiveSettings wide = as;
+        wide.bowl_capacity_oz = 47.0;
+        AdaptiveResult none = solve_adaptive(ranch, wide, &costs);
+        expect_eq("wide bowl status", to_string(none.status), "no adjustment");
+        expect_near("wide bowl alpha", none.alpha, 0.0, 1e-9);
+        expect_near("wide bowl is untouched", none.food_volume_oz,
+                    none.nominal_volume_oz, 1e-9);
+
+        // Scenario 3: the tolerance bands are not wide enough to save this bowl.
+        // 37.8 oz nominal against a 27.2 oz target is a 28% cut; base can give 20%,
+        // protein 5%. The honest answer is a flagged underfill, not a fit.
+        AdaptiveResult hard = solve_adaptive(ranch, as, &costs);
+        expect_eq("ranch salad at 32 oz", to_string(hard.status),
+                  "still over at max reduction");
+        expect_near("ranch alpha pinned", hard.alpha, -1.0, 1e-9);
+        ++checks;
+        if (hard.food_volume_oz <= as.target_fill * 32.0) {
+            ++failures;
+            std::printf("  FAIL expected it to remain over target\n");
+        } else {
+            std::printf("  ok   best effort %.1f oz vs %.1f oz target -- flagged\n",
+                        hard.food_volume_oz, as.target_fill * 32.0);
+        }
+
+        // Raising the target must never lower the volume delivered.
+        double prev = -1;
+        bool monotone = true;
+        for (double t = 0.30; t <= 1.2001; t += 0.05) {
+            AdaptiveSettings s2 = as;
+            s2.band_low = 2.0;          // disable the dead band for this sweep
+            s2.band_high = 2.0;
+            s2.target_fill = t;
+            const double v = solve_adaptive(cow, s2, &costs).food_volume_oz;
+            if (v + 1e-9 < prev) monotone = false;
+            prev = v;
+        }
+        ++checks;
+        if (!monotone) { ++failures; std::printf("  FAIL volume not monotone in target\n"); }
+        else std::printf("  ok   delivered volume monotone in target\n");
+
+        // COGS is reported, never solved for.
+        AdaptiveSettings priced = as;
+        priced.menu_price = 12.95;
+        AdaptiveResult pr = solve_adaptive(cow, priced, &costs);
+        ++checks;
+        if (pr.total_cost <= 0) { ++failures; std::printf("  FAIL no cost computed\n"); }
+        else std::printf("  ok   COGS %.1f%% of $%.2f (guardrail %.0f%%) -- %s\n",
+                         100 * pr.cogs_ratio(), priced.menu_price,
+                         100 * priced.cogs_target,
+                         pr.cogs_within_guardrail() ? "within" : "OVER");
+        expect_near("solving for volume ignores price",
+                    pr.food_volume_oz, ar.food_volume_oz, 1e-9);
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

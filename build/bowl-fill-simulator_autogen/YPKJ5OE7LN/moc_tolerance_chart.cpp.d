@@ -1,4 +1,4 @@
-/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/YPKJ5OE7LN/moc_main_window.cpp: /home/ntesta/Projects/bowl_fill_simulator/src/ui/main_window.hh \
+/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/YPKJ5OE7LN/moc_tolerance_chart.cpp: /home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.hh \
   /home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/moc_predefs.h \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh \
@@ -317,7 +317,6 @@
   /usr/include/linux/types.h \
   /usr/include/locale.h \
   /usr/include/pthread.h \
-  /usr/include/qt6/QtCore/QHash \
   /usr/include/qt6/QtCore/QString \
   /usr/include/qt6/QtCore/QStringList \
   /usr/include/qt6/QtCore/q17memory.h \
@@ -473,10 +472,8 @@
   /usr/include/qt6/QtGui/qtguiglobal.h \
   /usr/include/qt6/QtGui/qtransform.h \
   /usr/include/qt6/QtGui/qwindowdefs.h \
-  /usr/include/qt6/QtWidgets/QMainWindow \
-  /usr/include/qt6/QtWidgets/qmainwindow.h \
+  /usr/include/qt6/QtWidgets/QWidget \
   /usr/include/qt6/QtWidgets/qsizepolicy.h \
-  /usr/include/qt6/QtWidgets/qtabwidget.h \
   /usr/include/qt6/QtWidgets/qtwidgets-config.h \
   /usr/include/qt6/QtWidgets/qtwidgetsexports.h \
   /usr/include/qt6/QtWidgets/qtwidgetsglobal.h \

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/adaptive.hh"
 #include "core/curves.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
@@ -23,6 +24,7 @@ namespace bowlfill {
 class RampChart;
 class CurveChart;
 class BowlDiagram;
+class ToleranceChart;
 
 /// Per-ingredient edits the user has made, keyed by ingredient name. Absent fields
 /// fall back to the menu's configuration.
@@ -38,6 +40,10 @@ public:
 
     /// Preselects a brand and, optionally, one of its recipes by name.
     void select(const QString &brand, const QString &recipe = {});
+    void select_adaptive() { set_mode(true); }
+
+public slots:
+    void set_mode(bool adaptive);
 
 private slots:
     void on_brand_changed();
@@ -60,6 +66,8 @@ private:
     void rebuild_override_rows();
     void apply_floor();
     void recompute();
+    void render_adaptive();
+    void render_photos(const std::vector<BowlItem> &items);
 
     const Menu *menu() const;
     Method method() const;
@@ -75,6 +83,9 @@ private:
     std::map<QString, Override> overrides_;
     QStringList picked_proteins_, picked_toppings_;
     SimResult last_;
+    AdaptiveResult last_adaptive_;
+    CostTable costs_;
+    bool adaptive_ = false;
 
     // Controls
     QComboBox *brand_ = nullptr;
@@ -90,6 +101,22 @@ private:
     QPushButton *split_ = nullptr;
     QPushButton *compress_ = nullptr;
     QPushButton *theme_ = nullptr;
+    QPushButton *mode_legacy_ = nullptr;
+    QPushButton *mode_adaptive_ = nullptr;
+    QWidget *legacy_group_ = nullptr;
+    QWidget *adaptive_group_ = nullptr;
+    QDoubleSpinBox *target_fill_ = nullptr;
+    QDoubleSpinBox *band_low_ = nullptr;
+    QDoubleSpinBox *tol_base_ = nullptr;
+    QDoubleSpinBox *tol_protein_ = nullptr;
+    QDoubleSpinBox *tol_topping_ = nullptr;
+    QDoubleSpinBox *sauce_cups_ = nullptr;
+    QDoubleSpinBox *menu_price_ = nullptr;
+    QDoubleSpinBox *cogs_target_ = nullptr;
+    QLabel *adaptive_note_ = nullptr;
+    QWidget *ramp_panel_ = nullptr;
+    QWidget *tol_panel_ = nullptr;
+    ToleranceChart *tol_chart_ = nullptr;
     QPushButton *unit_oz_ = nullptr;
     QPushButton *unit_ml_ = nullptr;
     QLabel *capacity_label_ = nullptr;
@@ -118,6 +145,7 @@ private:
     QLabel *verdict_sub_ = nullptr;
     QWidget *verdict_panel_ = nullptr;
     QLabel *stat_value_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+    QLabel *stat_key_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
     QWidget *stat_tile_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
     QTableWidget *breakdown_ = nullptr;
     QLabel *foot_note_ = nullptr;
