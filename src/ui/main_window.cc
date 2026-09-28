@@ -19,6 +19,8 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
+#include "report_dialog.hh"
+#include "core/feasibility.hh"
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
@@ -244,7 +246,17 @@ QWidget *MainWindow::build_controls()
 
     recipe_ = new QComboBox;
     connect(recipe_, &QComboBox::currentIndexChanged, this, &MainWindow::on_recipe_changed);
-    v->addWidget(field("bowl recipe", recipe_));
+    auto *recipe_row = new QHBoxLayout;
+    recipe_row->setSpacing(6);
+    recipe_row->addWidget(field("bowl recipe", recipe_), 1);
+    auto *report = new QPushButton("i");
+    report->setObjectName("info");
+    report->setCursor(Qt::WhatsThisCursor);
+    report->setToolTip("Feasibility report: every recipe this brand defines, checked "
+                       "against the current bowl and curves under both dispense models.");
+    connect(report, &QPushButton::clicked, this, &MainWindow::show_report);
+    recipe_row->addWidget(report, 0, Qt::AlignBottom);
+    v->addLayout(recipe_row);
     recipe_note_ = make_label("", "note");
     v->addWidget(recipe_note_);
     brand_note_ = make_label("", "note");
@@ -1044,6 +1056,32 @@ void MainWindow::on_selection_changed()
 // Rendering
 //
 
+SimSettings MainWindow::legacy_settings() const
+{
+    SimSettings s;
+    s.floor_g = floor_->value();
+    s.bowl_capacity_oz = units::to_oz(capacity_->value());
+    s.compress = compress_->isChecked();
+    s.load_transfer = load_transfer_->value();
+    return s;
+}
+
+AdaptiveSettings MainWindow::adaptive_settings() const
+{
+    AdaptiveSettings a;
+    a.bowl_capacity_oz = units::to_oz(capacity_->value());
+    a.target_fill = target_fill_->value() / 100.0;
+    a.band_low = band_low_->value() / 100.0;
+    a.band_high = a.target_fill;
+    a.tolerances.base = tol_base_->value() / 100.0;
+    a.tolerances.protein = tol_protein_->value() / 100.0;
+    a.tolerances.topping = tol_topping_->value() / 100.0;
+    a.sauce_cups = static_cast<int>(sauce_cups_->value());
+    a.menu_price = menu_price_->value();
+    a.cogs_target = cogs_target_->value() / 100.0;
+    return a;
+}
+
 void MainWindow::recompute()
 {
     if (loading_) return;
@@ -1051,28 +1089,12 @@ void MainWindow::recompute()
     if (!m) return;
 
     if (adaptive_) {
-        AdaptiveSettings a;
-        a.bowl_capacity_oz = units::to_oz(capacity_->value());
-        a.target_fill = target_fill_->value() / 100.0;
-        a.band_low = band_low_->value() / 100.0;
-        a.band_high = a.target_fill;
-        a.tolerances.base = tol_base_->value() / 100.0;
-        a.tolerances.protein = tol_protein_->value() / 100.0;
-        a.tolerances.topping = tol_topping_->value() / 100.0;
-        a.sauce_cups = static_cast<int>(sauce_cups_->value());
-        a.menu_price = menu_price_->value();
-        a.cogs_target = cogs_target_->value() / 100.0;
-        last_adaptive_ = solve_adaptive(assemble_bowl(), a, &costs_);
+        last_adaptive_ = solve_adaptive(assemble_bowl(), adaptive_settings(), &costs_);
         render_adaptive();
         return;
     }
 
-    SimSettings settings;
-    settings.floor_g = floor_->value();
-    settings.bowl_capacity_oz = units::to_oz(capacity_->value());
-    settings.compress = compress_->isChecked();
-    settings.load_transfer = load_transfer_->value();
-
+    const SimSettings settings = legacy_settings();
     last_ = simulate(assemble_bowl(), settings);
     const SimResult &r = last_;
     const theme::Palette &pal = theme::palette();
@@ -1319,6 +1341,31 @@ void MainWindow::recompute()
 // ############################################################################
 // CSV ingest
 //
+
+void MainWindow::show_report()
+{
+    const Menu *m = menu();
+    if (!m) return;
+
+    // Each recipe resolves its own floor, so the panel's floor field is deliberately
+    // not carried in: the report answers what the menu does, not what is dialled up.
+    const BrandAudit audit =
+        audit_brand(*m, curves_, method(), legacy_settings(), adaptive_settings(), &costs_);
+
+    const QString assumptions =
+        QString("%1 bowl · %2 curves · adaptive target %3% with %4 sauce cup%5 · each "
+                "recipe uses the floor its own ingredients match.")
+            .arg(units::volume(units::to_oz(capacity_->value()), true))
+            .arg(method() == Method::Robot ? "robot" : method() == Method::Hand ? "hand" : "pooled")
+            .arg(std::round(target_fill_->value()))
+            .arg(static_cast<int>(sauce_cups_->value()))
+            .arg(sauce_cups_->value() == 1 ? "" : "s");
+
+    ReportDialog dialog(audit, assumptions, this);
+    connect(&dialog, &ReportDialog::recipe_chosen, this,
+            [this, m](const QString &recipe) { select(m->brand, recipe); });
+    dialog.exec();
+}
 
 void MainWindow::show_csv_help()
 {

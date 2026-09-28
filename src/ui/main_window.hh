@@ -52,6 +52,7 @@ private slots:
     void on_upload_csv();
     void on_reset_curves();
     void show_csv_help();
+    void show_report();
     void toggle_theme();
     void set_units(bool metric);
 
@@ -70,6 +71,8 @@ private:
     void render_photos(const std::vector<BowlItem> &items);
 
     const Menu *menu() const;
+    SimSettings legacy_settings() const;
+    AdaptiveSettings adaptive_settings() const;
     Method method() const;
     double value_for(const QString &name, const QString &field) const;
     std::vector<BowlItem> assemble_bowl() const;

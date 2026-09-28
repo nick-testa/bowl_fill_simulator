@@ -379,8 +379,8 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
     for (const QJsonValue pv : m["product_templates"].toArray()) {
         const QJsonObject p = pv.toObject();
         const QJsonArray targets = p["target_item_ids"].toArray();
-        if (targets.isEmpty()) continue;  // the build-your-own entries
         Recipe rec;
+        rec.customer_built = targets.isEmpty();
         rec.name = title_from_slug(p["source_item_id"].toString().section(':', 1, 1));
         for (const QJsonValue tv : targets) {
             const QString id = tv.toString();
@@ -394,9 +394,10 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
             }
             rec.items.push_back({name, g});
         }
-        if (rec.items.empty()) continue;
+        if (rec.items.empty() && !rec.customer_built) continue;
         auto it = best_recipe.find(rec.name);
-        if (it == best_recipe.end() || rec.weighted > it->second.weighted)
+        if (it == best_recipe.end()
+            || (rec.weighted > it->second.weighted && !rec.customer_built))
             best_recipe[rec.name] = rec;
     }
 

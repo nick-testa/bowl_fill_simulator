@@ -41,6 +41,7 @@ add_library(bowlfill_core STATIC
   src/core/curves.cc
   src/core/simulator.cc
   src/core/adaptive.cc
+  src/core/feasibility.cc
 )
 target_include_directories(bowlfill_core PUBLIC src)
 target_link_libraries(bowlfill_core PUBLIC Qt6::Core)
@@ -49,6 +50,7 @@ target_compile_options(bowlfill_core PRIVATE -Wall -Wextra -Wpedantic)
 qt_add_executable(bowl-fill-simulator
   src/main.cc
   src/ui/main_window.cc
+  src/ui/report_dialog.cc
   src/ui/ramp_chart.cc
   src/ui/curve_chart.cc
   src/ui/bowl_diagram.cc

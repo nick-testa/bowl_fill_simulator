@@ -17,6 +17,18 @@ double BowlItem::marginal_oz_per_100g(double grams) const
     return has_curve ? K * p * std::pow(grams, p - 1.0) * 100.0 : flat_oz_per_100g;
 }
 
+QString to_string(Verdict v)
+{
+    switch (v) {
+    case Verdict::NoFloor: return "no floor";
+    case Verdict::FitsMassBound: return "fits";
+    case Verdict::Saturated: return "saturates short";
+    case Verdict::OverAtStart: return "over as written";
+    case Verdict::OverWhileRamping: return "over after ramping";
+    }
+    return {};
+}
+
 double SimResult::grams_per_pass() const
 {
     double total = 0.0;

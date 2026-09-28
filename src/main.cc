@@ -1,3 +1,4 @@
+#include "core/feasibility.hh"
 #include "ui/main_window.hh"
 #include "ui/theme.hh"
 #include "ui/units.hh"
@@ -6,7 +7,54 @@
 #include <QGuiApplication>
 #include <QCommandLineParser>
 #include <QDir>
+#include <QTextStream>
 #include <QTimer>
+
+namespace {
+
+/// Headless feasibility audit, so the culinary team's report can be regenerated in a
+/// script without opening the window.
+int run_audit(const QString &asset_dir, const QString &want)
+{
+    using namespace bowlfill;
+    QTextStream out(stdout), err(stderr);
+
+    CurveSet curves;
+    QString error;
+    if (!curves.load_csv(asset_dir + "/data/mass_to_volume.csv", &error)) {
+        err << "curves: " << error << "\n";
+        return 2;
+    }
+    CostTable costs;
+    costs.load_csv(asset_dir + "/data/ingredient_costs.csv");
+
+    const LoadResult loaded = load_menus(asset_dir + "/menus");
+    if (loaded.menus.empty()) {
+        err << "no menus under " << asset_dir << "/menus\n";
+        return 2;
+    }
+
+    bool header_written = false, matched = false;
+    for (const Menu &m : loaded.menus) {
+        if (want.compare("all", Qt::CaseInsensitive) != 0
+            && m.brand.compare(want, Qt::CaseInsensitive) != 0)
+            continue;
+        matched = true;
+        const BrandAudit audit =
+            audit_brand(m, curves, Method::Robot, SimSettings{}, AdaptiveSettings{}, &costs);
+        const QString csv = audit.to_csv();
+        out << (header_written ? csv.section('\n', 1) : csv);
+        header_written = true;
+    }
+    if (!matched) {
+        err << "no brand matching \"" << want << "\". Known brands:\n";
+        for (const Menu &m : loaded.menus) err << "  " << m.brand << "\n";
+        return 2;
+    }
+    return 0;
+}
+
+}  // namespace
 
 int main(int argc, char **argv)
 {
@@ -53,7 +101,14 @@ int main(int argc, char **argv)
     QCommandLineOption pick("select",
                             "Preselect \"Brand|Recipe\" before rendering.", "spec");
     parser.addOption(pick);
+    QCommandLineOption audit("audit",
+                             "Print the feasibility report for a brand (or \"all\") as "
+                             "CSV and exit, without opening a window.", "brand");
+    parser.addOption(audit);
     parser.process(app);
+
+    if (parser.isSet(audit))
+        return run_audit(QDir(parser.value(assets)).absolutePath(), parser.value(audit));
 
     bowlfill::theme::follow_system();
     if (parser.isSet(dark)) bowlfill::theme::set_dark(true);

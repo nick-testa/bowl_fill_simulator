@@ -5,6 +5,7 @@
 ///
 #include "core/adaptive.hh"
 #include "core/curves.hh"
+#include "core/feasibility.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 
@@ -45,6 +46,34 @@ void expect_eq(const QString &what, const QString &got, const QString &want)
     }
 }
 
+void expect_true(const QString &what, bool ok)
+{
+    ++checks;
+    if (!ok) { ++failures; std::printf("  FAIL %s\n", qPrintable(what)); }
+    else std::printf("  ok   %s\n", qPrintable(what));
+}
+
+/// Number of fields in one RFC4180 record, so the report's quoting is checked rather
+/// than assumed -- every summary sentence contains commas.
+int csv_fields(const QString &line)
+{
+    int n = 1;
+    bool quoted = false;
+    for (int i = 0; i < line.size(); ++i) {
+        const QChar c = line[i];
+        if (c == '"') quoted = !quoted;
+        else if (c == ',' && !quoted) ++n;
+    }
+    return n;
+}
+
+const RecipeAudit *row_named(const BrandAudit &a, const QString &name)
+{
+    for (const RecipeAudit &r : a.rows)
+        if (r.recipe == name) return &r;
+    return nullptr;
+}
+
 QString verdict_name(Verdict v)
 {
     switch (v) {
@@ -62,27 +91,6 @@ const Menu *by_brand(const std::vector<Menu> &menus, const QString &brand)
     for (const Menu &m : menus)
         if (m.brand == brand) return &m;
     return nullptr;
-}
-
-/// Builds the bowl a recipe describes, in dispense order, exactly as the UI does.
-std::vector<BowlItem> bowl_from_recipe(const Menu &menu, const Recipe &rec,
-                                       const CurveSet &curves, Method method)
-{
-    std::vector<BowlItem> bases, proteins, toppings;
-    for (const RecipeItem &ri : rec.items) {
-        const Ingredient *ing = menu.find(ri.name);
-        if (!ing) continue;
-        BowlItem item = make_item(*ing, curves, method, 3.5, 4.5);
-        item.start_g = ri.grams;
-        (ing->kind == Kind::Base ? bases
-                                 : ing->kind == Kind::Protein ? proteins : toppings)
-            .push_back(item);
-    }
-    std::vector<BowlItem> all;
-    all.insert(all.end(), bases.begin(), bases.end());
-    all.insert(all.end(), proteins.begin(), proteins.end());
-    all.insert(all.end(), toppings.begin(), toppings.end());
-    return all;
 }
 
 QStringList names_in(const std::vector<BowlItem> &items)
@@ -163,9 +171,18 @@ int main()
 
     expect_near("Farmstand floors", farmstand->floors.size(), 4, 0.01);
     expect_near("Farmstand ingredients", farmstand->ingredients.size(), 28, 0.01);
-    expect_near("Farmstand recipes", farmstand->recipes.size(), 10, 0.01);
+    // 10 plated templates plus the two build-your-own shells, which pin nothing but
+    // still have to appear in the feasibility report.
+    expect_near("Farmstand recipes", farmstand->recipes.size(), 12, 0.01);
     expect_near("Meat + Rice floors", meatrice->floors.size(), 0, 0.01);
-    expect_near("Meat + Rice recipes", meatrice->recipes.size(), 1, 0.01);
+    expect_near("Meat + Rice recipes", meatrice->recipes.size(), 4, 0.01);
+
+    {
+        int built = 0;
+        for (const Recipe &r : farmstand->recipes)
+            if (r.customer_built) { ++built; if (!r.items.empty()) built = -99; }
+        expect_near("Farmstand customer-built shells", built, 2, 0.01);
+    }
 
     // Portion resolution: romaine must read its standalone (build-your-own) weight,
     // not the 100 g a preconfigured salad is plated at.
@@ -492,6 +509,85 @@ int main()
                          pr.cogs_within_guardrail() ? "within" : "OVER");
         expect_near("solving for volume ignores price",
                     pr.food_volume_oz, ar.food_volume_oz, 1e-9);
+    }
+
+    std::printf("\nPer-brand feasibility audit\n");
+    {
+        SimSettings ls;
+        AdaptiveSettings as;
+        CostTable costs;
+        costs.load_csv(assets + "/data/ingredient_costs.csv");
+        const BrandAudit a =
+            audit_brand(*farmstand, curves, Method::Robot, ls, as, &costs);
+
+        expect_true("every recipe is audited",
+                    a.rows.size() == farmstand->recipes.size());
+        expect_true("counts partition the rows",
+                    a.complete + a.partial + a.customer_built
+                        == static_cast<int>(a.rows.size()));
+
+        bool ordered = true;
+        for (size_t i = 1; i < a.rows.size(); ++i)
+            if (a.rows[i].severity() > a.rows[i - 1].severity()) ordered = false;
+        expect_true("rows are ordered worst first", ordered);
+
+        int failing = 0, customer_built = 0;
+        for (const RecipeAudit &r : a.rows) {
+            if (r.customer_built) { ++customer_built; continue; }
+            if (!r.legacy_ok() && r.complete_bowl) ++failing;
+        }
+        expect_true("legacy_failing counts exactly the failing recipes",
+                    a.legacy_failing() == failing);
+        expect_true("overflowing and never-filling are counted apart",
+                    a.legacy_over > 0 && a.legacy_short > 0);
+        expect_true("customer-built bowls are excluded from the failure count",
+                    a.customer_built == customer_built && customer_built > 0);
+
+        const RecipeAudit *ranch = row_named(a, "Farmstand Ranch Salad");
+        expect_true("Ranch Salad is found", ranch != nullptr);
+        if (ranch) {
+            expect_true("Ranch Salad overflows as written",
+                        ranch->legacy.verdict == Verdict::OverAtStart);
+            expect_true("Ranch Salad is judged a complete bowl", ranch->complete_bowl);
+            expect_true("tolerances cannot rescue Ranch Salad",
+                        ranch->adaptive.status == AdaptiveStatus::StillOver);
+        }
+
+        const RecipeAudit *chili = row_named(a, "Chili Crisp Crunch Salad");
+        expect_true("Chili Crisp never reaches its floor",
+                    chili && chili->legacy.verdict == Verdict::Saturated);
+
+        const RecipeAudit *byo = row_named(a, "Build Your Own Farmstand Bowl");
+        expect_true("the build-your-own template is audited, not dropped",
+                    byo && byo->customer_built && byo->pinned == 0);
+        expect_true("a customer-built bowl is never reported as a failure",
+                    byo && byo->severity() == 0);
+
+        // A partial template pins only a protein; judging it as a finished bowl would
+        // report a false failure, so it is separated rather than counted as one.
+        const BrandAudit cow =
+            audit_brand(*cowgirl, curves, Method::Robot, ls, as, &costs);
+        const RecipeAudit *pollo = row_named(cow, "Pollo Verde Asado Bowl");
+        expect_true("a one-ingredient template is flagged partial, not complete",
+                    pollo && !pollo->complete_bowl && !pollo->customer_built);
+        expect_true("a partial falling short is not a failure",
+                    pollo && pollo->legacy.verdict == Verdict::Saturated
+                        && pollo->severity() == 0);
+        expect_true("finished bowls sort above modifier templates at equal severity",
+                    cow.rows.front().complete_bowl);
+        // Seven protein-only templates all fall short; none of them may be counted.
+        // The one shortfall that remains is a finished bowl, Hungry Cowboy.
+        expect_true("partial shortfalls stay out of the brand's failure count",
+                    cow.partial == 7 && cow.legacy_short == 0 && cow.adaptive_short == 1);
+
+        const QStringList lines = a.to_csv().split('\n', Qt::SkipEmptyParts);
+        expect_true("CSV carries a header and one row per recipe",
+                    lines.size() == static_cast<int>(a.rows.size()) + 1);
+        const int width = csv_fields(lines.first());
+        bool rectangular = true;
+        for (const QString &line : lines)
+            if (csv_fields(line) != width) rectangular = false;
+        expect_true("CSV rows are rectangular once quoting is honoured", rectangular);
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

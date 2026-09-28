@@ -66,7 +66,10 @@ struct RecipeItem {
 struct Recipe {
     QString name;
     std::vector<RecipeItem> items;
-    int weighted = 0;  ///< how many items carried a real weight in the menu
+    int weighted = 0;      ///< how many items carried a real weight in the menu
+    /// A template with no target_item_ids: the customer picks every ingredient.
+    /// Not offered in the recipe picker, but still audited.
+    bool customer_built = false;
 
     int unweighted() const { return static_cast<int>(items.size()) - weighted; }
 };

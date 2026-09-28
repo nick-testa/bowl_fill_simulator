@@ -55,6 +55,8 @@ enum class Verdict {
     OverWhileRamping, ///< crossed the volume limit on the way to the floor
 };
 
+QString to_string(Verdict v);
+
 struct SimResult {
     std::vector<BowlItem> items;   ///< each carries start_g and final_g
     std::vector<Frame> frames;     ///< one per pass, frames.front() is as-ordered
