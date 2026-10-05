@@ -4,3 +4,5 @@ set(__QT_DEPLOY_TARGET_bowl-fill-simulator_FILE /home/ntesta/Projects/bowl_fill_
 set(__QT_DEPLOY_TARGET_bowl-fill-simulator_TYPE EXECUTABLE)
 set(__QT_DEPLOY_TARGET_bowlfill-verify_FILE /home/ntesta/Projects/bowl_fill_simulator/build/bowlfill-verify)
 set(__QT_DEPLOY_TARGET_bowlfill-verify_TYPE EXECUTABLE)
+set(__QT_DEPLOY_TARGET_romaine-fill_FILE /home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill)
+set(__QT_DEPLOY_TARGET_romaine-fill_TYPE EXECUTABLE)

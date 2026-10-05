@@ -23,6 +23,8 @@ public:
 signals:
     /// A recipe the user wants to open in the simulator.
     void recipe_chosen(const QString &recipe);
+    /// The combinatorial workup over this brand, which the main window owns.
+    void full_report_requested();
 
 private:
     void populate();

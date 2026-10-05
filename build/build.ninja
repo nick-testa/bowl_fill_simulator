@@ -97,6 +97,14 @@ build CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o: CXX_COMPILER__bowl
   OBJECT_DIR = CMakeFiles/bowlfill_core.dir
   OBJECT_FILE_DIR = CMakeFiles/bowlfill_core.dir/src/core
 
+build CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o: CXX_COMPILER__bowlfill_core_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.cc || cmake_object_order_depends_target_bowlfill_core
+  DEFINES = -DQT_CORE_LIB -DQT_NO_DEBUG
+  DEP_FILE = CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowlfill_core_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++
+  OBJECT_DIR = CMakeFiles/bowlfill_core.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowlfill_core.dir/src/core
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target bowlfill_core
@@ -105,7 +113,7 @@ build CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o: CXX_COMPILER__bowl
 #############################################
 # Link the static library libbowlfill_core.a
 
-build libbowlfill_core.a: CXX_STATIC_LIBRARY_LINKER__bowlfill_core_Release CMakeFiles/bowlfill_core.dir/bowlfill_core_autogen/mocs_compilation.cpp.o CMakeFiles/bowlfill_core.dir/src/core/menu_loader.cc.o CMakeFiles/bowlfill_core.dir/src/core/curves.cc.o CMakeFiles/bowlfill_core.dir/src/core/simulator.cc.o CMakeFiles/bowlfill_core.dir/src/core/adaptive.cc.o CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps
+build libbowlfill_core.a: CXX_STATIC_LIBRARY_LINKER__bowlfill_core_Release CMakeFiles/bowlfill_core.dir/bowlfill_core_autogen/mocs_compilation.cpp.o CMakeFiles/bowlfill_core.dir/src/core/menu_loader.cc.o CMakeFiles/bowlfill_core.dir/src/core/curves.cc.o CMakeFiles/bowlfill_core.dir/src/core/simulator.cc.o CMakeFiles/bowlfill_core.dir/src/core/adaptive.cc.o CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = CMakeFiles/bowlfill_core.dir
   POST_BUILD = :
@@ -149,6 +157,22 @@ build CMakeFiles/bowl-fill-simulator.dir/src/ui/main_window.cc.o: CXX_COMPILER__
 build CMakeFiles/bowl-fill-simulator.dir/src/ui/report_dialog.cc.o: CXX_COMPILER__bowl-fill-simulator_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/ui/report_dialog.cc || cmake_object_order_depends_target_bowl-fill-simulator
   DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
   DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/src/ui/report_dialog.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++ -isystem /usr/include/qt6/QtWidgets -isystem /usr/include/qt6/QtGui
+  OBJECT_DIR = CMakeFiles/bowl-fill-simulator.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowl-fill-simulator.dir/src/ui
+
+build CMakeFiles/bowl-fill-simulator.dir/src/ui/mapping_dialog.cc.o: CXX_COMPILER__bowl-fill-simulator_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/ui/mapping_dialog.cc || cmake_object_order_depends_target_bowl-fill-simulator
+  DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
+  DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/src/ui/mapping_dialog.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++ -isystem /usr/include/qt6/QtWidgets -isystem /usr/include/qt6/QtGui
+  OBJECT_DIR = CMakeFiles/bowl-fill-simulator.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowl-fill-simulator.dir/src/ui
+
+build CMakeFiles/bowl-fill-simulator.dir/src/ui/sweep_dialog.cc.o: CXX_COMPILER__bowl-fill-simulator_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/ui/sweep_dialog.cc || cmake_object_order_depends_target_bowl-fill-simulator
+  DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB
+  DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/src/ui/sweep_dialog.cc.o.d
   FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
   INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++ -isystem /usr/include/qt6/QtWidgets -isystem /usr/include/qt6/QtGui
   OBJECT_DIR = CMakeFiles/bowl-fill-simulator.dir
@@ -210,7 +234,7 @@ build CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o: CXX_COMPILER__bowl-f
 #############################################
 # Link the executable bowl-fill-simulator
 
-build bowl-fill-simulator: CXX_EXECUTABLE_LINKER__bowl-fill-simulator_Release CMakeFiles/bowl-fill-simulator.dir/bowl-fill-simulator_autogen/mocs_compilation.cpp.o CMakeFiles/bowl-fill-simulator.dir/src/main.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/main_window.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/report_dialog.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/ramp_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/curve_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/bowl_diagram.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/tolerance_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o | libbowlfill_core.a /usr/lib/libQt6Widgets.so.6.11.2 /usr/lib/libQt6Gui.so.6.11.2 /usr/lib/libGLX.so /usr/lib/libOpenGL.so /usr/lib/libQt6Core.so.6.11.2 || bowl-fill-simulator_autogen bowl-fill-simulator_autogen_timestamp_deps libbowlfill_core.a
+build bowl-fill-simulator: CXX_EXECUTABLE_LINKER__bowl-fill-simulator_Release CMakeFiles/bowl-fill-simulator.dir/bowl-fill-simulator_autogen/mocs_compilation.cpp.o CMakeFiles/bowl-fill-simulator.dir/src/main.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/main_window.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/report_dialog.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/mapping_dialog.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/sweep_dialog.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/ramp_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/curve_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/bowl_diagram.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/theme.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/tolerance_chart.cc.o CMakeFiles/bowl-fill-simulator.dir/src/ui/units.cc.o | libbowlfill_core.a /usr/lib/libQt6Widgets.so.6.11.2 /usr/lib/libQt6Gui.so.6.11.2 /usr/lib/libGLX.so /usr/lib/libOpenGL.so /usr/lib/libQt6Core.so.6.11.2 || bowl-fill-simulator_autogen bowl-fill-simulator_autogen_timestamp_deps libbowlfill_core.a
   DEP_FILE = CMakeFiles/bowl-fill-simulator.dir/link.d
   FLAGS = -O3 -DNDEBUG
   LINK_FLAGS = -Xlinker --dependency-file=CMakeFiles/bowl-fill-simulator.dir/link.d
@@ -264,6 +288,50 @@ build bowlfill-verify: CXX_EXECUTABLE_LINKER__bowlfill-verify_Release CMakeFiles
   PRE_LINK = :
   TARGET_FILE = bowlfill-verify
   TARGET_PDB = bowlfill-verify.dbg
+
+# =============================================================================
+# Object build statements for EXECUTABLE target romaine-fill
+
+
+#############################################
+# Order-only phony target for romaine-fill
+
+build cmake_object_order_depends_target_romaine-fill: phony || cmake_object_order_depends_target_bowlfill_core romaine-fill_autogen romaine-fill_autogen/mocs_compilation.cpp romaine-fill_autogen/timestamp romaine-fill_autogen_timestamp_deps
+
+build CMakeFiles/romaine-fill.dir/romaine-fill_autogen/mocs_compilation.cpp.o: CXX_COMPILER__romaine-fill_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill_autogen/mocs_compilation.cpp || cmake_object_order_depends_target_romaine-fill
+  DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_NO_DEBUG
+  DEP_FILE = CMakeFiles/romaine-fill.dir/romaine-fill_autogen/mocs_compilation.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++
+  OBJECT_DIR = CMakeFiles/romaine-fill.dir
+  OBJECT_FILE_DIR = CMakeFiles/romaine-fill.dir/romaine-fill_autogen
+
+build CMakeFiles/romaine-fill.dir/tools/romaine_fill.cc.o: CXX_COMPILER__romaine-fill_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/tools/romaine_fill.cc || cmake_object_order_depends_target_romaine-fill
+  DEFINES = -DBOWLFILL_ASSET_DIR=\"/home/ntesta/Projects/bowl_fill_simulator\" -DQT_CORE_LIB -DQT_NO_DEBUG
+  DEP_FILE = CMakeFiles/romaine-fill.dir/tools/romaine_fill.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++
+  OBJECT_DIR = CMakeFiles/romaine-fill.dir
+  OBJECT_FILE_DIR = CMakeFiles/romaine-fill.dir/tools
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target romaine-fill
+
+
+#############################################
+# Link the executable romaine-fill
+
+build romaine-fill: CXX_EXECUTABLE_LINKER__romaine-fill_Release CMakeFiles/romaine-fill.dir/romaine-fill_autogen/mocs_compilation.cpp.o CMakeFiles/romaine-fill.dir/tools/romaine_fill.cc.o | libbowlfill_core.a /usr/lib/libQt6Core.so.6.11.2 || libbowlfill_core.a romaine-fill_autogen romaine-fill_autogen_timestamp_deps
+  DEP_FILE = CMakeFiles/romaine-fill.dir/link.d
+  FLAGS = -O3 -DNDEBUG
+  LINK_FLAGS = -Xlinker --dependency-file=CMakeFiles/romaine-fill.dir/link.d
+  LINK_LIBRARIES = libbowlfill_core.a  /usr/lib/libQt6Core.so.6.11.2
+  OBJECT_DIR = CMakeFiles/romaine-fill.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = romaine-fill
+  TARGET_PDB = romaine-fill.dbg
 
 
 #############################################
@@ -339,6 +407,18 @@ build bowlfill-verify_autogen: phony CMakeFiles/bowlfill-verify_autogen bowlfill
 
 
 #############################################
+# Utility command for romaine-fill_autogen_timestamp_deps
+
+build romaine-fill_autogen_timestamp_deps: phony libbowlfill_core.a
+
+
+#############################################
+# Utility command for romaine-fill_autogen
+
+build romaine-fill_autogen: phony CMakeFiles/romaine-fill_autogen romaine-fill_autogen/timestamp romaine-fill_autogen/mocs_compilation.cpp romaine-fill_autogen_timestamp_deps
+
+
+#############################################
 # Custom command for bowlfill_core_autogen/timestamp
 
 build bowlfill_core_autogen/timestamp bowlfill_core_autogen/mocs_compilation.cpp | ${cmake_ninja_workdir}bowlfill_core_autogen/timestamp ${cmake_ninja_workdir}bowlfill_core_autogen/mocs_compilation.cpp: CUSTOM_COMMAND /usr/lib/qt6/moc /usr/lib/qt6/uic || bowlfill_core_autogen_timestamp_deps
@@ -372,6 +452,17 @@ build bowlfill-verify_autogen/timestamp bowlfill-verify_autogen/mocs_compilation
 
 
 #############################################
+# Custom command for romaine-fill_autogen/timestamp
+
+build romaine-fill_autogen/timestamp romaine-fill_autogen/mocs_compilation.cpp | ${cmake_ninja_workdir}romaine-fill_autogen/timestamp ${cmake_ninja_workdir}romaine-fill_autogen/mocs_compilation.cpp: CUSTOM_COMMAND /usr/lib/qt6/moc /usr/lib/qt6/uic || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps libbowlfill_core.a romaine-fill_autogen_timestamp_deps
+  COMMAND = cd /home/ntesta/Projects/bowl_fill_simulator/build && /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/cmake -E cmake_autogen /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/romaine-fill_autogen.dir/AutogenInfo.json Release && /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/cmake -E touch /home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill_autogen/timestamp && /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/cmake -E cmake_transform_depfile Ninja gccdepfile /home/ntesta/Projects/bowl_fill_simulator /home/ntesta/Projects/bowl_fill_simulator /home/ntesta/Projects/bowl_fill_simulator/build /home/ntesta/Projects/bowl_fill_simulator/build /home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill_autogen/deps /home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/d/38d368bc672e81fa1f8e078f04763bc79211ff63c4c31f31ac0e759c8d0777cc.d
+  DESC = Automatic MOC and UIC for target romaine-fill
+  depfile = CMakeFiles/d/38d368bc672e81fa1f8e078f04763bc79211ff63c4c31f31ac0e759c8d0777cc.d
+  deps = gcc
+  restat = 1
+
+
+#############################################
 # Phony custom command for CMakeFiles/bowlfill_core_autogen
 
 build CMakeFiles/bowlfill_core_autogen | ${cmake_ninja_workdir}CMakeFiles/bowlfill_core_autogen: phony bowlfill_core_autogen/timestamp || bowlfill_core_autogen_timestamp_deps
@@ -388,6 +479,12 @@ build CMakeFiles/bowl-fill-simulator_autogen | ${cmake_ninja_workdir}CMakeFiles/
 
 build CMakeFiles/bowlfill-verify_autogen | ${cmake_ninja_workdir}CMakeFiles/bowlfill-verify_autogen: phony bowlfill-verify_autogen/timestamp || bowlfill-verify_autogen_timestamp_deps bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps libbowlfill_core.a
 
+
+#############################################
+# Phony custom command for CMakeFiles/romaine-fill_autogen
+
+build CMakeFiles/romaine-fill_autogen | ${cmake_ninja_workdir}CMakeFiles/romaine-fill_autogen: phony romaine-fill_autogen/timestamp || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps libbowlfill_core.a romaine-fill_autogen_timestamp_deps
+
 # =============================================================================
 # Target aliases.
 
@@ -401,7 +498,7 @@ build bowlfill_core: phony libbowlfill_core.a
 #############################################
 # Folder: /home/ntesta/Projects/bowl_fill_simulator/build
 
-build all: phony libbowlfill_core.a bowl-fill-simulator bowlfill-verify
+build all: phony libbowlfill_core.a bowl-fill-simulator bowlfill-verify romaine-fill
 
 # =============================================================================
 # Built-in targets

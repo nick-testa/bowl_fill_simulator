@@ -41,7 +41,7 @@ QList<double> span_ticks(double lo, double hi, int target)
 void tag(QPainter &p, QPointF at, Qt::Alignment align, const QString &text,
          const QColor &colour, bool bold = true)
 {
-    QFont f = theme::mono(8, bold ? QFont::Bold : QFont::Normal);
+    QFont f = theme::font(theme::Text::Caption, bold);
     p.setFont(f);
     const QFontMetrics fm(f);
     QRectF box(0, 0, fm.horizontalAdvance(text) + 8, fm.height() + 3);
@@ -93,7 +93,7 @@ void RampChart::paintEvent(QPaintEvent *)
     const auto &frames = result_.frames;
     if (frames.empty()) return;
 
-    const double cap = result_.settings.bowl_capacity_oz;
+    const double cap = result_.settings.food_capacity_oz();
     const double floor_g = result_.settings.floor_g;
 
     double g_min = frames.front().grams, g_max = frames.back().grams;
@@ -132,7 +132,7 @@ void RampChart::paintEvent(QPaintEvent *)
 
     // Ticks are chosen in the displayed unit so they land on round numbers there,
     // then mapped back to canonical ounces for positioning.
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     for (double shown : span_ticks(0, units::from_oz(oz_max), 5)) {
         const double y = Y(units::to_oz(shown));
         p.setPen(pal.rule);
@@ -230,7 +230,7 @@ void RampChart::paintEvent(QPaintEvent *)
         p.drawEllipse(QPointF(X(f.grams), Y(f.ounces)), 4.5, 4.5);
     }
 
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     p.setPen(pal.ink_soft);
     p.drawText(QRectF(kLeft, height() - 16, pw, 14), Qt::AlignCenter,
                "total bowl mass (g)");

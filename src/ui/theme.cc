@@ -56,32 +56,49 @@ void follow_system()
     g_dark = window.lightness() < 128;
 }
 
-QFont mono(int point_size, int weight)
+int pixel_size(Text role)
 {
-    static const QString family = first_available(
-        {"IBM Plex Mono", "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono"},
-        QFontDatabase::systemFont(QFontDatabase::FixedFont).family());
-    QFont f(family, point_size);
-    f.setWeight(static_cast<QFont::Weight>(weight));
-    return f;
+    switch (role) {
+    case Text::Caption: return 12;
+    case Text::Body: return 14;
+    case Text::Heading: return 16;
+    case Text::Display: return 24;
+    }
+    return 14;
 }
 
-QFont sans(int point_size, int weight)
+namespace {
+
+QString sans_family()
 {
     static const QString family = first_available(
         {"IBM Plex Sans", "Inter", "Noto Sans", "DejaVu Sans"},
         QApplication::font().family());
-    QFont f(family, point_size);
-    f.setWeight(static_cast<QFont::Weight>(weight));
+    return family;
+}
+
+QString mono_family()
+{
+    static const QString family = first_available(
+        {"IBM Plex Mono", "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono"},
+        QFontDatabase::systemFont(QFontDatabase::FixedFont).family());
+    return family;
+}
+
+}  // namespace
+
+QFont font(Text role, bool strong)
+{
+    QFont f(sans_family());
+    f.setPixelSize(pixel_size(role));
+    f.setWeight(strong ? QFont::DemiBold : QFont::Normal);
     return f;
 }
 
-QFont display(int point_size)
+QFont mono(Text role)
 {
-    static const QString family = first_available(
-        {"Archivo", "IBM Plex Sans", "Inter", "Noto Sans"}, QApplication::font().family());
-    QFont f(family, point_size);
-    f.setWeight(QFont::Bold);
+    QFont f(mono_family());
+    f.setPixelSize(pixel_size(role));
     return f;
 }
 
@@ -90,9 +107,7 @@ QColor series_colour(const QString &ingredient)
     const Palette &p = palette();
     if (ingredient == "Romaine Base") return p.romaine;
     if (ingredient == "Massaged Kale") return p.kale;
-    if (ingredient == "Mexican Rice" || ingredient == "White Rice"
-        || ingredient == "Brown Rice and Lentils")
-        return p.rice;
+    if (ingredient.contains("rice", Qt::CaseInsensitive)) return p.rice;
     return p.accent;
 }
 
@@ -108,84 +123,118 @@ QString stylesheet()
         {"@rule", p.rule.name()},           {"@ruleStrong", p.rule_strong.name()},
         {"@accent", p.accent.name()},       {"@accentSoft", p.accent_soft.name()},
         {"@over", p.over.name()},
-        {"@sans", sans().family()},         {"@mono", mono().family()},
-        {"@display", display().family()},
+        {"@overSoft", p.over_soft.name()},  {"@accentHover", p.accent.lighter(112).name()},
+        {"@sans", sans_family()},
+        {"@captionpx", QString("%1px").arg(pixel_size(Text::Caption))},
+        {"@bodypx", QString("%1px").arg(pixel_size(Text::Body))},
+        {"@headingpx", QString("%1px").arg(pixel_size(Text::Heading))},
+        {"@displaypx", QString("%1px").arg(pixel_size(Text::Display))},
     };
 
+    // Four text sizes (@caption, @body, @heading, @display) and two weights (400 and
+    // 600) carry the whole hierarchy; colour (@ink, @inkSoft, @inkFaint) does the rest.
+    // Spacing sticks to multiples of 4 px.
     QString css = R"(
-QWidget { background: @ground; color: @ink; font-family: "@sans"; font-size: 13px; }
-QScrollArea, QScrollArea > QWidget > QWidget { background: @ground; }
-/* Labels and check boxes inherit the panel they sit in rather than painting the
-   window colour as a box behind themselves. */
-QLabel, QCheckBox { background: transparent; }
-/* Layout-only wrappers must not paint the window colour inside a panel. */
+QWidget { background: @ground; color: @ink; font-family: "@sans"; font-size: @bodypx; }
+QScrollArea, QScrollArea > QWidget > QWidget { background: @ground; border: none; }
+QLabel, QCheckBox, QRadioButton { background: transparent; }
 QWidget#clear { background: transparent; }
 
 QFrame#panel { background: @panel; border: 1px solid @rule; border-radius: 10px; }
-QFrame#card  { background: @panel; border: 1px solid @rule; border-radius: 8px; }
 QFrame#sunk  { background: @sunk;  border: 1px solid @rule; border-radius: 8px; }
 QFrame#sep   { background: @rule; border: none; }
 
-QLabel#h1 { font-family: "@display"; font-size: 22px; font-weight: 700; color: @ink; }
-QLabel#h2 { font-family: "@display"; font-size: 14px; font-weight: 600; color: @ink; }
-QLabel#eyebrow { font-family: "@mono"; font-size: 10px; color: @inkFaint; }
-QLabel#note { color: @inkSoft; font-size: 12px; }
-QLabel#warn { color: @over; font-size: 12px; }
-QLabel#fieldLabel { color: @inkSoft; font-size: 11px; }
-QLabel#statValue { font-family: "@mono"; font-size: 17px; font-weight: 600; color: @ink; }
-QLabel#statKey { font-family: "@mono"; font-size: 9px; color: @inkFaint; }
+/* ---- text roles ------------------------------------------------------------ */
+QLabel#title    { font-size: @displaypx; font-weight: 600; }
+QLabel#subtitle { font-size: @captionpx; color: @inkSoft; }
+QLabel#heading  { font-size: @headingpx; font-weight: 600; }
+QLabel#section  { font-size: @captionpx; font-weight: 600; color: @inkFaint; }
+QLabel#label    { font-size: @captionpx; color: @inkSoft; }
+QLabel#note     { font-size: @captionpx; color: @inkSoft; }
+QLabel#lead     { color: @inkSoft; }
+QFrame#stat      { background: transparent; border: none; border-left: 1px solid @rule; }
+QFrame#statFirst { background: transparent; border: none; }
+QLabel#statKey   { font-size: @captionpx; color: @inkSoft; }
+QLabel#statValue { font-size: @displaypx; font-weight: 600; }
 
+/* ---- inputs ----------------------------------------------------------------- */
 QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox {
-    background: @sunk; color: @ink; border: 1px solid @ruleStrong; border-radius: 6px;
-    padding: 5px 8px; font-family: "@mono"; font-size: 13px;
+    background: @sunk; color: @ink; border: 1px solid @rule; border-radius: 6px;
+    padding: 0px 8px; font-size: @bodypx;
     selection-background-color: @accent;
 }
+QLineEdit:hover, QDoubleSpinBox:hover, QSpinBox:hover, QComboBox:hover {
+    border-color: @ruleStrong;
+}
 QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus, QLineEdit:focus {
-    border: 1px solid @accent;
+    border-color: @accent;
 }
-QComboBox { font-family: "@sans"; }
-QComboBox::drop-down { border: none; width: 18px; }
+QComboBox, QLineEdit { min-height: 30px; }
+QComboBox::drop-down { border: none; width: 24px; }
 QComboBox QAbstractItemView {
-    background: @panel; color: @ink; border: 1px solid @ruleStrong;
-    selection-background-color: @accentSoft; selection-color: @ink; padding: 3px;
-}
-QDoubleSpinBox::up-button, QDoubleSpinBox::down-button,
-QSpinBox::up-button, QSpinBox::down-button { width: 14px; background: @sunk; border: none; }
-
-QPushButton {
-    background: @sunk; color: @ink; border: 1px solid @ruleStrong; border-radius: 6px;
-    padding: 6px 12px; font-size: 13px;
-}
-QPushButton:hover { border-color: @accent; }
-QPushButton:checked { background: @accentSoft; border-color: @accent; color: @ink; }
-QPushButton#primary { background: @accentSoft; border-color: @accent; font-weight: 600; }
-QPushButton#info {
-    border-radius: 9px; padding: 0px; min-width: 18px; max-width: 18px;
-    min-height: 18px; max-height: 18px; font-weight: 700; color: @inkSoft;
+    background: @panel; color: @ink; border: 1px solid @ruleStrong; outline: none;
+    selection-background-color: @accentSoft; selection-color: @ink; padding: 4px;
 }
 
-QCheckBox { color: @ink; font-size: 12px; spacing: 6px; padding: 4px; }
+/* ---- buttons ---------------------------------------------------------------- */
+QPushButton, QToolButton {
+    background: @sunk; color: @ink; border: 1px solid @rule; border-radius: 6px;
+    padding: 0px 12px; min-height: 30px; font-size: @bodypx;
+}
+QPushButton:hover, QToolButton:hover { border-color: @ruleStrong; }
+QPushButton#primary { background: @accent; color: @panel; border-color: @accent;
+                      font-weight: 600; }
+QPushButton#primary:hover { background: @accentHover; border-color: @accentHover; }
+QPushButton#quiet { background: transparent; border-color: transparent; color: @inkSoft; }
+QPushButton#quiet:hover { color: @ink; background: @sunk; }
+QPushButton#issues { background: @overSoft; border-color: @over; color: @over;
+                     font-weight: 600; }
+
+/* Segmented control: a row of checkable buttons sharing one outline. */
+QFrame#segment { background: @sunk; border: 1px solid @rule; border-radius: 7px; }
+QFrame#segment QPushButton {
+    background: transparent; border: none; border-radius: 5px; min-height: 26px;
+    padding: 0px 12px; color: @inkSoft;
+}
+QFrame#segment QPushButton:hover { color: @ink; }
+QFrame#segment QPushButton:checked { background: @panel; color: @ink; font-weight: 600;
+                                     border: 1px solid @rule; }
+
+/* Collapsible section header in the sidebar. */
+QToolButton#disclosure {
+    background: transparent; border: none; padding: 0px; min-height: 24px;
+    font-size: @captionpx; font-weight: 600; color: @inkFaint; text-align: left;
+}
+QToolButton#disclosure:hover { color: @ink; }
+
+QCheckBox { spacing: 8px; padding: 4px 0px; }
 QCheckBox:disabled { color: @inkFaint; }
-QCheckBox::indicator { width: 13px; height: 13px; border-radius: 3px;
+QCheckBox::indicator { width: 16px; height: 16px; border-radius: 4px;
                        border: 1px solid @ruleStrong; background: @sunk; }
 QCheckBox::indicator:checked { background: @accent; border-color: @accent; }
 
+/* ---- tables ----------------------------------------------------------------- */
+QHeaderView { background: transparent; border: none; }
 QHeaderView::section {
-    background: @panel; color: @inkFaint; border: none; border-bottom: 1px solid @rule;
-    padding: 5px 7px; font-family: "@mono"; font-size: 10px;
+    background: @panel; color: @inkSoft; border: none; border-bottom: 1px solid @rule;
+    padding: 8px; font-size: @captionpx; font-weight: 600;
 }
 QTableWidget {
-    background: @panel; gridline-color: @rule; border: none;
-    font-family: "@mono"; font-size: 12px;
+    background: @panel; border: none; font-size: @bodypx; outline: none;
+    selection-background-color: @accentSoft; selection-color: @ink;
 }
-QTableWidget::item { padding: 4px 7px; }
-QTableWidget::item:selected { background: @accentSoft; color: @ink; }
+QTableWidget::item { padding: 0px 8px; border-bottom: 1px solid @rule; }
+QTableWidget QDoubleSpinBox { min-height: 26px; border-radius: 4px; }
 
-QToolTip { background: @panel; color: @ink; border: 1px solid @ruleStrong; padding: 8px; }
-QScrollBar:vertical { background: @ground; width: 10px; margin: 0; }
-QScrollBar::handle:vertical { background: @ruleStrong; border-radius: 5px; min-height: 24px; }
-QScrollBar::add-line, QScrollBar::sub-line { height: 0; }
-QSplitter::handle { background: @rule; }
+QToolTip { background: @panel; color: @ink; border: 1px solid @ruleStrong;
+           padding: 8px; font-size: @captionpx; }
+QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
+QScrollBar::handle:vertical { background: @ruleStrong; border-radius: 3px; min-height: 32px; }
+QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
+QScrollBar::handle:horizontal { background: @ruleStrong; border-radius: 3px; min-width: 32px; }
+QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+QSplitter::handle { background: transparent; width: 12px; }
 )";
     // Longest keys first so @inkSoft is not clipped by @ink.
     QList<std::pair<QString, QString>> ordered;

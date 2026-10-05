@@ -8,9 +8,13 @@
 #include "core/feasibility.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
+#include "core/sweep.hh"
 
+#include <QDir>
+#include <QFile>
 #include <QString>
 #include <QStringList>
+#include <QTextStream>
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -157,7 +161,8 @@ int main()
     std::printf("\nMenu loading\n");
     LoadResult loaded = load_menus(assets + "/menus");
     for (const QString &w : loaded.warnings) std::printf("  warn %s\n", qPrintable(w));
-    expect_near("brands parsed", loaded.menus.size(), 5, 0.01);
+    for (const QString &w : loaded.issues) std::printf("  issue %s\n", qPrintable(w));
+    expect_near("brands parsed", loaded.menus.size(), 7, 0.01);
 
     const Menu *farmstand = by_brand(loaded.menus, "Farmstand");
     const Menu *cowgirl = by_brand(loaded.menus, "The Hungry Cowgirl");
@@ -170,12 +175,92 @@ int main()
     }
 
     expect_near("Farmstand floors", farmstand->floors.size(), 4, 0.01);
-    expect_near("Farmstand ingredients", farmstand->ingredients.size(), 28, 0.01);
+    // Its ten cup sauces (Ranch, Tzatziki, the cremas...) are menu.sauces, not ingredients.
+    expect_near("Farmstand ingredients", farmstand->ingredients.size(), 19, 0.01);
+    expect_near("Farmstand sauces", farmstand->sauces.size(), 10, 0.01);
+    expect_true("Farmstand Ranch is a sauce, not a topping",
+                farmstand->is_sauce("Ranch") && !farmstand->find("Ranch"));
     // 10 plated templates plus the two build-your-own shells, which pin nothing but
     // still have to appear in the feasibility report.
     expect_near("Farmstand recipes", farmstand->recipes.size(), 12, 0.01);
     expect_near("Meat + Rice floors", meatrice->floors.size(), 0, 0.01);
     expect_near("Meat + Rice recipes", meatrice->recipes.size(), 4, 0.01);
+
+    // Casa Condesa has no dynamic_portion_increases and none of the old ingredient
+    // names: its options come from mappings.ingredients alone, kinds read from the
+    // names, and sauces left to the sauce cups.
+    if (const Menu *casa = by_brand(loaded.menus, "Casa Condesa")) {
+        expect_near("Casa Condesa bases", casa->names_of(Kind::Base).size(), 2, 0.01);
+        // Braised Beef is a stale template target borrowed from another brand.
+        expect_near("Casa Condesa proteins", casa->names_of(Kind::Protein).size(), 4, 0.01);
+        // Cotija goes in a cup though nothing in its name says so; the brand's own
+        // spellings ("Green Salsa Macha") still land on the list.
+        expect_near("Casa Condesa toppings", casa->names_of(Kind::Topping).size(), 2, 0.01);
+        expect_eq("Casa Condesa sauces", casa->sauces.join(" | "),
+                  "Cilantro Crema | Cotija | Green Salsa Macha | Guacachile Salsa | "
+                  "Salsa Cremosa");
+        expect_eq("Casa Condesa bases named",
+                  casa->names_of(Kind::Base).join(" | "), "Mexican Rice | White Jasmine Rice");
+        const Ingredient *rice = casa->find("Mexican Rice");
+        expect_true("Casa Condesa rice is a base", rice && rice->kind == Kind::Base);
+        expect_near("Casa Condesa rice portion", rice ? rice->full_portion() : 0, 160, 0.01);
+        expect_true("Casa Condesa sauces are not toppings",
+                    !casa->find("Salsa Cremosa Portioned"));
+        expect_true("Casa Condesa sweeps", combinations_for(*casa, SweepLimits{}) > 0);
+    } else {
+        expect_true("Casa Condesa loaded", false);
+    }
+
+    // M+R2 spells White Jasmine Rice three ways across stores; they are one option.
+    if (const Menu *mr2 = by_brand(loaded.menus, "M+R2")) {
+        expect_eq("M+R2 bases named", mr2->names_of(Kind::Base).join(" | "),
+                  "Mexican Rice | White Jasmine Rice");
+        expect_true("M+R2 carnitas spellings merged", !mr2->find("Pork Carnitas Cooked v11"));
+    } else {
+        expect_true("M+R2 loaded", false);
+    }
+
+    std::printf("\nName mappings\n");
+    {
+        // Two brands spell the same chicken differently from a third; mapping both
+        // onto the established name is what lets them share its cost and curve.
+        NameMappings maps;
+        maps[{"Casa Condesa", "Guajillo / Cumin Chicken, [cooked]"}] = {"Chicken Tex-Mex", ""};
+        maps[{"M+R2", "Guajillo  Cumin Chicken cooked"}] = {"Chicken Tex-Mex", ""};
+        maps[{"Casa Condesa", "Cotija portion"}] = {"", "sauce"};
+        const LoadResult mapped = load_menus(assets + "/menus", &maps);
+        const Menu *casa = by_brand(mapped.menus, "Casa Condesa");
+        const Menu *mr2 = by_brand(mapped.menus, "M+R2");
+        const Ingredient *tex = casa ? casa->find("Chicken Tex-Mex") : nullptr;
+        expect_true("mapped name replaces the menu's", tex && !casa->find("Guajillo Cumin Chicken"));
+        expect_true("mapped ingredient keeps its kind", tex && tex->kind == Kind::Protein);
+        expect_near("mapped ingredient keeps its weight", tex ? tex->full_portion() : 0, 60, 0.01);
+        expect_true("mapping applies per brand",
+                    mr2 && mr2->find("Chicken Tex-Mex") && !mr2->find("Guajillo Cumin Chicken"));
+        expect_true("kind override to sauce leaves the pool", casa && !casa->find("Cotija"));
+
+        QString smoky_item;
+        bool listed = false;
+        if (casa) {
+            for (const Recipe &r : casa->recipes)
+                if (r.name == "Smoky Roasted Chicken Bowl" && !r.items.empty())
+                    smoky_item = r.items[0].name;
+            for (const MenuName &n : casa->names)
+                if (n.raw == "Guajillo / Cumin Chicken, [cooked]")
+                    listed = n.automatic == "Guajillo Cumin Chicken" && n.name == "Chicken Tex-Mex";
+        }
+        expect_eq("recipe target follows the mapping", smoky_item, "Chicken Tex-Mex");
+        expect_true("menu lists raw, automatic and mapped names", listed);
+
+        const QString path = QDir::temp().filePath("bowlfill-verify-aliases.csv");
+        QString err;
+        NameMappings back;
+        const bool saved = save_name_mappings(path, maps, &err);
+        const bool read = load_name_mappings(path, back, &err);
+        expect_true("mappings round-trip through CSV (names with commas)",
+                    saved && read && back == maps);
+        QFile::remove(path);
+    }
 
     {
         int built = 0;
@@ -221,14 +306,18 @@ int main()
         std::printf("  ok   Meat + Rice matches no floor\n");
     }
 
-    std::printf("\nEnd-to-end recipes (against the HTML simulator's output)\n");
+    // Originally asserted against the HTML simulator. Recipes with sauces now differ
+    // from it: the HTML dispenses a recipe's sauces into the bowl as toppings, which
+    // double-counts them against the cups. Cowgirl, Siren, Ranch Salad and Meat Rice
+    // Meat moved for that reason; the rest still match the HTML.
+    std::printf("\nEnd-to-end recipes (sauces in cups, not in the bowl)\n");
     struct { const Menu *menu; const char *recipe; double g, oz; Verdict v; } cases[] = {
-        {cowgirl,   "The Hungry Cowgirl Bowl", 578, 28.5, Verdict::FitsMassBound},
+        {cowgirl,   "The Hungry Cowgirl Bowl", 578, 24.1, Verdict::FitsMassBound},
         {cowgirl,   "Pollo Verde Asado Bowl",  125,  4.4, Verdict::Saturated},
-        {siren,     "The Hungry Siren Bowl",   571, 26.5, Verdict::FitsMassBound},
-        {farmstand, "Farmstand Ranch Salad",   407, 41.6, Verdict::OverAtStart},
+        {siren,     "The Hungry Siren Bowl",   571, 24.8, Verdict::FitsMassBound},
+        {farmstand, "Farmstand Ranch Salad",   407, 50.9, Verdict::OverAtStart},
         {pita,      "The Oasis",               620, 27.9, Verdict::FitsMassBound},
-        {meatrice,  "Meat Rice Meat",          545, 27.5, Verdict::NoFloor},
+        {meatrice,  "Meat Rice Meat",          545, 23.1, Verdict::NoFloor},
     };
     for (const auto &c : cases) {
         SimResult r = run_recipe(*c.menu, c.recipe, curves);
@@ -411,7 +500,7 @@ int main()
 
         AdaptiveSettings as;
         as.bowl_capacity_oz = 32.0;
-        as.sauce_cups = 2;
+        as.sauce.cups = 2;
         expect_near("two sauce cups in oz", as.sauce_volume_oz(), 3.381, 0.01);
 
         auto recipe_items = [&](const Menu &m, const char *name) {
@@ -420,11 +509,13 @@ int main()
             return bowl_from_recipe(m, *it, curves, Method::Robot);
         };
 
-        // Scenario 2: a bowl a little over the band is pulled back onto target.
-        std::vector<BowlItem> cow = recipe_items(*cowgirl, "The Hungry Cowgirl Bowl");
+        // Scenario 2: a bowl a little over the band is pulled back onto target. The
+        // Oasis is 27.9 oz nominal against a 27.2 oz target. (The Cowgirl Bowl used to
+        // be the example, but without its sauces in the bowl it sits inside the band.)
+        std::vector<BowlItem> cow = recipe_items(*pita, "The Oasis");
         AdaptiveResult ar = solve_adaptive(cow, as, &costs);
-        expect_eq("cowgirl status", to_string(ar.status), "adjusted");
-        expect_near("cowgirl lands on target", ar.food_volume_oz,
+        expect_eq("oasis status", to_string(ar.status), "adjusted");
+        expect_near("oasis lands on target", ar.food_volume_oz,
                     as.target_fill * 32.0, 0.05);
         ++checks;
         if (ar.alpha >= 0) { ++failures; std::printf("  FAIL expected a reduction\n"); }
@@ -455,10 +546,10 @@ int main()
         }
 
         // Scenario 1: a bowl already inside the visual band is left alone. The Ranch
-        // Salad's nominal is 37.8 oz, so a 47 oz bowl puts it at ~80%.
+        // Salad's nominal is 34.5 oz, so a 43 oz bowl puts it at ~80%.
         std::vector<BowlItem> ranch = recipe_items(*farmstand, "Farmstand Ranch Salad");
         AdaptiveSettings wide = as;
-        wide.bowl_capacity_oz = 47.0;
+        wide.bowl_capacity_oz = 43.0;
         AdaptiveResult none = solve_adaptive(ranch, wide, &costs);
         expect_eq("wide bowl status", to_string(none.status), "no adjustment");
         expect_near("wide bowl alpha", none.alpha, 0.0, 1e-9);
@@ -466,7 +557,7 @@ int main()
                     none.nominal_volume_oz, 1e-9);
 
         // Scenario 3: the tolerance bands are not wide enough to save this bowl.
-        // 37.8 oz nominal against a 27.2 oz target is a 28% cut; base can give 20%,
+        // 34.5 oz nominal against a 27.2 oz target is a 21% cut; base can give 20%,
         // protein 5%. The honest answer is a flagged underfill, not a fit.
         AdaptiveResult hard = solve_adaptive(ranch, as, &costs);
         expect_eq("ranch salad at 32 oz", to_string(hard.status),
@@ -588,6 +679,220 @@ int main()
         for (const QString &line : lines)
             if (csv_fields(line) != width) rectangular = false;
         expect_true("CSV rows are rectangular once quoting is honoured", rectangular);
+    }
+
+    std::printf("\nSauce cups take space in both models\n");
+    {
+        SimSettings none;
+        none.sauce.cups = 0;
+        expect_near("no cups leaves the whole bowl", none.food_capacity_oz(), 32.0, 1e-9);
+        SimSettings two;
+        two.sauce.cups = 2;
+        expect_near("two cups", two.food_capacity_oz(), 32.0 - 3.381, 0.01);
+        SimSettings over_max;
+        over_max.sauce.cups = 5;
+        expect_near("cups are capped at two", over_max.food_capacity_oz(),
+                    two.food_capacity_oz(), 1e-9);
+
+        // Yiayia's Garden fills the bowl almost exactly, so it is the case that the cups
+        // decide. (Old Hank used to be; without Seeds in the bowl it ramps over anyway.)
+        const Recipe *hank = nullptr;
+        for (const Recipe &r : farmstand->recipes)
+            if (r.name == "Yiayia S Mediterranean Garden") hank = &r;
+        expect_true("Yiayia's Garden is found", hank != nullptr);
+        if (hank) {
+            std::vector<BowlItem> items =
+                bowl_from_recipe(*farmstand, *hank, curves, Method::Robot);
+            SimSettings s;
+            s.floor_g = farmstand->floor_for(names_in(items))->minimum_product_weight_g;
+            s.sauce.cups = 0;
+            expect_eq("without cups it fits", verdict_name(simulate(items, s).verdict),
+                      "Fits");
+            // It starts under the reduced ceiling and the ramp pushes it through.
+            s.sauce.cups = 1;
+            expect_eq("one cup puts it over", verdict_name(simulate(items, s).verdict),
+                      "OverWhileRamping");
+        }
+    }
+
+    std::printf("\nBowl geometry: cups and chunks by height\n");
+    {
+        // 32 oz at a 44.5 mm rim; cups 35 mm tall and 62 mm across.
+        BowlGeometry g;
+        g.enabled = true;
+        SauceCups none, two;
+        none.cups = 0;
+        two.cups = 2;
+        const double kOz = 29.5735295625;
+        const double cup_column_oz = 2 * M_PI * 31.0 * 31.0 * 35.0 / 1000.0 / kOz;
+
+        expect_near("no cups, no chunks: the whole bowl", food_capacity_oz(32, none, g, 0),
+                    32.0, 1e-9);
+        expect_near("pressed cups cost their columns", food_capacity_oz(32, two, g, 0),
+                    32.0 - cup_column_oz, 1e-6);
+        BowlGeometry resting = g;
+        resting.cups_pressed = false;
+        expect_near("resting cups hold the whole surface a cup below the lid",
+                    food_capacity_oz(32, two, resting, 0), 32.0 * (44.5 - 35.0) / 44.5, 1e-6);
+
+        // A 20 mm protein standing half proud needs 10 mm everywhere, and the cup
+        // columns shrink by the same 10 mm because the surface under them is already
+        // that much lower.
+        const double chunky = 32.0 * (44.5 - 10.0) / 44.5
+                              - 2 * M_PI * 31.0 * 31.0 * 25.0 / 1000.0 / kOz;
+        expect_near("chunks and pressed cups", food_capacity_oz(32, two, g, 20), chunky, 1e-6);
+
+        BowlGeometry domed = g;
+        domed.lid_headroom_mm = 10;
+        expect_near("a 10 mm dome adds half its cylinder",
+                    food_capacity_oz(32, none, domed, 0), 32.0 * (44.5 + 5.0) / 44.5, 1e-6);
+
+        BowlGeometry off;
+        expect_near("geometry off keeps the volume model", food_capacity_oz(32, two, off, 20),
+                    32.0 - two.volume_oz(), 1e-9);
+
+        BowlItem rice, chicken;
+        rice.kind = Kind::Base;
+        rice.start_g = 150;
+        chicken.kind = Kind::Protein;
+        chicken.start_g = 95;
+        chicken.piece_height_mm = 20;
+        SimSettings ss;
+        ss.geometry = g;
+        const SimResult sr = simulate({rice, chicken}, ss);
+        expect_near("simulate() finds the tallest chunk", sr.settings.chunk_height_mm, 20, 1e-9);
+        expect_near("and judges the bowl against it", sr.settings.food_capacity_oz(),
+                    food_capacity_oz(32, ss.sauce, g, 20), 1e-9);
+        AdaptiveSettings as;
+        as.geometry = g;
+        const AdaptiveResult ar = solve_adaptive({rice, chicken}, as, nullptr);
+        expect_near("adaptive charges the same overhead", ar.settings.sauce_volume_oz(),
+                    32.0 - food_capacity_oz(32, as.sauce, g, 20), 1e-9);
+    }
+
+    std::printf("\nPiece heights\n");
+    {
+        PieceHeights pieces{{"Chicken Tex-Mex", 25.0}, {"Beef Shawarma", 0.0}};
+        const LoadResult withp = load_menus(assets + "/menus", nullptr, &pieces);
+        const Menu *cg = by_brand(withp.menus, "The Hungry Cowgirl");
+        const Ingredient *tex = cg ? cg->find("Chicken Tex-Mex") : nullptr;
+        const Ingredient *shaw = cg ? cg->find("Beef Shawarma") : nullptr;
+        const Ingredient *rice = cg ? cg->find("Mexican Rice") : nullptr;
+        expect_near("a listed height is used", tex ? tex->piece_height_mm : -1, 25, 1e-9);
+        expect_near("a listed 0 smears", shaw ? shaw->piece_height_mm : -1, 0, 1e-9);
+        expect_true("an unlisted base smears", rice && rice->piece_height_mm == 0);
+        const Ingredient *herby = nullptr;
+        for (const Menu &m : withp.menus)
+            if (!herby) herby = m.find("Chicken Herby");
+        expect_true("an unlisted protein takes the placeholder",
+                    herby && herby->piece_height_mm == kPlaceholderProteinPieceMm
+                        && herby->piece_height_placeholder);
+
+        const QString path = QDir::temp().filePath("bowlfill-verify-pieces.csv");
+        PieceHeights back;
+        expect_true("piece heights round-trip through CSV",
+                    save_piece_heights(path, pieces) && load_piece_heights(path, back)
+                        && back == pieces);
+        QFile::remove(path);
+    }
+
+    std::printf("\nCombinatorial sweep\n");
+    {
+        // Bases only, one sauce: 5 single-base bowls plus 10 pairs.
+        SweepLimits base_only;
+        base_only.min_proteins = base_only.max_proteins = 0;
+        base_only.min_toppings = base_only.max_toppings = 0;
+        base_only.max_sauces = 1;
+        expect_near("base-only combinations", combinations_for(*farmstand, base_only), 15,
+                    0.01);
+
+        SweepLimits lim = base_only;
+        lim.min_proteins = lim.max_proteins = 1;
+        expect_near("exactly one protein", combinations_for(*farmstand, lim), 15 * 3, 0.01);
+        lim.min_toppings = lim.max_toppings = 1;
+        // 11 toppings, now that the sauces go in cups instead.
+        expect_near("exactly one topping", combinations_for(*farmstand, lim), 15 * 3 * 11,
+                    0.01);
+        lim.max_sauces = 2;
+        expect_near("the second sauce doubles the space", combinations_for(*farmstand, lim),
+                    15 * 3 * 11 * 2, 0.01);
+
+        // The menu requires a base, a topping and a sauce, so the default sweep must
+        // never emit a bowl missing any of them.
+        const SweepLimits fallback;
+        SweepLimits no_floor_bounds = fallback;
+        no_floor_bounds.min_toppings = 0;
+        expect_true("dropping the topping minimum admits strictly more bowls",
+                    combinations_for(*farmstand, no_floor_bounds)
+                        > combinations_for(*farmstand, fallback));
+        SweepLimits no_protein_bound = fallback;
+        no_protein_bound.min_proteins = 0;
+        expect_true("dropping the protein minimum admits strictly more bowls",
+                    combinations_for(*farmstand, no_protein_bound)
+                        > combinations_for(*farmstand, fallback));
+
+        bool grows = true;
+        qint64 prev = 0;
+        for (int k = 1; k <= 5; ++k) {
+            SweepLimits step;
+            step.max_toppings = k;
+            const qint64 n = combinations_for(*farmstand, step);
+            if (n <= prev) grows = false;
+            prev = n;
+        }
+        expect_true("raising the topping cap strictly grows the space", grows);
+
+        const SweepPlan plan = plan_sweep(*farmstand, base_only);
+        expect_near("plan rows = combinations x recipes", plan.rows(), 15 * 12, 0.01);
+
+        QString csv;
+        QTextStream out(&csv);
+        std::vector<SweepTotals> totals;
+        // Compression is forced on for every swept bowl, so passing it off must not
+        // change what comes out.
+        SimSettings no_compress;
+        no_compress.compress = false;
+        const bool finished =
+            run_sweep({farmstand}, curves, Method::Robot, no_compress, AdaptiveSettings{},
+                      nullptr, base_only, out, {}, &totals);
+        out.flush();
+        expect_true("sweep runs to completion", finished);
+        expect_near("rows emitted = rows planned", totals.at(0).rows, plan.rows(), 0.01);
+
+        const QStringList lines = csv.split('\n', Qt::SkipEmptyParts);
+        expect_near("CSV line count", lines.size(), plan.rows() + 1, 0.01);
+        const int width = csv_fields(lines.first());
+        bool rectangular = true;
+        for (const QString &line : lines)
+            if (csv_fields(line) != width) rectangular = false;
+        expect_true("sweep CSV is rectangular", rectangular);
+
+        expect_near("verdicts partition the rows",
+                    totals.at(0).legacy_fits + totals.at(0).legacy_over
+                        + totals.at(0).legacy_short,
+                    totals.at(0).rows, 0.01);
+
+        // A recipe pin must survive into the swept bowl, and must not leak into a bowl
+        // built by a recipe that does not pin that ingredient.
+        const double romaine_portion = farmstand->find("Romaine Base")->full_portion();
+        double pinned_g = 0, shell_g = 0;
+        for (const QString &line : lines) {
+            const QStringList f = line.split(',');
+            if (f.size() < 9 || f[3] != "Romaine Base") continue;
+            if (f[1] == "Farmstand Ranch Salad") pinned_g = f[8].toDouble();
+            if (f[1] == "Build Your Own Farmstand Bowl") shell_g = f[8].toDouble();
+        }
+        expect_near("a customer-built shell uses the menu portion", shell_g,
+                    romaine_portion, 0.51);
+        expect_true("a recipe's pinned weight overrides the menu portion",
+                    pinned_g > 0 && std::fabs(pinned_g - romaine_portion) > 0.5);
+
+        // Every recipe has to appear, including the shells the dropdown hides.
+        int distinct = 0;
+        for (const Recipe &r : farmstand->recipes)
+            if (csv.contains("," + r.name + ",")) ++distinct;
+        expect_near("every recipe appears in the sweep", distinct,
+                    farmstand->recipes.size(), 0.01);
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

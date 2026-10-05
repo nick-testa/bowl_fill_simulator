@@ -49,9 +49,10 @@ struct AdaptiveSettings {
     double band_low = 0.75;
     double band_high = 0.85;
 
-    /// Sauce cups ride inside the bowl and take real space. Maximum two.
-    int sauce_cups = 2;
-    double sauce_cup_ml = 50.0;
+    SauceCups sauce;
+    BowlGeometry geometry;
+    /// Tallest chunk in the bowl; solve_adaptive() fills this from its items.
+    double chunk_height_mm = 0.0;
 
     Tolerances tolerances;
 
@@ -60,6 +61,8 @@ struct AdaptiveSettings {
     double menu_price = 0.0;      ///< 0 disables the COGS readout
     double cogs_target = 0.23;
 
+    /// Everything that is not food: the cups' contents, or with geometry on, the room
+    /// the cups and chunks need below the lid. capacity = food room + this.
     double sauce_volume_oz() const;
     /// Capacity actually available to food, once the cups are in.
     double food_capacity_oz() const;

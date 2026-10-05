@@ -9,7 +9,7 @@
 
 namespace bowlfill {
 namespace {
-constexpr int kRowH = 26;
+constexpr int kRowH = 30;
 constexpr int kNameW = 168;
 constexpr int kValueW = 132;
 constexpr int kTop = 26, kBottom = 22;
@@ -17,13 +17,20 @@ constexpr int kTop = 26, kBottom = 22;
 
 ToleranceChart::ToleranceChart(QWidget *parent) : QWidget(parent)
 {
-    setMinimumHeight(200);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+}
+
+QSize ToleranceChart::minimumSizeHint() const { return {440, sizeHint().height()}; }
+
+QSize ToleranceChart::sizeHint() const
+{
+    return {720, kTop + kBottom + std::max<int>(3, result_.items.size()) * kRowH};
 }
 
 void ToleranceChart::set_result(const AdaptiveResult &result)
 {
     result_ = result;
-    setMinimumHeight(kTop + kBottom + std::max<int>(3, result_.items.size()) * kRowH);
+    updateGeometry();
     update();
 }
 
@@ -49,7 +56,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
     auto X = [&](double frac) { return cx + frac / widest * (w / 2); };
 
     // Axis: zero, and a tick at each configured tolerance edge.
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     p.setPen(pal.rule);
     for (double t : {-widest, -tol.base, -tol.topping, -tol.protein, 0.0,
                      tol.protein, tol.topping, tol.base, widest}) {
@@ -59,7 +66,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
     }
     p.setPen(pal.ink_faint);
     for (double t : {-tol.base, 0.0, tol.base})
-        p.drawText(QRectF(X(t) - 30, 4, 60, 14), Qt::AlignCenter,
+        p.drawText(QRectF(X(t) - 40, 2, 80, 18), Qt::AlignCenter,
                    t == 0 ? QString("nominal")
                           : QString("%1%2%").arg(t > 0 ? "+" : "").arg(t * 100, 0, 'f', 0));
 
@@ -71,7 +78,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
                                                          : pal.accent;
 
         p.setPen(pal.ink);
-        p.setFont(theme::sans(9));
+        p.setFont(theme::font(theme::Text::Caption));
         const QFontMetricsF fm(p.font());
         p.drawText(QRectF(8, y, kNameW - 16, kRowH), Qt::AlignLeft | Qt::AlignVCenter,
                    fm.elidedText(it.name, Qt::ElideRight, kNameW - 20));
@@ -99,7 +106,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
             p.drawEllipse(QPointF(X(d), y + kRowH / 2.0), 7.0, 7.0);
         }
 
-        p.setFont(theme::mono(8));
+        p.setFont(theme::font(theme::Text::Caption));
         p.setPen(std::fabs(it.delta_pct()) > 0.05 ? pal.ink : pal.ink_faint);
         p.drawText(QRectF(width() - kValueW, y, kValueW - 8, kRowH),
                    Qt::AlignRight | Qt::AlignVCenter,
@@ -110,7 +117,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
         y += kRowH;
     }
 
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     p.setPen(pal.ink_faint);
     p.drawText(QRectF(0, height() - kBottom + 2, width(), 14), Qt::AlignCenter,
                QString("each ingredient moved %1% of its own band")

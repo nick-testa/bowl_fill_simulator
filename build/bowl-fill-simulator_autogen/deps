@@ -8,6 +8,7 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/menu_model.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/main.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/bowl_diagram.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/bowl_diagram.hh \
@@ -15,10 +16,14 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/curve_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/main_window.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/main_window.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/mapping_dialog.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/mapping_dialog.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/report_dialog.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/report_dialog.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/sweep_dialog.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/sweep_dialog.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/theme.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/tolerance_chart.cc \

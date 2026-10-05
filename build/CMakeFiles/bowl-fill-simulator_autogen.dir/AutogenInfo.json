@@ -574,6 +574,12 @@
 			null
 		],
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/mapping_dialog.hh",
+			"MU",
+			"YPKJ5OE7LN/moc_mapping_dialog.cpp",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.hh",
 			"MU",
 			"YPKJ5OE7LN/moc_ramp_chart.cpp",
@@ -583,6 +589,12 @@
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/report_dialog.hh",
 			"MU",
 			"YPKJ5OE7LN/moc_report_dialog.cpp",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/sweep_dialog.hh",
+			"MU",
+			"YPKJ5OE7LN/moc_sweep_dialog.cpp",
 			null
 		],
 		[
@@ -692,12 +704,22 @@
 			null
 		],
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/mapping_dialog.cc",
+			"MU",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/ramp_chart.cc",
 			"MU",
 			null
 		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/report_dialog.cc",
+			"MU",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/ui/sweep_dialog.cc",
 			"MU",
 			null
 		],

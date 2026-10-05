@@ -578,6 +578,12 @@
 			"MU",
 			"PRMOGMWJPH/moc_simulator.cpp",
 			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.hh",
+			"MU",
+			"PRMOGMWJPH/moc_sweep.cpp",
+			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
@@ -661,6 +667,11 @@
 		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.cc",
+			"MU",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.cc",
 			"MU",
 			null
 		]

@@ -16,8 +16,17 @@ namespace {
 constexpr double kHeightOverRim = 0.46;
 constexpr double kBaseOverRim = 0.64;
 constexpr double kRimEllipse = 0.13;   // rim depth as a fraction of rim width
-constexpr int kRowHeight = 22;
-constexpr int kLabelWidth = 216;
+
+// No room is held above the rim for a heap: a bowl that fits should not sit under a
+// band of empty space. An overfull bowl shrinks to fit its heap in the same height.
+constexpr double kMargin = 12;
+constexpr double kFooterGap = 12;
+
+/// Vertical space the vessel takes beyond its depth, as a share of that depth: half
+/// the rim ellipse above the rim line and half the base ellipse below the base. Both
+/// the layout check and heightForWidth() must use this same figure, or the drawing
+/// runs past the widget whenever the bowl is overfull.
+constexpr double kEllipseShare = kRimEllipse * (1.0 + kBaseOverRim) / (2.0 * kHeightOverRim);
 
 ///
 /// Distinct fills for ingredients with no assigned series hue. Bases keep their
@@ -45,7 +54,7 @@ struct Slice {
 
 BowlDiagram::BowlDiagram(QWidget *parent) : QWidget(parent)
 {
-    setMinimumSize(430, 260);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 void BowlDiagram::set_result(const SimResult &result)
@@ -63,56 +72,56 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     p.fillRect(rect(), pal.panel);
     if (result_.frames.empty()) return;
 
-    const double cap = result_.settings.bowl_capacity_oz;
+    const double cap = result_.settings.food_capacity_oz();
     if (cap <= 0) return;
     const double total = result_.last().ounces;
     const bool over = total > cap;
 
     // ---- slices, in dispense order so the stack matches how the bowl is built ----
     std::vector<Slice> slices;
-    int base_i = 0, protein_i = 0, topping_i = 0;
+    const std::vector<QColor> colours = item_colours();
     for (size_t i = 0; i < result_.items.size(); ++i) {
         const double oz = result_.last().per_item_oz[i];
         if (oz <= 0.005) continue;
-        const BowlItem &it = result_.items[i];
-        int &counter = it.kind == Kind::Base      ? base_i
-                       : it.kind == Kind::Protein ? protein_i
-                                                  : topping_i;
-        slices.push_back({it.name, band_colour(it, counter++), oz, 0, 0});
+        slices.push_back({result_.items[i].name, colours[i], oz, 0, 0});
     }
     if (slices.empty()) return;
 
     // ---- geometry ---------------------------------------------------------
-    const double margin = 14;
-    const double footer_h = 34;
-    const bool room_for_labels = width() > 470;
-    const double label_x = width() - margin - kLabelWidth;
-    const double bowl_area_w =
-        (room_for_labels ? label_x - margin * 2 : width() - margin * 2);
-    const double bowl_area_h = height() - footer_h - margin * 2;
-    if (bowl_area_w <= 40 || bowl_area_h <= 40) return;
+    // The bowl fills the widget's width; the footer sits directly under it and the
+    // whole block is centred vertically, so no space is stranded at the bottom.
+    const QFont foot_font = theme::font(theme::Text::Heading, true);
+    const QFont foot_note_font = theme::font(theme::Text::Caption);
+    const double foot_line = QFontMetricsF(foot_font).height();
+    const double footer_h = kFooterGap + foot_line + 2 + QFontMetricsF(foot_note_font).height();
 
     // How far past the rim the food heaps, as a multiple of the bowl's own depth.
     // Clamped for drawing so a wildly overfull bowl cannot squash the vessel itself
     // to nothing; the caption always states the true overage.
     const double over_ratio = std::max(0.0, total / cap - 1.0);
     const double drawn_over = std::min(over_ratio, 0.70);
+    // The "+X over the rim" caption sits above the heap, so it needs a line too.
+    const double caption_h = drawn_over > 0 ? QFontMetricsF(foot_note_font).height() + 6 : 0;
+    const double reserve = drawn_over;
 
-    // Width first, then shrink if the bowl plus its heap will not fit the height.
-    double rim_w = std::min(bowl_area_w, 440.0);
+    const double avail_h = height() - footer_h - caption_h - kMargin * 2;
+    double rim_w = width() - kMargin * 2;
     double bowl_h = rim_w * kHeightOverRim;
-    const double ell_share = kRimEllipse * kHeightOverRim;   // rim ellipse, as a share
-    if (bowl_h * (1.0 + drawn_over + ell_share) > bowl_area_h) {
-        bowl_h = bowl_area_h / (1.0 + drawn_over + ell_share);
+    if (bowl_h * (1.0 + reserve + kEllipseShare) > avail_h) {
+        bowl_h = avail_h / (1.0 + reserve + kEllipseShare);
         rim_w = bowl_h / kHeightOverRim;
     }
+    if (rim_w <= 40 || bowl_h <= 20) return;
 
     const double rim_hw = rim_w / 2, base_hw = rim_w * kBaseOverRim / 2;
     const double rim_ell = rim_w * kRimEllipse;
     const double base_ell = rim_ell * kBaseOverRim;
 
-    const double cx = margin + bowl_area_w / 2;
-    const double rim_y = margin + bowl_h * drawn_over + rim_ell / 2;
+    const double block_h =
+        caption_h + bowl_h * (1.0 + reserve) + rim_ell / 2 + base_ell / 2 + footer_h;
+    const double top = std::max(kMargin, (height() - block_h) / 2) + caption_h;
+    const double cx = width() / 2.0;
+    const double rim_y = top + bowl_h * reserve + rim_ell / 2;
     const double base_y = rim_y + bowl_h;
 
     const double oz_per_px = cap / bowl_h;
@@ -204,73 +213,66 @@ void BowlDiagram::paintEvent(QPaintEvent *)
 
         p.setPen(QPen(pal.over, 1.2, Qt::DashLine));
         p.drawLine(QPointF(cx - rim_hw - 14, rim_y), QPointF(cx + rim_hw + 14, rim_y));
-        p.setFont(theme::mono(8, QFont::Bold));
+        p.setFont(theme::font(theme::Text::Caption, true));
         p.setPen(pal.over);
-        p.drawText(QRectF(cx - rim_hw, rim_y - overflow_px - 20, rim_w, 14),
+        const double over_h = QFontMetricsF(p.font()).height();
+        p.drawText(QRectF(cx - rim_hw, rim_y - overflow_px - over_h - 6, rim_w, over_h),
                    Qt::AlignCenter,
                    QString("+%1 over the rim").arg(units::volume(total - cap, true)));
     }
 
-    // ---- labels down the side ---------------------------------------------
-    if (room_for_labels) {
-        // More slices than rows would overlap, so the thinnest are pooled.
-        const int max_rows = std::max(3, static_cast<int>(bowl_area_h / kRowHeight));
-        // Listed in the order they appear down the bowl, so the column and the bands
-        // can be read off against each other without leader lines.
-        std::vector<Slice> shown(slices.rbegin(), slices.rend());
-        if (static_cast<int>(shown.size()) > max_rows) {
-            std::stable_sort(shown.begin(), shown.end(),
-                             [](const Slice &a, const Slice &b) { return a.ounces > b.ounces; });
-            Slice other{"Other", pal.ink_faint, 0, 0, 0};
-            for (size_t i = max_rows - 1; i < shown.size(); ++i) other.ounces += shown[i].ounces;
-            other.name = QString("Other (%1)").arg(shown.size() - max_rows + 1);
-            shown.resize(max_rows - 1);
-            shown.push_back(other);
-        }
 
-        const double block_h = shown.size() * kRowHeight;
-        double ly = std::max<double>(margin, rim_y + bowl_h / 2 - block_h / 2);
-        p.setFont(theme::sans(9));
-        const QFontMetricsF fm(p.font());
-
-        for (const Slice &s : shown) {
-            const QRectF swatch(label_x, ly + kRowHeight / 2.0 - 5, 10, 10);
-            p.setPen(Qt::NoPen);
-            p.setBrush(s.colour);
-            p.drawRoundedRect(swatch, 2.5, 2.5);
-
-            const double text_x = label_x + 17;
-            const double value_w = 94;
-            p.setPen(pal.ink);
-            p.drawText(QRectF(text_x, ly, kLabelWidth - 16 - value_w, kRowHeight),
-                       Qt::AlignLeft | Qt::AlignVCenter,
-                       fm.elidedText(s.name, Qt::ElideRight,
-                                     kLabelWidth - 17 - value_w - 8));
-            p.setPen(pal.ink_soft);
-            p.setFont(theme::mono(8));
-            p.drawText(QRectF(label_x + kLabelWidth - value_w, ly, value_w, kRowHeight),
-                       Qt::AlignRight | Qt::AlignVCenter,
-                       QString("%1 · %2%")
-                           .arg(units::volume(s.ounces, true))
-                           .arg(std::round(s.ounces / total * 100)));
-            p.setFont(theme::sans(9));
-            ly += kRowHeight;
-        }
-    }
-
-    // ---- footer -----------------------------------------------------------
-    p.setFont(theme::mono(9, QFont::Bold));
+    // ---- footer, directly under the bowl ----------------------------------
+    const double foot_y = base_y + base_ell / 2 + kFooterGap;
+    p.setFont(foot_font);
     p.setPen(over ? pal.over : pal.ink);
-    p.drawText(QRectF(0, height() - footer_h + 2, width(), 16), Qt::AlignCenter,
-               QString("%1 of a %2 bowl · %3%")
-                   .arg(units::volume(total, true), units::volume(cap, true))
-                   .arg(std::round(total / cap * 100)));
-    p.setFont(theme::mono(8));
+    p.drawText(QRectF(0, foot_y, width(), foot_line), Qt::AlignCenter,
+               result_.settings.geometry.enabled
+                   // By height, cap is the room left for food, not the bowl.
+                   ? QString("%1 of %2 food room · %3%")
+                         .arg(units::volume(total, true), units::volume(cap, true))
+                         .arg(std::round(total / cap * 100))
+                   : QString("%1 of a %2 bowl · %3%")
+                         .arg(units::volume(total, true), units::volume(cap, true))
+                         .arg(std::round(total / cap * 100)));
+    p.setFont(foot_note_font);
     p.setPen(pal.ink_faint);
-    p.drawText(QRectF(0, height() - footer_h + 18, width(), 14), Qt::AlignCenter,
-               QString("%1 g total across %2 ingredients")
-                   .arg(std::round(result_.last().grams))
-                   .arg(slices.size()));
+    p.drawText(QRectF(0, foot_y + foot_line + 2, width(),
+                      QFontMetricsF(foot_note_font).height()),
+               Qt::AlignCenter,
+               result_.settings.geometry.enabled
+                   ? QString("%1 g · %2 bowl, %3 to cups and clearance")
+                         .arg(std::round(result_.last().grams))
+                         .arg(units::volume(result_.settings.bowl_capacity_oz, true),
+                              units::volume(result_.settings.overhead_oz(), true))
+                   : QString("%1 g total across %2 ingredients")
+                         .arg(std::round(result_.last().grams))
+                         .arg(slices.size()));
+}
+
+std::vector<QColor> BowlDiagram::item_colours() const
+{
+    std::vector<QColor> out(result_.items.size());
+    if (result_.frames.empty()) return out;
+    int base_i = 0, protein_i = 0, topping_i = 0;
+    for (size_t i = 0; i < result_.items.size(); ++i) {
+        if (result_.last().per_item_oz[i] <= 0.005) continue;
+        const BowlItem &it = result_.items[i];
+        int &counter = it.kind == Kind::Base      ? base_i
+                       : it.kind == Kind::Protein ? protein_i
+                                                  : topping_i;
+        out[i] = band_colour(it, counter++);
+    }
+    return out;
+}
+
+int BowlDiagram::heightForWidth(int w) const
+{
+    const double rim_w = w - kMargin * 2;
+    const double bowl_h = rim_w * kHeightOverRim;
+    const double footer = kFooterGap + QFontMetricsF(theme::font(theme::Text::Heading, true)).height()
+                          + 2 + QFontMetricsF(theme::font(theme::Text::Caption)).height();
+    return static_cast<int>(std::ceil(kMargin * 2 + bowl_h * (1.0 + kEllipseShare) + footer));
 }
 
 }  // namespace bowlfill

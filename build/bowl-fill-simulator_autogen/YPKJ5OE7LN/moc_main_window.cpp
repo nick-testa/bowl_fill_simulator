@@ -49,6 +49,8 @@ template <> constexpr inline auto bowlfill::MainWindow::qt_create_metaobjectdata
         "on_reset_curves",
         "show_csv_help",
         "show_report",
+        "show_issues",
+        "show_mappings",
         "toggle_theme",
         "set_units",
         "metric"
@@ -73,11 +75,15 @@ template <> constexpr inline auto bowlfill::MainWindow::qt_create_metaobjectdata
         QtMocHelpers::SlotData<void()>(9, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'show_report'
         QtMocHelpers::SlotData<void()>(10, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'toggle_theme'
+        // Slot 'show_issues'
         QtMocHelpers::SlotData<void()>(11, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'show_mappings'
+        QtMocHelpers::SlotData<void()>(12, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'toggle_theme'
+        QtMocHelpers::SlotData<void()>(13, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'set_units'
-        QtMocHelpers::SlotData<void(bool)>(12, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Bool, 13 },
+        QtMocHelpers::SlotData<void(bool)>(14, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Bool, 15 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
@@ -110,8 +116,10 @@ void bowlfill::MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c,
         case 5: _t->on_reset_curves(); break;
         case 6: _t->show_csv_help(); break;
         case 7: _t->show_report(); break;
-        case 8: _t->toggle_theme(); break;
-        case 9: _t->set_units((*reinterpret_cast<std::add_pointer_t<bool>>(_a[1]))); break;
+        case 8: _t->show_issues(); break;
+        case 9: _t->show_mappings(); break;
+        case 10: _t->toggle_theme(); break;
+        case 11: _t->set_units((*reinterpret_cast<std::add_pointer_t<bool>>(_a[1]))); break;
         default: ;
         }
     }
@@ -136,14 +144,14 @@ int bowlfill::MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 10)
+        if (_id < 12)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 10;
+        _id -= 12;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 10)
+        if (_id < 12)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 10;
+        _id -= 12;
     }
     return _id;
 }

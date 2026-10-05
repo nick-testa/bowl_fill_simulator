@@ -2,6 +2,8 @@
 #include "YPKJ5OE7LN/moc_bowl_diagram.cpp"
 #include "YPKJ5OE7LN/moc_curve_chart.cpp"
 #include "YPKJ5OE7LN/moc_main_window.cpp"
+#include "YPKJ5OE7LN/moc_mapping_dialog.cpp"
 #include "YPKJ5OE7LN/moc_ramp_chart.cpp"
 #include "YPKJ5OE7LN/moc_report_dialog.cpp"
+#include "YPKJ5OE7LN/moc_sweep_dialog.cpp"
 #include "YPKJ5OE7LN/moc_tolerance_chart.cpp"

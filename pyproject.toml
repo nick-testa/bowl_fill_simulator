@@ -1,0 +1,30 @@
+[project]
+name = "bowl-fill-simulator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "nick-testa", email = "nick.testa@lab37.us" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "pandas>=3.0.6",
+]
+
+[project.scripts]
+bowl-fill-simulator = "bowl_fill_simulator:main"
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "nbconvert>=7.17.1",
+    "papermill>=2.7.0",
+    "pyyaml>=6.0.3",
+    "tabulate>=0.10.0",
+]

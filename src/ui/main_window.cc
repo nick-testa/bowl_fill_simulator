@@ -4,10 +4,17 @@
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
 #include "tolerance_chart.hh"
+#include "mapping_dialog.hh"
 #include "theme.hh"
 #include "units.hh"
 
 #include <QApplication>
+#include <QBoxLayout>
+#include <QPainter>
+#include <QPainterPath>
+#include <QIcon>
+#include <functional>
+#include <map>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDir>
@@ -20,13 +27,16 @@
 #include <QLabel>
 #include <QMessageBox>
 #include "report_dialog.hh"
+#include "sweep_dialog.hh"
 #include "core/feasibility.hh"
 #include <QPixmap>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSet>
 #include <QSettings>
 #include <QSplitter>
 #include <QTableWidget>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QRegularExpression>
 
@@ -38,14 +48,19 @@ namespace bowlfill {
 namespace {
 
 const char *const kIntroText =
-    "The dynamic portion algorithm optimises on <i>mass</i> — it steps every "
+    "The dynamic portion algorithm optimises on <i>mass</i>: it steps every "
     "ingredient until the bowl clears its recipe's gram floor. Bowls fail at the "
     "lidder on <i>volume</i>. Ramp settings, portion weights and floors are read "
     "from the menu dumps in <code>menus/</code>; mass→volume is "
     "<code>%1 = K·g^p</code>, fitted to the measured bowls.";
 
-constexpr double kFlatProteinRate = 3.5;   // oz/100 g; nothing here was measured
-constexpr double kFlatToppingRate = 4.5;
+namespace space = theme::space;
+
+/// Every input and button is this tall, so rows of mixed controls line up.
+constexpr int kControlHeight = 32;
+
+/// Space between a scroll area's edge and the panels inside it; see build_controls().
+constexpr int kEdgeInset = 2;
 
 QLabel *make_label(const QString &text, const char *role)
 {
@@ -56,11 +71,32 @@ QLabel *make_label(const QString &text, const char *role)
     return l;
 }
 
+/// A small uppercase label that heads a group of controls inside a panel.
+QLabel *section_label(const QString &text)
+{
+    auto *l = new QLabel(text.toUpper());
+    l->setObjectName("section");
+    return l;
+}
+
 QFrame *make_panel(const char *role = "panel")
 {
     auto *f = new QFrame;
     f->setObjectName(role);
     return f;
+}
+
+/// A panel with a heading, returning the layout its content goes into. Every panel
+/// in the window uses the same padding and heading, which is most of what makes the
+/// page read as one system.
+QFrame *titled_panel(const QString &title, QVBoxLayout *&body)
+{
+    QFrame *panel = make_panel();
+    body = new QVBoxLayout(panel);
+    body->setContentsMargins(space::lg, space::lg, space::lg, space::lg);
+    body->setSpacing(space::md);
+    if (!title.isEmpty()) body->addWidget(make_label(title, "heading"));
+    return panel;
 }
 
 QFrame *hline()
@@ -79,6 +115,11 @@ QDoubleSpinBox *make_spin(double lo, double hi, double step, int decimals)
     s->setDecimals(decimals);
     s->setKeyboardTracking(false);
     s->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    s->setFixedHeight(kControlHeight);
+    // A spin box asks for room to show its whole range; in a row of four that is
+    // wider than the sidebar. Let the layout decide the width instead.
+    s->setMinimumWidth(48);
+    s->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
     return s;
 }
 
@@ -88,22 +129,297 @@ QWidget *field(const QString &caption, QWidget *w)
     box->setObjectName("clear");
     auto *v = new QVBoxLayout(box);
     v->setContentsMargins(0, 0, 0, 0);
-    v->setSpacing(3);
+    v->setSpacing(space::xs);
     auto *l = new QLabel(caption);
-    l->setObjectName("fieldLabel");
+    l->setObjectName("label");
     v->addWidget(l);
     v->addWidget(w);
     return box;
+}
+
+/// Lays several fields out side by side at equal widths.
+QHBoxLayout *field_row(std::initializer_list<QWidget *> fields)
+{
+    auto *row = new QHBoxLayout;
+    row->setSpacing(space::sm);
+    for (QWidget *f : fields) row->addWidget(f, 1);
+    return row;
 }
 
 QPushButton *make_toggle(const QString &text)
 {
     auto *b = new QPushButton(text);
     b->setCheckable(true);
+    b->setCursor(Qt::PointingHandCursor);
     return b;
 }
 
+/// A segmented control: mutually exclusive options sharing one outline.
+QFrame *segment(std::initializer_list<QPushButton *> buttons)
+{
+    auto *frame = new QFrame;
+    frame->setObjectName("segment");
+    auto *h = new QHBoxLayout(frame);
+    h->setContentsMargins(2, 2, 2, 2);
+    h->setSpacing(2);
+    for (QPushButton *b : buttons) h->addWidget(b, 1);
+    frame->setFixedHeight(kControlHeight + 2);
+    return frame;
+}
+
+/// A combo box that never asks for more width than its column gives it. By default
+/// a combo is as wide as its longest entry, and two side by side ("Brown Rice and
+/// Lentils") overflow the sidebar; long names are elided instead.
+QComboBox *make_combo()
+{
+    auto *c = new QComboBox;
+    c->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    c->setMinimumContentsLength(6);
+    c->setFixedHeight(kControlHeight);
+    return c;
+}
+
 QString fmt(double v, int dp = 1) { return QString::number(v, 'f', dp); }
+
+struct BreakdownRow {
+    QString name, kind;
+    QColor swatch;              ///< the ingredient's band in the bowl diagram
+    QColor colour;              ///< text colour; invalid means the default ink
+    std::vector<QString> cells; ///< the numeric columns, right-aligned
+};
+
+QIcon swatch_icon(const QColor &colour)
+{
+    const qreal dpr = qApp->devicePixelRatio();
+    QPixmap pm(QSize(14, 14) * dpr);
+    pm.setDevicePixelRatio(dpr);
+    pm.fill(Qt::transparent);
+    if (colour.isValid()) {
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setPen(Qt::NoPen);
+        p.setBrush(colour);
+        p.drawRoundedRect(QRectF(1, 1, 12, 12), 3, 3);
+    }
+    return QIcon(pm);
+}
+
+///
+/// Fills the "where the volume goes" table, which doubles as the bowl diagram's
+/// legend: each name carries the swatch of its band. The table is sized to its rows
+/// so the page scrolls as one, rather than the table scrolling inside the page.
+///
+void fill_breakdown(QTableWidget *table, const QStringList &headers,
+                    const std::map<int, QString> &header_tips,
+                    const std::vector<BreakdownRow> &rows)
+{
+    table->setColumnCount(headers.size());
+    table->setHorizontalHeaderLabels(headers);
+    table->setRowCount(static_cast<int>(rows.size()));
+    table->setIconSize(QSize(14, 14));
+    for (int c = 0; c < headers.size(); ++c)
+        if (QTableWidgetItem *h = table->horizontalHeaderItem(c))
+            h->setTextAlignment((c == 0 ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter);
+    for (const auto &[c, tip] : header_tips)
+        if (QTableWidgetItem *h = table->horizontalHeaderItem(c)) h->setToolTip(tip);
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        const BreakdownRow &row = rows[i];
+        auto *name = new QTableWidgetItem(swatch_icon(row.swatch), row.name);
+        name->setToolTip(row.kind);
+        if (row.colour.isValid()) name->setForeground(row.colour);
+        table->setItem(i, 0, name);
+        for (size_t c = 0; c < row.cells.size(); ++c) {
+            auto *v = new QTableWidgetItem(row.cells[c]);
+            v->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            table->setItem(i, static_cast<int>(c) + 1, v);
+        }
+    }
+    // Numeric columns are sized by hand: resizeColumnsToContents() reserves room in
+    // each header for a sort arrow the table never shows, and in a narrow window that
+    // slack is taken from the ingredient names.
+    const QFontMetrics body(theme::font(theme::Text::Body));
+    const QFontMetrics head(theme::font(theme::Text::Caption, true));
+    for (int c = 1; c < headers.size(); ++c) {
+        int w = head.horizontalAdvance(headers[c]);
+        for (int i = 0; i < table->rowCount(); ++i)
+            if (const QTableWidgetItem *it = table->item(i, c))
+                w = std::max(w, body.horizontalAdvance(it->text()));
+        table->setColumnWidth(c, w + theme::space::lg + theme::space::sm);
+    }
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    table->setFixedHeight(table->horizontalHeader()->sizeHint().height()
+                          + table->verticalHeader()->defaultSectionSize()
+                                * static_cast<int>(rows.size())
+                          + 2);
+}
+
+/// The width the table needs to show every column at its content width, the
+/// ingredient names included. Anything wider is whitespace in the name column.
+int breakdown_natural_width(const QTableWidget *table)
+{
+    const QFontMetrics fm(theme::font(theme::Text::Body));
+    int name_w = table->horizontalHeader()->sectionSizeHint(0);
+    for (int r = 0; r < table->rowCount(); ++r)
+        if (const QTableWidgetItem *it = table->item(r, 0))
+            name_w = std::max(name_w, fm.horizontalAdvance(it->text()) + table->iconSize().width()
+                                          + theme::space::sm);
+    // Item padding either side, plus a little air before the first number.
+    int w = name_w + theme::space::lg + theme::space::xl;
+    for (int c = 1; c < table->columnCount(); ++c) w += table->columnWidth(c);
+    return w + 2 * table->frameWidth();
+}
+
+}  // namespace
+
+///
+/// A reference photo drawn at whatever height the layout asks for, keeping its aspect
+/// ratio. A QLabel pixmap is fixed at the size it was scaled to; this rescales.
+///
+class PhotoLabel : public QWidget {
+public:
+    PhotoLabel() { setObjectName("clear"); }
+
+    void set_source(const QPixmap &pm)
+    {
+        source_ = pm;
+        set_photo_height(height_);
+        update();
+    }
+    bool has_photo() const { return !source_.isNull(); }
+
+    int width_at(int h) const
+    {
+        const double aspect =
+            has_photo() ? double(source_.width()) / std::max(1, source_.height()) : 0.75;
+        return static_cast<int>(std::round(h * aspect));
+    }
+    void set_photo_height(int h)
+    {
+        height_ = h;
+        setFixedSize(width_at(h), h);
+    }
+
+protected:
+    void paintEvent(QPaintEvent *) override
+    {
+        if (!has_photo()) return;
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        QPainterPath clip;
+        clip.addRoundedRect(QRectF(rect()), 6, 6);
+        p.setClipPath(clip);
+        p.drawPixmap(rect(), source_);
+    }
+
+private:
+    QPixmap source_;
+    int height_ = 120;
+};
+
+namespace {
+
+///
+/// The finished-bowl card's arrangement. Three layouts, widest first:
+///   wide     bowl | table | photos   (photos large, table at its content width)
+///   medium   bowl over photos | table
+///   stacked  bowl over photos, table below
+/// Re-decided on resize and whenever the table or the photos change, since both
+/// change width with the brand, the model and the units.
+///
+class BowlCard : public QWidget {
+public:
+    enum class Mode { Unset, Wide, Medium, Stacked };
+    static constexpr int kBigPhoto = 250, kSmallPhoto = 120;
+
+    BowlCard(QWidget *bowl, int bowl_width, QWidget *photos, QWidget *table,
+             std::function<int()> table_width, std::function<int(int)> photos_width,
+             std::function<void(int)> set_photo_height)
+        : bowl_width_(bowl_width), photos_(photos), table_(table),
+          table_width_(std::move(table_width)), photos_width_(std::move(photos_width)),
+          set_photo_height_(std::move(set_photo_height))
+    {
+        setObjectName("clear");
+        left_ = new QWidget;
+        left_->setObjectName("clear");
+        left_->setFixedWidth(bowl_width_);
+        left_layout_ = new QVBoxLayout(left_);
+        left_layout_->setContentsMargins(0, 0, 0, 0);
+        left_layout_->setSpacing(theme::space::md);
+        left_layout_->addWidget(bowl);
+
+        grid_ = new QGridLayout(this);
+        grid_->setContentsMargins(0, 0, 0, 0);
+        grid_->setHorizontalSpacing(theme::space::xl);
+        grid_->setVerticalSpacing(theme::space::lg);
+    }
+
+    void relayout()
+    {
+        const int gap = theme::space::xl;
+        const int table_w = table_width_();
+        const int big = photos_width_(kBigPhoto);
+        Mode want = Mode::Stacked;
+        if (big > 0 && width() >= bowl_width_ + gap + big + gap + table_w)
+            want = Mode::Wide;
+        else if (width() >= bowl_width_ + gap + table_w)
+            want = Mode::Medium;
+        // Wide pins the table to its content width, so the name column carries no
+        // slack; the other layouts let it fill what is left. Reapplied even when
+        // the mode holds, because the content width follows the model and units.
+        table_->setMinimumWidth(want == Mode::Wide ? table_w : 0);
+        table_->setMaximumWidth(want == Mode::Wide ? table_w : QWIDGETSIZE_MAX);
+        set_photo_height_(want == Mode::Wide ? kBigPhoto : kSmallPhoto);
+        if (want == mode_) return;
+        mode_ = want;
+
+        for (QWidget *w : {static_cast<QWidget *>(left_), photos_, table_}) grid_->removeWidget(w);
+        left_layout_->removeWidget(photos_);
+        for (int i = 0; i < 3; ++i) grid_->setColumnStretch(i, 0);
+
+        switch (mode_) {
+        case Mode::Wide:
+            // The table is the diagram's legend, so the two sit together; the photos
+            // are reference material and take the far edge. Spare width opens up
+            // between the table and the photos, never between bowl and legend.
+            grid_->addWidget(left_, 0, 0, Qt::AlignTop);
+            grid_->addWidget(table_, 0, 1, Qt::AlignTop);
+            grid_->addWidget(photos_, 0, 2, Qt::AlignTop | Qt::AlignRight);
+            grid_->setColumnStretch(2, 1);
+            break;
+        case Mode::Medium:
+            left_layout_->addWidget(photos_, 0, Qt::AlignHCenter);
+            grid_->addWidget(left_, 0, 0, Qt::AlignTop);
+            grid_->addWidget(table_, 0, 1, Qt::AlignTop);
+            grid_->setColumnStretch(1, 1);
+            break;
+        case Mode::Stacked:
+        case Mode::Unset:
+            left_layout_->addWidget(photos_, 0, Qt::AlignHCenter);
+            grid_->addWidget(left_, 0, 0, Qt::AlignTop | Qt::AlignHCenter);
+            grid_->addWidget(table_, 1, 0);
+            grid_->setColumnStretch(0, 1);
+            break;
+        }
+    }
+
+protected:
+    void resizeEvent(QResizeEvent *event) override
+    {
+        QWidget::resizeEvent(event);
+        relayout();
+    }
+
+private:
+    int bowl_width_;
+    QWidget *left_ = nullptr, *photos_, *table_;
+    QVBoxLayout *left_layout_ = nullptr;
+    QGridLayout *grid_ = nullptr;
+    std::function<int()> table_width_;
+    std::function<int(int)> photos_width_;
+    std::function<void(int)> set_photo_height_;
+    Mode mode_ = Mode::Unset;
+};
 
 }  // namespace
 
@@ -114,9 +430,14 @@ QString fmt(double v, int dp = 1) { return QString::number(v, 'f', dp); }
 MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     : QMainWindow(parent), asset_dir_(asset_dir)
 {
-    LoadResult loaded = load_menus(asset_dir_ + "/menus");
+    QString map_err;
+    if (!load_name_mappings(mappings_path(), name_maps_, &map_err))
+        load_warnings_ << map_err;
+    if (!load_piece_heights(pieces_path(), pieces_, &map_err)) load_warnings_ << map_err;
+    LoadResult loaded = load_menus(asset_dir_ + "/menus", &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
-    load_warnings_ = loaded.warnings;
+    load_warnings_ << loaded.warnings;
+    menu_issues_ = loaded.issues;
 
     QString err;
     if (!curves_.load_csv(asset_dir_ + "/data/mass_to_volume.csv", &err))
@@ -139,14 +460,16 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
         capacity_->setDecimals(0);
         capacity_->setSingleStep(25);
         capacity_->setValue(units::from_oz(32));
-        if (capacity_label_) capacity_label_->setText("bowl capacity (ml)");
-        override_table_->setHorizontalHeaderItem(4, new QTableWidgetItem("ml/100g"));
+        if (capacity_label_) capacity_label_->setText("Bowl capacity (ml)");
     }
     reload_theme();
     populate_brand();
 
+    // Stale menu data is shown in the header, where it stays visible without
+    // blocking every launch. Only a file that could not be read stops the user.
     if (!load_warnings_.isEmpty())
-        QMessageBox::warning(this, "Loaded with warnings", load_warnings_.join("\n"));
+        QMessageBox::warning(this, "Some files could not be loaded",
+                             load_warnings_.join("\n"));
 }
 
 void MainWindow::select(const QString &brand, const QString &recipe)
@@ -159,27 +482,61 @@ void MainWindow::select(const QString &brand, const QString &recipe)
 void MainWindow::build_ui()
 {
     setWindowTitle("Bowl Fill Simulator");
-    resize(1400, 920);
+    resize(1440, 940);
 
     auto *central = new QWidget;
     central->setObjectName("clear");
     auto *root = new QVBoxLayout(central);
-    root->setContentsMargins(18, 14, 18, 14);
-    root->setSpacing(12);
+    root->setContentsMargins(space::xl, space::lg, space::xl, space::lg);
+    root->setSpacing(space::lg);
+    root->addWidget(build_header());
 
-    auto *header = new QHBoxLayout;
+    auto *splitter = new QSplitter(Qt::Horizontal);
+    splitter->setChildrenCollapsible(false);
+    splitter->addWidget(build_controls());
+    splitter->addWidget(build_results());
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes({400, 1040});
+    root->addWidget(splitter, 1);
+
+    setCentralWidget(central);
+}
+
+QWidget *MainWindow::build_header()
+{
+    auto *header = new QWidget;
+    header->setObjectName("clear");
+    auto *h = new QHBoxLayout(header);
+    h->setContentsMargins(0, 0, 0, 0);
+    h->setSpacing(space::md);
+
     auto *titles = new QVBoxLayout;
-    titles->setSpacing(2);
-    titles->addWidget(make_label("LAB37 · ASSEMBLY LINE PORTIONING", "eyebrow"));
-    auto *h1 = new QLabel("Bowl Fill Simulator");
-    h1->setObjectName("h1");
-    titles->addWidget(h1);
-    intro_ = make_label(QString(kIntroText).arg(units::suffix()), "note");
-    titles->addWidget(intro_);
-    header->addLayout(titles, 1);
+    titles->setSpacing(0);
+    auto *title = new QLabel("Bowl Fill Simulator");
+    title->setObjectName("title");
+    titles->addWidget(title);
+    titles->addWidget(make_label("Lab37 · assembly line portioning", "subtitle"));
+    h->addLayout(titles);
+    h->addStretch(1);
 
-    auto *prefs = new QHBoxLayout;
-    prefs->setSpacing(4);
+    // The dispense model changes the whole results column, so it lives up here
+    // rather than among the settings it switches between.
+    mode_legacy_ = make_toggle("Legacy ramp");
+    mode_adaptive_ = make_toggle("Adaptive");
+    mode_legacy_->setChecked(true);
+    mode_legacy_->setToolTip("What dynamic_portion_algorithm.cc does today: flat gram "
+                             "steps added until a mass floor is cleared.");
+    mode_adaptive_->setToolTip("What the user stories propose: solve directly for a "
+                               "volume target, holding each ingredient inside its "
+                               "tolerance band.");
+    connect(mode_legacy_, &QPushButton::clicked, this, [this] { set_mode(false); });
+    connect(mode_adaptive_, &QPushButton::clicked, this, [this] { set_mode(true); });
+    auto *modes = segment({mode_legacy_, mode_adaptive_});
+    modes->setMinimumWidth(240);
+    h->addWidget(modes);
+    h->addSpacing(space::sm);
+
     unit_oz_ = make_toggle("fl oz");
     unit_ml_ = make_toggle("ml");
     unit_oz_->setToolTip("Show volumes in US fluid ounces");
@@ -188,23 +545,51 @@ void MainWindow::build_ui()
     unit_ml_->setChecked(units::metric());
     connect(unit_oz_, &QPushButton::clicked, this, [this] { set_units(false); });
     connect(unit_ml_, &QPushButton::clicked, this, [this] { set_units(true); });
-    prefs->addWidget(unit_oz_);
-    prefs->addWidget(unit_ml_);
-    theme_ = new QPushButton("◐  Theme");
+    h->addWidget(segment({unit_oz_, unit_ml_}));
+    h->addSpacing(space::sm);
+
+    issues_ = new QPushButton;
+    issues_->setObjectName("issues");
+    issues_->setCursor(Qt::PointingHandCursor);
+    issues_->setVisible(!menu_issues_.isEmpty());
+    issues_->setText(QString("%1 menu issue%2")
+                         .arg(menu_issues_.size())
+                         .arg(menu_issues_.size() == 1 ? "" : "s"));
+    issues_->setToolTip(menu_issues_.join("\n"));
+    connect(issues_, &QPushButton::clicked, this, &MainWindow::show_issues);
+    h->addWidget(issues_);
+
+    about_ = new QPushButton("About");
+    about_->setObjectName("quiet");
+    about_->setToolTip(QString(kIntroText).arg(units::suffix()));
+    connect(about_, &QPushButton::clicked, this, [this] {
+        QMessageBox box(this);
+        box.setWindowTitle("About the simulator");
+        box.setTextFormat(Qt::RichText);
+        box.setText(QString(kIntroText).arg(units::suffix()));
+        box.exec();
+    });
+    h->addWidget(about_);
+
+    theme_ = new QPushButton("Theme");
+    theme_->setObjectName("quiet");
+    theme_->setToolTip("Switch between the light and dark palettes");
     connect(theme_, &QPushButton::clicked, this, &MainWindow::toggle_theme);
-    prefs->addWidget(theme_);
-    header->addLayout(prefs, 0);
-    root->addLayout(header);
+    h->addWidget(theme_);
+    return header;
+}
 
-    auto *splitter = new QSplitter(Qt::Horizontal);
-    splitter->addWidget(build_controls());
-    splitter->addWidget(build_results());
-    splitter->setStretchFactor(0, 0);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes({390, 1010});
-    root->addWidget(splitter, 1);
-
-    setCentralWidget(central);
+void MainWindow::show_issues()
+{
+    QMessageBox box(this);
+    box.setWindowTitle("Menu issues");
+    box.setIcon(QMessageBox::Information);
+    box.setText("These menus loaded, but some of their data looks stale. The items "
+                "listed were left out of the simulation.");
+    box.setInformativeText("Fix them in the menu export; the notice clears once the "
+                           "export stops producing them.");
+    box.setDetailedText(menu_issues_.join("\n"));
+    box.exec();
 }
 
 QWidget *MainWindow::build_controls()
@@ -212,46 +597,32 @@ QWidget *MainWindow::build_controls()
     auto *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setMinimumWidth(360);
+    scroll->setMinimumWidth(380);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    auto *panel = make_panel();
-    auto *v = new QVBoxLayout(panel);
-    v->setContentsMargins(15, 15, 15, 15);
-    v->setSpacing(13);
+    auto *host = new QWidget;
+    host->setObjectName("clear");
+    auto *col = new QVBoxLayout(host);
+    // A panel border sitting exactly on the scroll area's edge can lose its outer
+    // pixel column to rounding at fractional display scales, which shows on the
+    // coloured verdict border. A small inset keeps every border inside the viewport.
+    col->setContentsMargins(kEdgeInset, kEdgeInset, space::md, kEdgeInset);
+    col->setSpacing(space::md);
 
-    // ---- dispense model ---------------------------------------------------
-    v->addWidget(make_label("DISPENSE MODEL", "eyebrow"));
-    auto *modes = new QHBoxLayout;
-    modes->setSpacing(4);
-    mode_legacy_ = make_toggle("Legacy ramp");
-    mode_adaptive_ = make_toggle("Adaptive");
-    mode_legacy_->setChecked(true);
-    mode_legacy_->setToolTip("What dynamic_portion_algorithm.cc does today: flat gram "
-                             "steps added until a mass floor is cleared.");
-    mode_adaptive_->setToolTip("What the user stories propose: solve directly for a "
-                              "volume target, holding each ingredient inside its "
-                              "tolerance band.");
-    connect(mode_legacy_, &QPushButton::clicked, this, [this] { set_mode(false); });
-    connect(mode_adaptive_, &QPushButton::clicked, this, [this] { set_mode(true); });
-    modes->addWidget(mode_legacy_);
-    modes->addWidget(mode_adaptive_);
-    v->addLayout(modes);
-    v->addWidget(hline());
+    // ---- the bowl: what is being ordered ---------------------------------
+    QVBoxLayout *v = nullptr;
+    col->addWidget(titled_panel("Bowl", v));
 
-    // ---- menu -------------------------------------------------------------
-    v->addWidget(make_label("MENU", "eyebrow"));
-    brand_ = new QComboBox;
+    brand_ = make_combo();
     connect(brand_, &QComboBox::currentIndexChanged, this, &MainWindow::on_brand_changed);
-    v->addWidget(field("brand", brand_));
+    v->addWidget(field("Brand", brand_));
 
-    recipe_ = new QComboBox;
+    recipe_ = make_combo();
     connect(recipe_, &QComboBox::currentIndexChanged, this, &MainWindow::on_recipe_changed);
     auto *recipe_row = new QHBoxLayout;
-    recipe_row->setSpacing(6);
-    recipe_row->addWidget(field("bowl recipe", recipe_), 1);
-    auto *report = new QPushButton("i");
-    report->setObjectName("info");
-    report->setCursor(Qt::WhatsThisCursor);
+    recipe_row->setSpacing(space::sm);
+    recipe_row->addWidget(field("Recipe", recipe_), 1);
+    auto *report = new QPushButton("Report");
     report->setToolTip("Feasibility report: every recipe this brand defines, checked "
                        "against the current bowl and curves under both dispense models.");
     connect(report, &QPushButton::clicked, this, &MainWindow::show_report);
@@ -259,216 +630,306 @@ QWidget *MainWindow::build_controls()
     v->addLayout(recipe_row);
     recipe_note_ = make_label("", "note");
     v->addWidget(recipe_note_);
-    brand_note_ = make_label("", "note");
-    v->addWidget(brand_note_);
-    v->addWidget(hline());
 
-    // ---- weight floor (legacy only) ---------------------------------------
-    legacy_group_ = new QWidget;
-    legacy_group_->setObjectName("clear");
-    auto *lg = new QVBoxLayout(legacy_group_);
-    lg->setContentsMargins(0, 0, 0, 0);
-    lg->setSpacing(9);
-    v->addWidget(legacy_group_);
-    QVBoxLayout *vsave = v;
-    v = lg;
-    v->addWidget(make_label("WEIGHT FLOOR", "eyebrow"));
-    floor_ = make_spin(0, 5000, 5, 0);
-    connect(floor_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    v->addWidget(field("minimum_product_weight_g — matched from the menu", floor_));
-    floor_note_ = make_label("", "note");
-    v->addWidget(floor_note_);
-    v = vsave;
-    v->addWidget(hline());
-
-    // ---- measurement source ----------------------------------------------
-    v->addWidget(make_label("MEASUREMENT SOURCE", "eyebrow"));
-    auto *seg = new QHBoxLayout;
-    seg->setSpacing(4);
-    method_robot_ = make_toggle("robot");
-    method_hand_ = make_toggle("hand");
-    method_pooled_ = make_toggle("pooled");
-    method_robot_->setChecked(true);
-    for (QPushButton *b : {method_robot_, method_hand_, method_pooled_}) {
-        seg->addWidget(b);
-        connect(b, &QPushButton::clicked, this, [this, b] {
-            for (QPushButton *o : {method_robot_, method_hand_, method_pooled_})
-                o->setChecked(o == b);
-            on_selection_changed();
-        });
-    }
-    v->addLayout(seg);
-    method_note_ = make_label("", "note");
-    v->addWidget(method_note_);
-    v->addWidget(hline());
-
-    // ---- bases ------------------------------------------------------------
-    v->addWidget(make_label("BASE INGREDIENTS (UP TO 2)", "eyebrow"));
     for (int i = 0; i < 2; ++i) {
         QComboBox *&box = (i == 0 ? base1_ : base2_);
-        box = new QComboBox;
+        box = make_combo();
         connect(box, &QComboBox::currentIndexChanged, this,
                 &MainWindow::on_selection_changed);
-        v->addWidget(field(i == 0 ? "Base 1 — bottom layer" : "Base 2", box));
-
-        auto *card = make_panel("card");
-        auto *g = new QGridLayout(card);
-        g->setContentsMargins(11, 11, 11, 11);
-        g->setSpacing(7);
-        base_start_[i] = make_spin(0, 2000, 1, 0);
-        base_step_[i] = make_spin(0, 100, 0.1, 2);
-        base_max_[i] = make_spin(0, 2000, 1, 0);
-        g->addWidget(field("start g", base_start_[i]), 0, 0);
-        g->addWidget(field("step g", base_step_[i]), 0, 1);
-        g->addWidget(field("max g", base_max_[i]), 0, 2);
-        base_fit_[i] = make_label("", "note");
-        base_fit_[i]->setFont(theme::mono(8));
-        g->addWidget(base_fit_[i], 1, 0, 1, 3);
-        for (QDoubleSpinBox *s : {base_start_[i], base_step_[i], base_max_[i]})
-            connect(s, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-        base_card_[i] = card;
-        base_card_layout_[i] = g;
-        v->addWidget(card);
     }
-    split_ = make_toggle("Apply the 50:50 base split");
-    connect(split_, &QPushButton::clicked, this, &MainWindow::on_selection_changed);
-    v->addWidget(split_);
-    split_note_ = make_label("", "note");
-    v->addWidget(split_note_);
-    v->addWidget(hline());
+    v->addLayout(field_row({field("Base (bottom layer)", base1_), field("Second base", base2_)}));
 
-    // ---- proteins & toppings ---------------------------------------------
-    v->addWidget(make_label("PROTEINS (UP TO 2)", "eyebrow"));
+    v->addSpacing(space::xs);
+    v->addWidget(section_label("Proteins · up to 2"));
     protein_picks_ = new QWidget;
     protein_picks_->setObjectName("clear");
     new QGridLayout(protein_picks_);
     protein_picks_->layout()->setContentsMargins(0, 0, 0, 0);
     v->addWidget(protein_picks_);
 
-    v->addWidget(make_label("OTHER TOPPINGS", "eyebrow"));
+    v->addSpacing(space::xs);
+    v->addWidget(section_label("Toppings"));
     topping_picks_ = new QWidget;
     topping_picks_->setObjectName("clear");
     new QGridLayout(topping_picks_);
     topping_picks_->layout()->setContentsMargins(0, 0, 0, 0);
     v->addWidget(topping_picks_);
 
-    override_table_ = new QTableWidget(0, 5);
-    override_table_->setHorizontalHeaderLabels(
-        {"ingredient", "start g", "step g", "max g", "oz/100g"});
-    rate_header_ = nullptr;
-    override_table_->verticalHeader()->setVisible(false);
-    override_table_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    for (int c = 1; c < 5; ++c)
-        override_table_->horizontalHeader()->setSectionResizeMode(c,
-                                                                  QHeaderView::Fixed);
-    override_table_->setColumnWidth(1, 62);
-    override_table_->setColumnWidth(2, 58);
-    override_table_->setColumnWidth(3, 58);
-    override_table_->setColumnWidth(4, 62);
-    override_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    override_table_->setSelectionMode(QAbstractItemView::NoSelection);
-    v->addWidget(override_table_);
-    v->addWidget(hline());
+    // Sauces go in cups, never into the bowl: each one picked is a 50 ml cup that
+    // takes room from the food.
+    v->addSpacing(space::xs);
+    v->addWidget(section_label(QString("Sauces · up to %1 · one 50 ml cup each")
+                                   .arg(SauceCups::kMax)));
+    sauce_picks_ = new QWidget;
+    sauce_picks_->setObjectName("clear");
+    new QGridLayout(sauce_picks_);
+    sauce_picks_->layout()->setContentsMargins(0, 0, 0, 0);
+    v->addWidget(sauce_picks_);
 
-    // ---- adaptive-only controls -------------------------------------------
+    // ---- dispense: how the model is set up --------------------------------
+    col->addWidget(titled_panel("Dispense", v));
+
+    method_robot_ = make_toggle("Robot");
+    method_hand_ = make_toggle("Hand");
+    method_pooled_ = make_toggle("Pooled");
+    method_robot_->setChecked(true);
+    for (QPushButton *b : {method_robot_, method_hand_, method_pooled_}) {
+        connect(b, &QPushButton::clicked, this, [this, b] {
+            for (QPushButton *o : {method_robot_, method_hand_, method_pooled_})
+                o->setChecked(o == b);
+            on_selection_changed();
+        });
+    }
+    v->addWidget(field("Measurement source", segment({method_robot_, method_hand_,
+                                                      method_pooled_})));
+    method_note_ = make_label("", "note");
+    v->addWidget(method_note_);
+
+    capacity_ = make_spin(1, 6000, 1, 0);
+    capacity_->setValue(32);
+    connect(capacity_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+    auto *cap_field = field("Bowl capacity (fl oz)", capacity_);
+    capacity_label_ = cap_field->findChild<QLabel *>();
+    v->addLayout(field_row({cap_field}));
+
+    // Fit by height: cups and chunks need clearance below the lid, which a plain
+    // volume sum cannot see. The dimensions live in Advanced; the switch and the cup
+    // placement, which change every result, live here.
+    QSettings prefs;
+    heights_ = new QCheckBox("Judge fit by height under the lid");
+    heights_->setChecked(prefs.value("geometry/enabled", true).toBool());
+    heights_->setToolTip("Rigid sauce cups and chunky pieces need room below the lid, not "
+                         "just their volume. Off: cups count as their 50 ml contents.");
+    v->addWidget(heights_);
+    cups_pressed_ = make_toggle("Cups pressed in");
+    cups_resting_ = make_toggle("Cups resting on top");
+    cups_pressed_->setToolTip("The robot pushes each cup down; food flows round it, so a "
+                              "cup costs only its own column.");
+    cups_resting_->setToolTip("Cups sit on the food as dispensed, so the whole surface must "
+                              "stay a cup height below the lid.");
+    const bool pressed = prefs.value("geometry/cups_pressed", true).toBool();
+    cups_pressed_->setChecked(pressed);
+    cups_resting_->setChecked(!pressed);
+    cups_segment_ = segment({cups_pressed_, cups_resting_});
+    v->addWidget(cups_segment_);
+    geometry_note_ = make_label("", "note");
+    v->addWidget(geometry_note_);
+    connect(heights_, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue("geometry/enabled", on);
+        cups_segment_->setVisible(on);
+        recompute();
+    });
+    for (QPushButton *b : {cups_pressed_, cups_resting_})
+        connect(b, &QPushButton::clicked, this, [this, b] {
+            cups_pressed_->setChecked(b == cups_pressed_);
+            cups_resting_->setChecked(b == cups_resting_);
+            QSettings().setValue("geometry/cups_pressed", cups_pressed_->isChecked());
+            recompute();
+        });
+    cups_segment_->setVisible(heights_->isChecked());
+
+    legacy_group_ = new QWidget;
+    legacy_group_->setObjectName("clear");
+    auto *lg = new QVBoxLayout(legacy_group_);
+    lg->setContentsMargins(0, 0, 0, 0);
+    lg->setSpacing(space::sm);
+    floor_ = make_spin(0, 5000, 5, 0);
+    floor_->setToolTip("minimum_product_weight_g, matched from the menu. Edit to override.");
+    connect(floor_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+    lg->addWidget(field("Weight floor (g)", floor_));
+    floor_note_ = make_label("", "note");
+    lg->addWidget(floor_note_);
+    v->addWidget(legacy_group_);
+
     adaptive_group_ = new QWidget;
     adaptive_group_->setObjectName("clear");
     auto *ag = new QVBoxLayout(adaptive_group_);
     ag->setContentsMargins(0, 0, 0, 0);
-    ag->setSpacing(9);
-    ag->addWidget(make_label("ADAPTIVE TARGET", "eyebrow"));
-
-    auto *trow = new QHBoxLayout;
-    trow->setSpacing(8);
+    ag->setSpacing(space::md);
     target_fill_ = make_spin(10, 100, 1, 0);
     target_fill_->setValue(85);
     band_low_ = make_spin(0, 100, 1, 0);
     band_low_->setValue(75);
-    trow->addWidget(field("target fill %", target_fill_));
-    trow->addWidget(field("leave alone above %", band_low_));
-    ag->addLayout(trow);
-
-    ag->addWidget(make_label("TOLERANCES (US-3)", "eyebrow"));
-    auto *tolrow = new QHBoxLayout;
-    tolrow->setSpacing(8);
+    ag->addLayout(field_row({field("Target fill %", target_fill_),
+                             field("Leave alone above %", band_low_)}));
     tol_base_ = make_spin(0, 100, 1, 0);      tol_base_->setValue(20);
     tol_protein_ = make_spin(0, 100, 1, 0);   tol_protein_->setValue(5);
     tol_topping_ = make_spin(0, 100, 1, 0);   tol_topping_->setValue(10);
-    tolrow->addWidget(field("base ±%", tol_base_));
-    tolrow->addWidget(field("protein ±%", tol_protein_));
-    tolrow->addWidget(field("topping ±%", tol_topping_));
-    ag->addLayout(tolrow);
-
-    auto *srow = new QHBoxLayout;
-    srow->setSpacing(8);
-    sauce_cups_ = make_spin(0, 2, 1, 0);
-    sauce_cups_->setValue(2);
+    ag->addLayout(field_row({field("Base ±%", tol_base_), field("Protein ±%", tol_protein_),
+                             field("Topping ±%", tol_topping_)}));
     menu_price_ = make_spin(0, 100, 0.25, 2);
     menu_price_->setValue(12.95);
+    menu_price_->setPrefix("$");
     cogs_target_ = make_spin(0, 100, 1, 0);
     cogs_target_->setValue(23);
-    srow->addWidget(field("sauce cups (50 ml)", sauce_cups_));
-    srow->addWidget(field("menu price", menu_price_));
-    srow->addWidget(field("COGS target %", cogs_target_));
-    ag->addLayout(srow);
-
+    ag->addLayout(field_row({field("Menu price", menu_price_),
+                             field("COGS target %", cogs_target_)}));
     adaptive_note_ = make_label("", "note");
     ag->addWidget(adaptive_note_);
     for (QDoubleSpinBox *sp : {target_fill_, band_low_, tol_base_, tol_protein_,
-                               tol_topping_, sauce_cups_, menu_price_, cogs_target_})
+                               tol_topping_, menu_price_, cogs_target_})
         connect(sp, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
     v->addWidget(adaptive_group_);
     adaptive_group_->setVisible(false);
+
+    // ---- advanced: per-ingredient tuning, collapsed by default ------------
+    QFrame *adv = make_panel();
+    auto *av = new QVBoxLayout(adv);
+    av->setContentsMargins(space::lg, space::md, space::lg, space::md);
+    av->setSpacing(space::md);
+    auto *disclose = new QToolButton;
+    disclose->setObjectName("disclosure");
+    disclose->setText("ADVANCED: RAMP, COMPRESSION, DATA");
+    disclose->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    disclose->setCheckable(true);
+    disclose->setCursor(Qt::PointingHandCursor);
+    disclose->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    av->addWidget(disclose);
+
+    auto *adv_body = new QWidget;
+    adv_body->setObjectName("clear");
+    v = new QVBoxLayout(adv_body);
+    v->setContentsMargins(0, space::xs, 0, space::xs);
+    v->setSpacing(space::md);
+    av->addWidget(adv_body);
+
+    const bool open = QSettings().value("ui/advanced_open", false).toBool();
+    disclose->setChecked(open);
+    disclose->setArrowType(open ? Qt::DownArrow : Qt::RightArrow);
+    adv_body->setVisible(open);
+    connect(disclose, &QToolButton::toggled, this, [disclose, adv_body](bool on) {
+        disclose->setArrowType(on ? Qt::DownArrow : Qt::RightArrow);
+        adv_body->setVisible(on);
+        QSettings().setValue("ui/advanced_open", on);
+    });
+
+    v->addWidget(section_label("Base ramp"));
+    for (int i = 0; i < 2; ++i) {
+        auto *card = make_panel("sunk");
+        auto *g = new QGridLayout(card);
+        g->setContentsMargins(space::md, space::md, space::md, space::md);
+        g->setHorizontalSpacing(space::sm);
+        g->setVerticalSpacing(space::sm);
+        base_start_[i] = make_spin(0, 2000, 1, 0);
+        base_step_[i] = make_spin(0, 100, 0.1, 2);
+        base_max_[i] = make_spin(0, 2000, 1, 0);
+        g->addWidget(make_label(i == 0 ? "Base" : "Second base", "label"), 0, 0, 1, 3);
+        g->addWidget(field("Start g", base_start_[i]), 1, 0);
+        g->addWidget(field("Step g", base_step_[i]), 1, 1);
+        g->addWidget(field("Max g", base_max_[i]), 1, 2);
+        base_fit_[i] = make_label("", "note");
+        g->addWidget(base_fit_[i], 2, 0, 1, 3);
+        for (QDoubleSpinBox *s : {base_start_[i], base_step_[i], base_max_[i]})
+            connect(s, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+        base_card_[i] = card;
+        base_card_layout_[i] = g;
+        v->addWidget(card);
+    }
+    split_ = new QCheckBox("Apply the 50:50 base split");
+    split_->setChecked(true);
+    connect(split_, &QCheckBox::toggled, this, &MainWindow::on_selection_changed);
+    v->addWidget(split_);
+    split_note_ = make_label("", "note");
+    v->addWidget(split_note_);
+
     v->addWidget(hline());
+    v->addWidget(section_label("Protein and topping ramp"));
+    // Each ingredient takes two lines, its name over its four values, so names are
+    // never cut short in a sidebar this narrow.
+    override_table_ = new QWidget;
+    override_table_->setObjectName("clear");
+    auto *og = new QGridLayout(override_table_);
+    og->setContentsMargins(0, 0, 0, 0);
+    og->setHorizontalSpacing(space::sm);
+    og->setVerticalSpacing(space::xs);
+    v->addWidget(override_table_);
 
-    // ---- bowl -------------------------------------------------------------
-    v->addWidget(make_label("BOWL", "eyebrow"));
-    capacity_ = make_spin(1, 6000, 1, 0);
-    capacity_->setValue(32);
-    connect(capacity_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    auto *cap_field = field("bowl capacity (fl oz)", capacity_);
-    capacity_label_ = cap_field->findChild<QLabel *>();
-    v->addWidget(cap_field);
+    v->addWidget(hline());
+    v->addWidget(section_label("Bowl, lid and cups"));
+    {
+        QSettings prefs;
+        auto dim = [&](const char *key, double def, double hi, int dp, const char *suffix) {
+            QDoubleSpinBox *sp = make_spin(0, hi, dp ? 0.5 : 1, dp);
+            sp->setSuffix(suffix);
+            sp->setValue(prefs.value(QString("geometry/") + key, def).toDouble());
+            connect(sp, &QDoubleSpinBox::valueChanged, this, [this, key](double v) {
+                QSettings().setValue(QString("geometry/") + key, v);
+                recompute();
+            });
+            return sp;
+        };
+        depth_ = dim("depth_mm", BowlGeometry{}.depth_mm, 200, 1, " mm");
+        depth_->setToolTip("Inside depth to the rim, where the bowl reaches its capacity.");
+        headroom_ = dim("lid_headroom_mm", BowlGeometry::kPlaceholderHeadroom, 50, 1, " mm");
+        headroom_->setToolTip("Extra clearance at the centre of a domed lid.");
+        cup_h_ = dim("cup_height_mm", BowlGeometry::kPlaceholderCupHeight, 100, 1, " mm");
+        cup_h_->setToolTip("Sauce cup height with its lid on.");
+        cup_d_ = dim("cup_diameter_mm", BowlGeometry::kPlaceholderCupDiameter, 150, 1, " mm");
+        cup_d_->setToolTip("Sauce cup diameter; only matters when cups are pressed in.");
+        chunk_proud_ = dim("chunk_proud_pct", BowlGeometry::kPlaceholderChunkProud * 100, 100,
+                           0, " %");
+        chunk_proud_->setToolTip("How much of a chunky piece's height stands above the "
+                                 "smeared food around it.");
+        v->addLayout(field_row({field("Bowl depth", depth_), field("Lid dome headroom", headroom_)}));
+        v->addLayout(field_row({field("Cup height", cup_h_), field("Cup diameter", cup_d_)}));
+        v->addWidget(field("Chunks stand proud by", chunk_proud_));
+        v->addWidget(make_label("Piece heights for chunky ingredients are set per ingredient "
+                                "under <i>Ingredients</i> below.", "note"));
+    }
 
-    compress_ = make_toggle("Compress the base under this load");
-    connect(compress_, &QPushButton::clicked, this, &MainWindow::on_selection_changed);
+    v->addWidget(hline());
+    v->addWidget(section_label("Compression"));
+    compress_ = new QCheckBox("Compress the base under the load above it");
+    compress_->setChecked(true);
+    connect(compress_, &QCheckBox::toggled, this, &MainWindow::on_selection_changed);
     v->addWidget(compress_);
     load_transfer_ = make_spin(0, 1, 0.05, 2);
     load_transfer_->setValue(1.0);
+    load_transfer_->setToolTip("Share of the topping weight that bears on the base.");
     connect(load_transfer_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    v->addWidget(field("load transfer — share of topping weight bearing on the base",
-                       load_transfer_));
+    v->addWidget(field("Load transfer (0–1)", load_transfer_));
     compress_note_ = make_label("", "note");
     v->addWidget(compress_note_);
-    v->addWidget(hline());
 
-    // ---- measured data ----------------------------------------------------
-    v->addWidget(make_label("MASS → VOLUME DATA", "eyebrow"));
+    v->addWidget(hline());
+    v->addWidget(section_label("Mass → volume data"));
     auto *row = new QHBoxLayout;
-    row->setSpacing(6);
+    row->setSpacing(space::sm);
     auto *upload = new QPushButton("Upload CSV…");
-    upload->setObjectName("primary");
     connect(upload, &QPushButton::clicked, this, &MainWindow::on_upload_csv);
     row->addWidget(upload, 1);
-
-    auto *help = new QPushButton("?");
-    help->setObjectName("info");
-    help->setCursor(Qt::WhatsThisCursor);
+    auto *help = new QPushButton("Format");
     help->setToolTip(CurveSet::format_help());
     connect(help, &QPushButton::clicked, this, &MainWindow::show_csv_help);
-    row->addWidget(help, 0);
-
+    row->addWidget(help);
     auto *reset = new QPushButton("Reset");
     reset->setToolTip("Discard uploaded rows and return to the bundled measurements.");
     connect(reset, &QPushButton::clicked, this, &MainWindow::on_reset_curves);
-    row->addWidget(reset, 0);
+    row->addWidget(reset);
     v->addLayout(row);
-
     curve_note_ = make_label("", "note");
     v->addWidget(curve_note_);
 
-    v->addStretch(1);
-    scroll->setWidget(panel);
+    v->addWidget(hline());
+    v->addWidget(section_label("Menu"));
+    brand_note_ = make_label("", "note");
+    v->addWidget(brand_note_);
+
+    v->addWidget(hline());
+    v->addWidget(section_label("Ingredients"));
+    auto *names = new QPushButton("Edit names, kinds and piece heights…");
+    names->setToolTip("Map each menu's spelling of an ingredient onto a common name, so "
+                      "brands that call it different things share its cost and curve; "
+                      "correct its kind; and give chunky ingredients a piece height.");
+    connect(names, &QPushButton::clicked, this, &MainWindow::show_mappings);
+    v->addWidget(names);
+    mapping_note_ = make_label("", "note");
+    v->addWidget(mapping_note_);
+    update_mapping_note();
+
+    col->addWidget(adv);
+    col->addStretch(1);
+    scroll->setWidget(host);
     return scroll;
 }
 
@@ -477,112 +938,133 @@ QWidget *MainWindow::build_results()
     auto *scroll = new QScrollArea;
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     auto *host = new QWidget;
     host->setObjectName("clear");
     auto *v = new QVBoxLayout(host);
-    v->setContentsMargins(4, 0, 4, 0);
-    v->setSpacing(14);
+    v->setContentsMargins(space::xs, kEdgeInset, space::md, kEdgeInset);
+    v->setSpacing(space::md);
 
+    // ---- verdict ----------------------------------------------------------
     verdict_panel_ = make_panel();
     auto *vv = new QVBoxLayout(verdict_panel_);
-    vv->setContentsMargins(15, 13, 15, 13);
-    vv->setSpacing(3);
+    vv->setContentsMargins(space::lg, space::md, space::lg, space::md);
+    vv->setSpacing(space::xs);
     verdict_head_ = new QLabel;
-    verdict_head_->setObjectName("h2");
+    verdict_head_->setObjectName("heading");
     verdict_head_->setWordWrap(true);
-    verdict_sub_ = make_label("", "note");
+    verdict_sub_ = make_label("", "lead");
     vv->addWidget(verdict_head_);
     vv->addWidget(verdict_sub_);
     v->addWidget(verdict_panel_);
 
-    auto *stats = new QHBoxLayout;
-    stats->setSpacing(1);
-    const char *keys[5] = {"RAMP STOPS AT", "FINAL VOLUME", "FILL", "SQUEEZED OUT",
-                           "HIGHEST SAFE FLOOR"};
+    // ---- key numbers, one panel divided into columns ----------------------
+    auto *stats = make_panel();
+    auto *sh = new QHBoxLayout(stats);
+    sh->setContentsMargins(0, space::md, 0, space::md);
+    sh->setSpacing(0);
     for (int i = 0; i < 5; ++i) {
-        auto *tile = make_panel(i == 4 ? "sunk" : "panel");
+        auto *tile = new QFrame;
+        tile->setObjectName(i == 0 ? "statFirst" : "stat");
         auto *tv = new QVBoxLayout(tile);
-        tv->setContentsMargins(12, 9, 12, 9);
-        tv->setSpacing(2);
-        auto *k = new QLabel(keys[i]);
-        k->setObjectName("statKey");
-        stat_key_[i] = k;
+        tv->setContentsMargins(space::lg, 0, space::lg, 0);
+        tv->setSpacing(space::xs);
+        stat_key_[i] = make_label("", "statKey");
+        stat_key_[i]->setWordWrap(false);
         stat_value_[i] = new QLabel("—");
         stat_value_[i]->setObjectName("statValue");
-        tv->addWidget(k);
+        tv->addWidget(stat_key_[i]);
         tv->addWidget(stat_value_[i]);
         stat_tile_[i] = tile;
-        stats->addWidget(tile);
+        sh->addWidget(tile, 1);
     }
-    v->addLayout(stats);
+    v->addWidget(stats);
 
-    auto *chart_panel = make_panel();
-    auto *cv = new QVBoxLayout(chart_panel);
-    cv->setContentsMargins(15, 13, 15, 13);
-    cv->setSpacing(8);
-    cv->addWidget(make_label("Volume against mass, one point per ramp pass", "h2"));
+    // ---- the finished bowl and where its volume goes -----------------------
+    // One card: the bowl and its reference photos on the left, and on the right the
+    // breakdown table, which is also the bowl's legend.
+    QVBoxLayout *bv = nullptr;
+    v->addWidget(titled_panel("The finished bowl", bv));
+
+    constexpr int kBowlColumn = 300;
+    diagram_ = new BowlDiagram;
+    diagram_->setFixedWidth(kBowlColumn);
+    diagram_->setFixedHeight(diagram_->heightForWidth(kBowlColumn));
+
+    auto *photos = new QWidget;
+    photos->setObjectName("clear");
+    auto *ph = new QHBoxLayout(photos);
+    ph->setContentsMargins(0, 0, 0, 0);
+    ph->setSpacing(space::md);
+    for (int i = 0; i < 2; ++i) {
+        auto *pc = new QVBoxLayout;
+        pc->setSpacing(space::xs);
+        photo_[i] = new PhotoLabel;
+        photo_caption_[i] = make_label("", "note");
+        photo_caption_[i]->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+        pc->addWidget(photo_[i], 0, Qt::AlignHCenter);
+        pc->addWidget(photo_caption_[i]);
+        pc->addStretch(1);
+        ph->addLayout(pc);
+    }
+
+    auto *right = new QWidget;
+    right->setObjectName("clear");
+    auto *rv = new QVBoxLayout(right);
+    rv->setContentsMargins(0, 0, 0, 0);
+    rv->setSpacing(space::md);
+    breakdown_ = new QTableWidget(0, 8);
+    breakdown_->setObjectName("breakdown");
+    breakdown_->setShowGrid(false);
+    breakdown_->verticalHeader()->setVisible(false);
+    breakdown_->verticalHeader()->setDefaultSectionSize(36);
+    breakdown_->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    breakdown_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    breakdown_->setSelectionMode(QAbstractItemView::NoSelection);
+    breakdown_->setFocusPolicy(Qt::NoFocus);
+    breakdown_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    breakdown_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    rv->addWidget(breakdown_);
+    foot_note_ = make_label("", "note");
+    rv->addWidget(foot_note_);
+
+    bowl_row_ = new BowlCard(
+        diagram_, kBowlColumn, photos, right,
+        [this] { return breakdown_natural_width(breakdown_); },
+        [this](int h) {
+            int w = 0;
+            for (PhotoLabel *p : photo_)
+                if (p->has_photo()) w += (w ? space::md : 0) + p->width_at(h);
+            return w;
+        },
+        [this](int h) {
+            for (int i = 0; i < 2; ++i) {
+                photo_[i]->set_photo_height(h);
+                photo_caption_[i]->setFixedWidth(
+                    photo_[i]->has_photo() ? std::max(photo_[i]->width(), 140) : 220);
+            }
+        });
+    bv->addWidget(bowl_row_);
+
+    // ---- charts: one per model, only the active one shows -----------------
+    QVBoxLayout *cv = nullptr;
+    ramp_panel_ = titled_panel("Volume against mass, one point per ramp pass", cv);
     ramp_chart_ = new RampChart;
     cv->addWidget(ramp_chart_);
-    ramp_panel_ = chart_panel;
-    v->addWidget(chart_panel);
+    v->addWidget(ramp_panel_);
 
-    auto *tolp = make_panel();
-    auto *tv = new QVBoxLayout(tolp);
-    tv->setContentsMargins(15, 13, 15, 13);
-    tv->setSpacing(8);
-    tv->addWidget(make_label("How far each ingredient moved inside its tolerance", "h2"));
+    QVBoxLayout *tv = nullptr;
+    tol_panel_ = titled_panel("How far each ingredient moved inside its tolerance", tv);
     tol_chart_ = new ToleranceChart;
     tv->addWidget(tol_chart_);
-    tol_panel_ = tolp;
-    tolp->setVisible(false);
-    v->addWidget(tolp);
+    tol_panel_->setVisible(false);
+    v->addWidget(tol_panel_);
 
-    auto *visual = make_panel();
-    auto *xv = new QHBoxLayout(visual);
-    xv->setContentsMargins(15, 13, 15, 13);
-    xv->setSpacing(14);
-    diagram_ = new BowlDiagram;
-    xv->addWidget(diagram_, 3);
-    for (int i = 0; i < 2; ++i) {
-        auto *col = new QVBoxLayout;
-        col->setSpacing(4);
-        photo_[i] = new QLabel;
-        photo_[i]->setAlignment(Qt::AlignCenter);
-        photo_[i]->setMinimumSize(120, 160);
-        photo_caption_[i] = make_label("", "note");
-        photo_caption_[i]->setAlignment(Qt::AlignCenter);
-        col->addWidget(photo_[i], 1);
-        col->addWidget(photo_caption_[i]);
-        xv->addLayout(col, 1);
-    }
-    v->addWidget(visual);
-
-    auto *break_panel = make_panel();
-    auto *bv = new QVBoxLayout(break_panel);
-    bv->setContentsMargins(15, 13, 15, 13);
-    bv->setSpacing(8);
-    bv->addWidget(make_label("Where the volume goes", "h2"));
-    breakdown_ = new QTableWidget(0, 7);
-    breakdown_->setHorizontalHeaderLabels({"ingredient", "rate at end", "start g",
-                                           "final g", "added g", "added vol", "share"});
-    breakdown_->verticalHeader()->setVisible(false);
-    breakdown_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    breakdown_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    breakdown_->setMinimumHeight(190);
-    bv->addWidget(breakdown_);
-    foot_note_ = make_label("", "note");
-    bv->addWidget(foot_note_);
-    v->addWidget(break_panel);
-
-    auto *curve_panel = make_panel();
-    auto *qv = new QVBoxLayout(curve_panel);
-    qv->setContentsMargins(15, 13, 15, 13);
-    qv->setSpacing(8);
-    qv->addWidget(make_label("The measured curve", "h2"));
+    QVBoxLayout *qv = nullptr;
+    v->addWidget(titled_panel("Measured mass → volume curves", qv));
     curve_chart_ = new CurveChart;
     qv->addWidget(curve_chart_);
-    v->addWidget(curve_panel);
 
     v->addStretch(1);
     scroll->setWidget(host);
@@ -592,8 +1074,7 @@ QWidget *MainWindow::build_results()
 void MainWindow::reload_theme()
 {
     qApp->setStyleSheet(theme::stylesheet());
-    for (int i = 0; i < 2; ++i)
-        if (base_fit_[i]) base_fit_[i]->setFont(theme::mono(8));
+    theme_->setText(theme::is_dark() ? "Light" : "Dark");
     update();
 }
 
@@ -605,6 +1086,13 @@ void MainWindow::toggle_theme()
     recompute();
 }
 
+namespace {
+const char *const kLegacyKeys[5] = {"Ramp stops at", "Final volume", "Fill",
+                                    "Squeezed out", "Highest safe floor"};
+const char *const kAdaptiveKeys[5] = {"Total mass", "Food volume", "Food fill",
+                                      "With sauce cups", "COGS"};
+}  // namespace
+
 void MainWindow::set_mode(bool adaptive)
 {
     adaptive_ = adaptive;
@@ -612,12 +1100,8 @@ void MainWindow::set_mode(bool adaptive)
     mode_adaptive_->setChecked(adaptive);
     legacy_group_->setVisible(!adaptive);
     adaptive_group_->setVisible(adaptive);
-    static const char *legacy_keys[5] = {"RAMP STOPS AT", "FINAL VOLUME", "FILL",
-                                         "SQUEEZED OUT", "HIGHEST SAFE FLOOR"};
-    static const char *adaptive_keys[5] = {"TOTAL MASS", "FOOD VOLUME", "FOOD FILL",
-                                           "WITH SAUCE CUPS", "COGS"};
     for (int i = 0; i < 5; ++i)
-        stat_key_[i]->setText(adaptive ? adaptive_keys[i] : legacy_keys[i]);
+        stat_key_[i]->setText(adaptive ? kAdaptiveKeys[i] : kLegacyKeys[i]);
     ramp_panel_->setVisible(!adaptive);
     tol_panel_->setVisible(adaptive);
     // The 50:50 split and the compression toggle both describe the legacy path.
@@ -646,13 +1130,9 @@ void MainWindow::set_units(bool metric)
         capacity_->setValue(units::from_oz(cap_oz));
     }
     if (capacity_label_)
-        capacity_label_->setText(QString("bowl capacity (%1)")
+        capacity_label_->setText(QString("Bowl capacity (%1)")
                                      .arg(metric ? "ml" : "fl oz"));
-    override_table_->setHorizontalHeaderItem(
-        4, new QTableWidgetItem(QString("%1/100g").arg(units::suffix())));
-
-    if (intro_)
-        intro_->setText(QString(kIntroText).arg(units::suffix()));
+    about_->setToolTip(QString(kIntroText).arg(units::suffix()));
     rebuild_override_rows();   // the rate spin boxes are re-seeded in the new unit
     recompute();
 }
@@ -744,6 +1224,68 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
 // Population
 //
 
+QString MainWindow::mappings_path() const
+{
+    return asset_dir_ + "/data/ingredient_aliases.csv";
+}
+
+QString MainWindow::pieces_path() const
+{
+    return asset_dir_ + "/data/ingredient_pieces.csv";
+}
+
+void MainWindow::update_mapping_note()
+{
+    if (!mapping_note_) return;
+    QSet<QString> brands;
+    for (const auto &[key, m] : name_maps_) brands << key.first;
+    mapping_note_->setText(
+        name_maps_.empty()
+            ? QString("Nothing mapped yet. Saved to <code>data/ingredient_aliases.csv</code>.")
+            : QString("<b>%1</b> spelling%2 mapped across %3 brand%4, saved in "
+                      "<code>data/ingredient_aliases.csv</code>.")
+                  .arg(name_maps_.size()).arg(name_maps_.size() == 1 ? "" : "s")
+                  .arg(brands.size()).arg(brands.size() == 1 ? "" : "s"));
+}
+
+void MainWindow::show_mappings()
+{
+    MappingDialog dialog(menus_, name_maps_, pieces_, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    const NameMappings next = dialog.mappings();
+    const PieceHeights next_pieces = dialog.pieces();
+    QString err;
+    if (!save_name_mappings(mappings_path(), next, &err)
+        || !save_piece_heights(pieces_path(), next_pieces, &err)) {
+        QMessageBox::warning(this, "Could not save ingredients", err);
+        return;
+    }
+    name_maps_ = next;
+    pieces_ = next_pieces;
+    reload_menus();
+}
+
+void MainWindow::reload_menus()
+{
+    // Names may have changed under the current selection, so hold on to the brand and
+    // recipe (recipe names come from the menu's template ids, not its ingredients).
+    const QString brand = brand_->currentData().toString();
+    const QString recipe = recipe_->currentData().toString();
+
+    LoadResult loaded = load_menus(asset_dir_ + "/menus", &name_maps_, &pieces_);
+    menus_ = std::move(loaded.menus);
+    menu_issues_ = loaded.issues;
+    issues_->setVisible(!menu_issues_.isEmpty());
+    issues_->setText(QString("%1 menu issue%2")
+                         .arg(menu_issues_.size())
+                         .arg(menu_issues_.size() == 1 ? "" : "s"));
+    issues_->setToolTip(menu_issues_.join("\n"));
+    update_mapping_note();
+
+    populate_brand();
+    select(brand, recipe);
+}
+
 void MainWindow::populate_brand()
 {
     loading_ = true;
@@ -763,6 +1305,7 @@ void MainWindow::on_brand_changed()
     overrides_.clear();
     picked_proteins_.clear();
     picked_toppings_.clear();
+    picked_sauces_.clear();
 
     for (int i = 0; i < 2; ++i) {
         QComboBox *box = (i == 0 ? base1_ : base2_);
@@ -813,6 +1356,7 @@ void MainWindow::on_recipe_changed()
     overrides_.clear();
     picked_proteins_.clear();
     picked_toppings_.clear();
+    picked_sauces_.clear();
 
     const QString want = recipe_->currentData().toString();
     const Recipe *rec = nullptr;
@@ -825,6 +1369,8 @@ void MainWindow::on_recipe_changed()
         base2_->setCurrentIndex(0);
         const QStringList proteins = m->names_of(Kind::Protein);
         if (!proteins.isEmpty()) picked_proteins_ << proteins.front();
+        // Every bowl comes with one sauce; the second is an upcharge.
+        if (!m->sauces.isEmpty()) picked_sauces_ << m->sauces.front();
         recipe_note_->setText(
             m->recipes.empty()
                 ? QString("<span style='color:%1'>This menu defines no preconfigured "
@@ -847,11 +1393,17 @@ void MainWindow::on_recipe_changed()
         };
         select(base1_, rec_bases.value(0));
         select(base2_, rec_bases.value(1));
+        picked_sauces_ = m->sauces_in(*rec).mid(0, SauceCups::kMax);
 
-        const int n = static_cast<int>(rec->items.size());
+        const int n = static_cast<int>(rec->items.size()) - m->sauces_in(*rec).size();
         QString note = QString("Pins <b>%1</b> ingredient%2")
                            .arg(n)
                            .arg(n == 1 ? "" : "s");
+        if (!picked_sauces_.isEmpty())
+            note += QString(" and <b>%1</b> sauce cup%2 (%3)")
+                        .arg(picked_sauces_.size())
+                        .arg(picked_sauces_.size() == 1 ? "" : "s")
+                        .arg(picked_sauces_.join(", "));
         note += n <= 2 ? " — this template only fixes the protein, so the rest of the "
                          "bowl is still customer-chosen."
                        : ".";
@@ -901,25 +1453,65 @@ void MainWindow::rebuild_ingredient_pickers()
             if (++col == 2) { col = 0; ++row; }
         }
     }
+
+    auto *grid = qobject_cast<QGridLayout *>(sauce_picks_->layout());
+    while (QLayoutItem *item = grid->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
+    if (m->sauces.isEmpty()) {
+        grid->addWidget(make_label("This menu serves no sauces in cups.", "note"), 0, 0);
+        return;
+    }
+    int row = 0, col = 0;
+    for (const QString &n : m->sauces) {
+        auto *cb = new QCheckBox(n);
+        cb->setChecked(picked_sauces_.contains(n));
+        connect(cb, &QCheckBox::toggled, this, [this, n](bool on) {
+            if (on && !picked_sauces_.contains(n)) picked_sauces_ << n;
+            if (!on) picked_sauces_.removeAll(n);
+            on_selection_changed();
+        });
+        grid->addWidget(cb, row, col);
+        if (++col == 2) { col = 0; ++row; }
+    }
+}
+
+int MainWindow::sauce_cup_count() const
+{
+    return std::min(static_cast<int>(picked_sauces_.size()), SauceCups::kMax);
 }
 
 void MainWindow::rebuild_override_rows()
 {
     const Menu *m = menu();
     if (!m) return;
-    QStringList rows = picked_proteins_ + picked_toppings_;
+    const QStringList rows = picked_proteins_ + picked_toppings_;
 
-    override_table_->setRowCount(rows.size());
+    auto *grid = qobject_cast<QGridLayout *>(override_table_->layout());
+    while (QLayoutItem *item = grid->takeAt(0)) {
+        delete item->widget();
+        delete item;
+    }
     override_table_->setVisible(!rows.isEmpty());
-    for (int r = 0; r < rows.size(); ++r) {
-        const QString name = rows[r];
+    if (rows.isEmpty()) return;
+
+    const QString captions[4] = {"Start g", "Step g", "Max g",
+                                 QString("%1/100 g").arg(units::suffix())};
+    for (int c = 0; c < 4; ++c) grid->addWidget(make_label(captions[c], "label"), 0, c);
+
+    const theme::Palette &pal = theme::palette();
+    int line = 1;
+    for (const QString &name : rows) {
         const Ingredient *ing = m->find(name);
-        auto *label = new QTableWidgetItem(name);
-        if (ing && (ing->source == WeightSource::Class || ing->source == WeightSource::None))
-            label->setForeground(theme::palette().over);
-        label->setToolTip(ing ? QString("portion source: %1").arg(to_string(ing->source))
+        auto *label = new QLabel(name);
+        label->setObjectName("clear");
+        const bool guessed =
+            ing && (ing->source == WeightSource::Class || ing->source == WeightSource::None);
+        if (guessed) label->setStyleSheet(QString("color:%1;").arg(pal.over.name()));
+        label->setToolTip(ing ? QString("Portion source: %1").arg(to_string(ing->source))
                               : QString());
-        override_table_->setItem(r, 0, label);
+        grid->addWidget(label, line++, 0, 1, 4);
 
         const char *fields[4] = {"start", "step", "max", "rate"};
         for (int c = 0; c < 4; ++c) {
@@ -938,11 +1530,11 @@ void MainWindow::rebuild_override_rows()
                 else o.rate = units::to_oz(v);
                 recompute();
             });
-            override_table_->setCellWidget(r, c + 1, spin);
+            grid->addWidget(spin, line, c);
         }
+        ++line;
+        grid->setRowMinimumHeight(line++, space::xs);
     }
-    override_table_->setMaximumHeight(
-        std::min(260, 30 + static_cast<int>(rows.size()) * 34));
 }
 
 void MainWindow::apply_floor()
@@ -996,6 +1588,13 @@ void MainWindow::on_selection_changed()
         for (int i = 0; i < grid->count(); ++i)
             if (auto *cb = qobject_cast<QCheckBox *>(grid->itemAt(i)->widget()))
                 cb->setChecked(picked_toppings_.contains(cb->text()));
+    // A bowl holds at most two cups, so the rest lock once two sauces are picked.
+    if (auto *grid = qobject_cast<QGridLayout *>(sauce_picks_->layout()))
+        for (int i = 0; i < grid->count(); ++i)
+            if (auto *cb = qobject_cast<QCheckBox *>(grid->itemAt(i)->widget())) {
+                cb->setChecked(picked_sauces_.contains(cb->text()));
+                cb->setEnabled(cb->isChecked() || picked_sauces_.size() < SauceCups::kMax);
+            }
 
     const bool two_bases = !base2_->currentData().toString().isEmpty();
     for (int i = 0; i < 2; ++i) {
@@ -1061,9 +1660,75 @@ SimSettings MainWindow::legacy_settings() const
     SimSettings s;
     s.floor_g = floor_->value();
     s.bowl_capacity_oz = units::to_oz(capacity_->value());
+    s.sauce.cups = sauce_cup_count();
+    s.geometry = geometry();
     s.compress = compress_->isChecked();
     s.load_transfer = load_transfer_->value();
     return s;
+}
+
+BowlGeometry MainWindow::geometry() const
+{
+    BowlGeometry g;
+    g.enabled = heights_->isChecked();
+    g.depth_mm = depth_->value();
+    g.lid_headroom_mm = headroom_->value();
+    g.cups_pressed = cups_pressed_->isChecked();
+    g.cup_height_mm = cup_h_->value();
+    g.cup_diameter_mm = cup_d_->value();
+    g.chunk_proud = chunk_proud_->value() / 100.0;
+    return g;
+}
+
+void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce,
+                                      const BowlGeometry &g, double chunk_mm)
+{
+    if (!g.enabled) {
+        geometry_note_->setText("Fit is judged by volume alone; each sauce cup counts as its "
+                                "50 ml of contents.");
+        return;
+    }
+    SauceCups none = sauce;
+    none.cups = 0;
+    const double room = food_capacity_oz(capacity_oz, none, g, 0);
+    const double after_chunks = food_capacity_oz(capacity_oz, none, g, chunk_mm);
+    const double after_cups = food_capacity_oz(capacity_oz, sauce, g, chunk_mm);
+
+    QString text = QString("Lid at %1 mm. ").arg(g.depth_mm + g.lid_headroom_mm, 0, 'f', 1);
+    if (sauce.cups > 0)
+        text += QString("%1 cup%2 %3 take <b>%4</b>. ")
+                    .arg(sauce.cups).arg(sauce.cups == 1 ? "" : "s")
+                    .arg(g.cups_pressed ? "pressed in" : "resting on top")
+                    .arg(units::volume(after_chunks - after_cups, true));
+    if (chunk_mm > 0)
+        text += QString("The tallest chunk (%1 mm) needs <b>%2</b> of clearance. ")
+                    .arg(chunk_mm, 0, 'f', 0)
+                    .arg(units::volume(room - after_chunks, true));
+    text += QString("That leaves <b>%1</b> for food.").arg(units::volume(after_cups, true));
+
+    // Say plainly which of these numbers are guesses.
+    QStringList guesses;
+    if (sauce.cups > 0 && g.cup_height_mm == BowlGeometry::kPlaceholderCupHeight)
+        guesses << "cup height";
+    if (sauce.cups > 0 && g.cups_pressed
+        && g.cup_diameter_mm == BowlGeometry::kPlaceholderCupDiameter)
+        guesses << "cup diameter";
+    if (g.lid_headroom_mm == BowlGeometry::kPlaceholderHeadroom) guesses << "lid dome";
+    if (chunk_mm > 0 && g.chunk_proud == BowlGeometry::kPlaceholderChunkProud)
+        guesses << "how proud chunks stand";
+    if (const Menu *m = menu())
+        for (const QString &n : bowl_names())
+            if (const Ingredient *ing = m->find(n);
+                ing && ing->piece_height_placeholder && ing->piece_height_mm == chunk_mm
+                && chunk_mm > 0) {
+                guesses << QString("%1's piece height").arg(n);
+                break;
+            }
+    if (!guesses.isEmpty())
+        text += QString("<br><span style='color:%1'>Placeholder: %2. Set real values in "
+                        "Advanced.</span>")
+                    .arg(theme::palette().over.name(), guesses.join(", "));
+    geometry_note_->setText(text);
 }
 
 AdaptiveSettings MainWindow::adaptive_settings() const
@@ -1076,7 +1741,8 @@ AdaptiveSettings MainWindow::adaptive_settings() const
     a.tolerances.base = tol_base_->value() / 100.0;
     a.tolerances.protein = tol_protein_->value() / 100.0;
     a.tolerances.topping = tol_topping_->value() / 100.0;
-    a.sauce_cups = static_cast<int>(sauce_cups_->value());
+    a.sauce.cups = sauce_cup_count();
+    a.geometry = geometry();
     a.menu_price = menu_price_->value();
     a.cogs_target = cogs_target_->value() / 100.0;
     return a;
@@ -1094,11 +1760,13 @@ void MainWindow::recompute()
         return;
     }
 
-    const SimSettings settings = legacy_settings();
-    last_ = simulate(assemble_bowl(), settings);
+    last_ = simulate(assemble_bowl(), legacy_settings());
     const SimResult &r = last_;
+    const SimSettings &settings = r.settings;   // carries the bowl's tallest chunk
+    update_geometry_note(settings.bowl_capacity_oz, settings.sauce, settings.geometry,
+                         settings.chunk_height_mm);
     const theme::Palette &pal = theme::palette();
-    const double cap = settings.bowl_capacity_oz;
+    const double cap = settings.food_capacity_oz();
     const Frame &last = r.last();
 
     // ---- verdict ----------------------------------------------------------
@@ -1183,16 +1851,18 @@ void MainWindow::recompute()
                               : QString("none"))
                        : QString("no limit"));
     stat_value_[4]->setStyleSheet(QString("color:%1;").arg(pal.mass.name()));
-    for (int i = 0; i < 5; ++i) stat_key_[i]->setText(
-        QStringList{"RAMP STOPS AT", "FINAL VOLUME", "FILL", "SQUEEZED OUT",
-                    "HIGHEST SAFE FLOOR"}[i]);
+    for (int i = 0; i < 5; ++i) stat_key_[i]->setText(kLegacyKeys[i]);
 
     // ---- breakdown --------------------------------------------------------
     double total_oz = 0;
     for (double oz : last.per_item_oz) total_oz += oz;
     if (total_oz <= 0) total_oz = 1;
 
-    breakdown_->setRowCount(static_cast<int>(r.items.size()));
+    // The diagram goes first: the table is its legend, keyed by the colours it drew.
+    diagram_->set_result(r);
+    const std::vector<QColor> band = diagram_->item_colours();
+
+    std::vector<BreakdownRow> rows;
     for (size_t i = 0; i < r.items.size(); ++i) {
         const BowlItem &it = r.items[i];
         const double added_g = it.final_g - it.start_g;
@@ -1200,29 +1870,30 @@ void MainWindow::recompute()
         const double squeeze =
             last.per_item_oz_uncompressed[i] - last.per_item_oz[i];
 
-        QString name = it.name;
-        if (it.kind != Kind::Base) name += QString("  (%1)").arg(to_string(it.kind));
+        BreakdownRow row;
+        row.name = it.name;
+        row.kind = to_string(it.kind);
         if (settings.compress && squeeze > 0.05)
-            name += QString("  −%1").arg(units::volume(squeeze, true));
-        auto *cell = new QTableWidgetItem(name);
-        if (it.kind == Kind::Base) cell->setForeground(theme::series_colour(it.name));
-        const QString cols[6] = {
-            units::rate(it.marginal_oz_per_100g(it.final_g)),
-            QString::number(std::round(it.start_g)),
-            QString::number(std::round(it.final_g)),
-            added_g > 0.05 ? QString("+%1").arg(std::round(added_g)) : "—",
-            added_oz > 0.05 ? QString("+%1").arg(units::volume(added_oz)) : "—",
+            row.kind += QString(" · squeezed %1 by the load above it")
+                            .arg(units::volume(squeeze, true));
+        row.swatch = band[i];
+        row.cells = {
+            units::volume(last.per_item_oz[i], true),
             QString("%1%").arg(std::round(last.per_item_oz[i] / total_oz * 100)),
+            QString("%1 g").arg(std::round(it.start_g)),
+            QString("%1 g").arg(std::round(it.final_g)),
+            added_g > 0.05 ? QString("+%1").arg(units::volume(added_oz, true)) : "—",
+            units::rate(it.marginal_oz_per_100g(it.final_g)),
         };
-        breakdown_->setItem(static_cast<int>(i), 0, cell);
-        for (int c = 0; c < 6; ++c) {
-            auto *v = new QTableWidgetItem(cols[c]);
-            v->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            breakdown_->setItem(static_cast<int>(i), c + 1, v);
-        }
+        rows.push_back(row);
     }
-    breakdown_->resizeColumnsToContents();
-    breakdown_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    fill_breakdown(breakdown_,
+                   {"Ingredient", "Volume", "Share", "Start", "Final", "Added",
+                    "Rate"},
+                   {{6, QString("Marginal %1 per +100 g at the final mass")
+                            .arg(units::suffix())}},
+                   rows);
+    static_cast<BowlCard *>(bowl_row_)->relayout();
 
     // ---- footnote ---------------------------------------------------------
     std::vector<const BowlItem *> ramped;
@@ -1324,7 +1995,6 @@ void MainWindow::recompute()
 
     ramp_chart_->set_show_uncompressed(settings.compress);
     ramp_chart_->set_result(r);
-    diagram_->set_result(r);
     curve_chart_->set_curves(&curves_, method());
 
     QStringList bits;
@@ -1353,17 +2023,29 @@ void MainWindow::show_report()
         audit_brand(*m, curves_, method(), legacy_settings(), adaptive_settings(), &costs_);
 
     const QString assumptions =
-        QString("%1 bowl · %2 curves · adaptive target %3% with %4 sauce cup%5 · each "
-                "recipe uses the floor its own ingredients match.")
+        QString("%1 bowl · %2 curves · %3 sauce cup%4 charged against capacity in both "
+                "models · adaptive target %5% · each recipe uses the floor its own "
+                "ingredients match.")
             .arg(units::volume(units::to_oz(capacity_->value()), true))
             .arg(method() == Method::Robot ? "robot" : method() == Method::Hand ? "hand" : "pooled")
-            .arg(std::round(target_fill_->value()))
-            .arg(static_cast<int>(sauce_cups_->value()))
-            .arg(sauce_cups_->value() == 1 ? "" : "s");
+            .arg(sauce_cup_count())
+            .arg(sauce_cup_count() == 1 ? "" : "s")
+            .arg(std::round(target_fill_->value()));
 
     ReportDialog dialog(audit, assumptions, this);
     connect(&dialog, &ReportDialog::recipe_chosen, this,
             [this, m](const QString &recipe) { select(m->brand, recipe); });
+    connect(&dialog, &ReportDialog::full_report_requested, this, [this, m] {
+        SweepContext ctx;
+        ctx.menus = &menus_;
+        ctx.brand = m->brand;
+        ctx.curves = &curves_;
+        ctx.method = method();
+        ctx.legacy = legacy_settings();
+        ctx.adaptive = adaptive_settings();
+        ctx.costs = &costs_;
+        SweepDialog(std::move(ctx), this).exec();
+    });
     dialog.exec();
 }
 
@@ -1448,8 +2130,9 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
         QPixmap pm(photo_dir.filePath(QString("%1_%2g.jpg").arg(pit->second)
                                           .arg(best, 0, 'f', 0)));
         if (pm.isNull()) continue;
-        photo_[slot]->setPixmap(pm.scaled(photo_[slot]->width(), photo_[slot]->height(),
-                                          Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        photo_[slot]->set_source(pm);
+        photo_[slot]->setVisible(true);
+        photo_caption_[slot]->setVisible(true);
         photo_caption_[slot]->setText(
             QString("<b>%1</b><br>%2 g simulated · %3 g photo%4")
                 .arg(it.name).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
@@ -1460,10 +2143,13 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
         ++slot;
     }
     for (int i = slot; i < 2; ++i) {
-        photo_[i]->clear();
+        // An empty slot collapses, so a single photo centres under the bowl.
+        photo_[i]->set_source(QPixmap());
+        photo_[i]->setVisible(false);
         photo_caption_[i]->setText(i == 0 ? "No measured photo series for this base." : "");
+        photo_caption_[i]->setVisible(i == 0);
     }
-
+    static_cast<BowlCard *>(bowl_row_)->relayout();   // a photo more or less changes the fit
 }
 
 void MainWindow::render_adaptive()
@@ -1542,41 +2228,61 @@ void MainWindow::render_adaptive()
     stat_value_[4]->setStyleSheet(
         QString("color:%1;").arg((ok ? pal.accent : pal.over).name()));
 
-    // Breakdown, in the same columns but reading nominal -> dispensed.
-    breakdown_->setRowCount(static_cast<int>(r.items.size()));
-    double total_oz = std::max(0.001, r.food_volume_oz);
+    // The diagram and photos still describe the dispensed bowl, so feed them a
+    // SimResult built from the solved quantities.
+    SimResult shim;
+    shim.settings.bowl_capacity_oz = a.bowl_capacity_oz;
+    shim.settings.sauce = a.sauce;
+    shim.settings.geometry = a.geometry;
+    shim.settings.chunk_height_mm = a.chunk_height_mm;
+    shim.items = assemble_bowl();
+    Frame f;
+    for (size_t i = 0; i < shim.items.size() && i < r.items.size(); ++i) {
+        shim.items[i].final_g = r.items[i].final_g;
+        f.per_item_oz.push_back(r.items[i].volume_oz);
+        f.per_item_oz_uncompressed.push_back(r.items[i].volume_oz);
+        f.grams += r.items[i].final_g;
+        f.ounces += r.items[i].volume_oz;
+    }
+    f.ounces_uncompressed = f.ounces;
+    shim.frames.push_back(f);
+    diagram_->set_result(shim);
+    render_photos(shim.items);
+    const std::vector<QColor> band = diagram_->item_colours();
+
+    // Breakdown, in the same leading columns but reading nominal -> dispensed.
+    std::vector<BreakdownRow> rows;
+    const double food_oz = std::max(0.001, r.food_volume_oz);
     for (size_t i = 0; i < r.items.size(); ++i) {
         const AdaptiveItem &it = r.items[i];
-        QString name = it.name;
-        if (it.kind != Kind::Base) name += QString("  (%1)").arg(to_string(it.kind));
-        if (it.clamped) name += "  clamped";
-        if (!it.cost_known) name += "  ~cost";
-        auto *cell = new QTableWidgetItem(name);
-        if (it.kind == Kind::Base) cell->setForeground(theme::series_colour(it.name));
-        else if (it.clamped) cell->setForeground(pal.over);
-        breakdown_->setItem(static_cast<int>(i), 0, cell);
-        const QString cols[6] = {
+        BreakdownRow row;
+        row.name = it.name;
+        if (it.clamped) row.name += "  (clamped)";
+        if (!it.cost_known) row.name += "  (~cost)";
+        row.kind = to_string(it.kind);
+        row.swatch = i < band.size() ? band[i] : QColor();
+        if (it.clamped) row.colour = pal.over;
+        row.cells = {
+            units::volume(it.volume_oz, true),
+            QString("%1%").arg(std::round(it.volume_oz / food_oz * 100)),
+            QString("%1 g").arg(std::round(it.nominal_g)),
+            QString("%1 g").arg(std::round(it.final_g)),
             QString("%1%2%").arg(it.delta_pct() > 0.05 ? "+" : "")
                             .arg(it.delta_pct(), 0, 'f', 1),
-            QString::number(std::round(it.nominal_g)),
-            QString::number(std::round(it.final_g)),
-            QString("%1").arg(std::round(it.final_g - it.nominal_g)),
-            units::volume(it.volume_oz),
             QString("$%1").arg(it.cost, 0, 'f', 2),
         };
-        for (int c = 0; c < 6; ++c) {
-            auto *v = new QTableWidgetItem(cols[c]);
-            v->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-            breakdown_->setItem(static_cast<int>(i), c + 1, v);
-        }
+        rows.push_back(row);
     }
-    breakdown_->setHorizontalHeaderLabels({"ingredient", "change", "nominal g",
-                                           "dispense g", "Δg", "volume", "cost"});
-    breakdown_->resizeColumnsToContents();
-    breakdown_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    (void)total_oz;
+    fill_breakdown(breakdown_,
+                   {"Ingredient", "Volume", "Share", "Nominal", "Dispensed", "Change",
+                    "Cost"},
+                   {{5, "Dispensed against nominal, inside the ingredient's tolerance"}},
+                   rows);
+    static_cast<BowlCard *>(bowl_row_)->relayout();
 
-    QString note = QString("Sauce cups take %1 of the bowl, leaving %2 for food. ")
+    update_geometry_note(a.bowl_capacity_oz, a.sauce, a.geometry, a.chunk_height_mm);
+    QString note = QString("%1 take %2 of the bowl, leaving %3 for food. ")
+                       .arg(a.geometry.enabled ? "Cups and chunk clearance" : "Sauce cups")
                        .arg(units::volume(a.sauce_volume_oz(), true))
                        .arg(units::volume(a.food_capacity_oz(), true));
     if (a.menu_price > 0)
@@ -1600,23 +2306,7 @@ void MainWindow::render_adaptive()
 
     tol_chart_->set_result(r);
 
-    // The diagram and photos still describe the dispensed bowl, so feed them a
-    // SimResult built from the solved quantities.
-    SimResult shim;
-    shim.settings.bowl_capacity_oz = cap;
-    shim.items = assemble_bowl();
-    Frame f;
-    for (size_t i = 0; i < shim.items.size() && i < r.items.size(); ++i) {
-        shim.items[i].final_g = r.items[i].final_g;
-        f.per_item_oz.push_back(r.items[i].volume_oz);
-        f.per_item_oz_uncompressed.push_back(r.items[i].volume_oz);
-        f.grams += r.items[i].final_g;
-        f.ounces += r.items[i].volume_oz;
-    }
-    f.ounces_uncompressed = f.ounces;
-    shim.frames.push_back(f);
-    diagram_->set_result(shim);
-    render_photos(shim.items);
+
     curve_chart_->set_curves(&curves_, method());
 }
 

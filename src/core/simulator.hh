@@ -28,6 +28,10 @@ struct BowlItem {
     double p = 1.0;
     double flat_oz_per_100g = 4.5;
 
+    /// Height of one piece, for chunky ingredients that stand proud of the surface
+    /// rather than smearing into it. 0 means the ingredient smears.
+    double piece_height_mm = 0.0;
+
     double volume_oz(double grams) const;
     double marginal_oz_per_100g(double grams) const;
 };
@@ -40,11 +44,79 @@ struct Frame {
     std::vector<double> per_item_oz_uncompressed;
 };
 
+///
+/// Sauce rides in a cup inside the bowl and takes real space, so it comes off the
+/// capacity available to food. Every bowl carries one; the second is an upcharge.
+///
+struct SauceCups {
+    static constexpr int kMax = 2;
+
+    /// Two is the common order: one comes with the bowl, the second is an upcharge.
+    int cups = 2;
+    double cup_ml = 50.0;
+
+    double volume_oz() const;
+};
+
+///
+/// The bowl as a vessel under a lid, for judging fit by height rather than volume.
+///
+/// Smearing food (rice, greens, most toppings) flows into whatever space there is, so
+/// for it only volume matters. Two things do not flow: rigid sauce cups and chunky
+/// pieces. Each claims height below the lid, and height in a near-cylindrical bowl is
+/// volume: every millimetre of clearance they need is a millimetre of food the bowl
+/// cannot hold across its whole footprint (for chunks) or under the cup (for cups).
+///
+/// The footprint is taken from the capacity over the depth, not from a measured
+/// diameter: 32 oz is the functional full level at the rim, and a measured diameter
+/// may carry error, so the capacity is trusted and the bowl treated as a cylinder.
+///
+struct BowlGeometry {
+    bool enabled = false;          ///< off: the volume-only model, cups at their contents
+    double depth_mm = 44.5;        ///< rim height, where the functional capacity is reached
+    double lid_headroom_mm = 0.0;  ///< extra clearance at the centre of a domed lid
+
+    /// Pressed in, the robot pushes each cup down and the food flows round it, so a
+    /// cup costs only its own column. Resting, cups sit on the food as dispensed, so
+    /// the whole surface must stay a cup height below the lid.
+    bool cups_pressed = true;
+    double cup_height_mm = 35.0;   ///< lidded
+    double cup_diameter_mm = 62.0; ///< only used when pressed in
+
+    /// How much of a chunk's height stands above the smeared surface around it.
+    double chunk_proud = 0.5;
+
+    /// Placeholders, until the cup and lid are measured; the UI flags these values.
+    static constexpr double kPlaceholderCupHeight = 35.0;
+    static constexpr double kPlaceholderCupDiameter = 62.0;
+    static constexpr double kPlaceholderHeadroom = 0.0;
+    static constexpr double kPlaceholderChunkProud = 0.5;
+};
+
+/// Space left for food, in oz. With geometry off this is the capacity less the cups'
+/// contents; with it on, less what the cups and the tallest chunk need below the lid.
+double food_capacity_oz(double bowl_capacity_oz, const SauceCups &sauce,
+                        const BowlGeometry &geometry, double chunk_height_mm);
+
+/// Height of the tallest chunk in a bowl, from the items with any mass in it.
+double tallest_chunk_mm(const std::vector<BowlItem> &items);
+
 struct SimSettings {
     double floor_g = 0.0;
     double bowl_capacity_oz = 32.0;
+    SauceCups sauce;
+    BowlGeometry geometry;
     bool compress = false;
     double load_transfer = 1.0;  ///< share of the weight above a base that bears on it
+
+    /// Tallest chunk in the bowl; simulate() fills this from the items it is given.
+    double chunk_height_mm = 0.0;
+
+    /// What is left for food once the cups are in. The ramp is judged against this.
+    double food_capacity_oz() const;
+    /// Everything that is not food: the cups, and with geometry on, the clearance
+    /// the cups and chunks need. capacity = food room + overhead.
+    double overhead_oz() const { return bowl_capacity_oz - food_capacity_oz(); }
 };
 
 enum class Verdict {
@@ -88,8 +160,14 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings);
 ///
 double split_base_start(const Ingredient &ingredient, bool split_on, bool two_bases);
 
+/// Volume per 100 g for the ingredients with no measured curve. Nothing here was
+/// weighed; they stand in until proteins and toppings are run through the rig.
+constexpr double kFlatProteinRate = 3.5;
+constexpr double kFlatToppingRate = 4.5;
+
 /// Builds a bowl item from menu configuration plus the fitted curves.
 BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method method,
-                   double flat_protein_rate, double flat_topping_rate);
+                   double flat_protein_rate = kFlatProteinRate,
+                   double flat_topping_rate = kFlatToppingRate);
 
 }  // namespace bowlfill

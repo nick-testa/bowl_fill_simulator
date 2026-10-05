@@ -9,8 +9,11 @@ if("${CONFIG}" STREQUAL "" OR "${CONFIG}" STREQUAL "Release")
   "CMakeFiles/bowlfill-verify_autogen.dir/ParseCache.txt"
   "CMakeFiles/bowlfill_core_autogen.dir/AutogenUsed.txt"
   "CMakeFiles/bowlfill_core_autogen.dir/ParseCache.txt"
+  "CMakeFiles/romaine-fill_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/romaine-fill_autogen.dir/ParseCache.txt"
   "bowl-fill-simulator_autogen"
   "bowlfill-verify_autogen"
   "bowlfill_core_autogen"
+  "romaine-fill_autogen"
   )
 endif()

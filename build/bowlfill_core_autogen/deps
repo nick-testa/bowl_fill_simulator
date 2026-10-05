@@ -11,6 +11,8 @@ bowlfill_core_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/menu_loader.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.hh \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXInformation.cmake \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCommonLanguageInclude.cmake \

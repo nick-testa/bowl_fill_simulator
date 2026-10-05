@@ -10,8 +10,6 @@
 namespace bowlfill {
 namespace {
 
-constexpr double kOzPerMl = 1.0 / 29.5735295625;
-
 /// Volume of one ingredient at a given mass, using whatever the BowlItem carries:
 /// a fitted power law for the measured bases, a flat rate for everything else.
 double volume_at(const BowlItem &it, double grams)
@@ -33,12 +31,12 @@ double Tolerances::for_kind(Kind k) const
 
 double AdaptiveSettings::sauce_volume_oz() const
 {
-    return std::max(0, std::min(sauce_cups, 2)) * sauce_cup_ml * kOzPerMl;
+    return bowl_capacity_oz - food_capacity_oz();
 }
 
 double AdaptiveSettings::food_capacity_oz() const
 {
-    return std::max(0.0, bowl_capacity_oz - sauce_volume_oz());
+    return bowlfill::food_capacity_oz(bowl_capacity_oz, sauce, geometry, chunk_height_mm);
 }
 
 QString to_string(AdaptiveStatus s)
@@ -168,6 +166,7 @@ AdaptiveResult solve_adaptive(const std::vector<BowlItem> &items,
 {
     AdaptiveResult r;
     r.settings = settings;
+    r.settings.chunk_height_mm = tallest_chunk_mm(items);
     r.items = nominal_from_items(items);
     if (r.items.empty()) return r;
 
@@ -236,7 +235,7 @@ AdaptiveResult solve_adaptive(const std::vector<BowlItem> &items,
         r.food_volume_oz += it.volume_oz;
         r.total_cost += it.cost;
     }
-    r.total_volume_oz = r.food_volume_oz + settings.sauce_volume_oz();
+    r.total_volume_oz = r.food_volume_oz + r.settings.sauce_volume_oz();
     return r;
 }
 

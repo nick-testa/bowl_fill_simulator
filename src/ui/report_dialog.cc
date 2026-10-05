@@ -76,7 +76,7 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     v->setSpacing(10);
 
     auto *head = new QLabel(audit_.headline());
-    head->setFont(theme::display(14));
+    head->setFont(theme::font(theme::Text::Heading, true));
     head->setWordWrap(true);
     v->addWidget(head);
 
@@ -95,7 +95,7 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     table_->setSelectionMode(QAbstractItemView::SingleSelection);
     table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table_->setAlternatingRowColors(false);
-    table_->setFont(theme::sans(10));
+    table_->setFont(theme::font(theme::Text::Body));
     v->addWidget(table_, 1);
 
     detail_ = new QLabel;
@@ -109,12 +109,16 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     auto *buttons = new QDialogButtonBox(this);
     auto *open = buttons->addButton("Open in simulator", QDialogButtonBox::ActionRole);
     open->setObjectName("primary");
+    auto *full = buttons->addButton("Full report…", QDialogButtonBox::ActionRole);
+    full->setToolTip("Sweep every orderable combination of bases, proteins and toppings "
+                     "against every recipe in this brand, and save it as CSV.");
     auto *copy = buttons->addButton("Copy CSV", QDialogButtonBox::ActionRole);
     auto *save = buttons->addButton("Save CSV…", QDialogButtonBox::ActionRole);
     buttons->addButton(QDialogButtonBox::Close);
     v->addWidget(buttons);
 
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(full, &QPushButton::clicked, this, [this] { emit full_report_requested(); });
     connect(copy, &QPushButton::clicked, this, [this] {
         QApplication::clipboard()->setText(audit_.to_csv());
     });
@@ -154,7 +158,7 @@ void ReportDialog::populate()
         const QColor fg = severity_colour(r);
         // The selection highlight overrides the foreground, so severity is carried in
         // weight as well as colour.
-        QFont row_font = theme::sans(10, r.severity() >= 3 ? QFont::DemiBold : QFont::Normal);
+        QFont row_font = theme::font(theme::Text::Body, r.severity() >= 3);
         const QString kind = r.customer_built ? "customer-built"
                              : r.complete_bowl ? "complete"
                                                : "partial";

@@ -1,0 +1,327 @@
+---
+title: "Menu Fill Report"
+format:
+  typst:
+    papersize: us-letter
+    margin:
+      x: 0.8in
+      y: 0.8in
+    fig-format: svg
+    number-sections: true
+    toc: true
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+<!--
+Render with the default report:
+    uv run quarto render menu_report.qmd
+
+Render a different brand's report:
+    uv run quarto render menu_report.qmd -P report:the-hungry-siren-full-report.csv --output siren-report.pdf
+
+Or change `report` in the parameters cell below.
+-->
+
+```{python}
+#| tags: [parameters]
+report = "the-hungry-cowgirl-full-report.csv"
+```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
+import textwrap
+from IPython.display import Markdown
+
+df = pd.read_csv(report)
+
+
+def ordered(present, preferred):
+    """Known values in their preferred order, then anything unexpected at the end."""
+    present = list(pd.unique(present))
+    return [v for v in preferred if v in present] + sorted(v for v in present if v not in preferred)
+
+
+def md_table(frame, **kwargs):
+    """Render a DataFrame as a markdown table, with thousands separators on integer columns."""
+    frame = frame.copy()
+    for c in frame.select_dtypes("integer"):
+        frame[c] = frame[c].map("{:,}".format)
+    return Markdown(frame.to_markdown(**kwargs))
+
+
+# Verdicts are states, so they get fixed status colors (same color everywhere below).
+VERDICT_COLORS = {
+    "fits": "#0ca30c",                # good
+    "over after ramping": "#fab219",  # warning
+    "saturates short": "#ec835a",     # serious
+    "over as written": "#d03b3b",     # critical
+}
+VERDICT_ORDER = ordered(df["legacy_verdict"], list(VERDICT_COLORS))
+VERDICT_COLORS = {v: VERDICT_COLORS.get(v, "#8a8984") for v in VERDICT_ORDER}
+INK, INK_2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
+
+plt.rcParams.update({
+    "figure.facecolor": SURFACE,
+    "axes.facecolor": SURFACE,
+    "axes.edgecolor": GRID,
+    "axes.labelcolor": INK_2,
+    "axes.titlecolor": INK,
+    "axes.titleweight": "semibold",
+    "axes.titlelocation": "left",
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "axes.grid": True,
+    "grid.color": GRID,
+    "grid.linewidth": 0.8,
+    "axes.axisbelow": True,
+    "xtick.color": INK_2,
+    "ytick.color": INK_2,
+    "font.size": 10,
+})
+
+thousands = mticker.FuncFormatter(lambda x, _: f"{x:,.0f}")
+```
+
+```{python}
+#| output: asis
+brands = ", ".join(df["brand"].unique())
+print(f"**Brand:** {brands}  \n**Source:** `{report}`  \n"
+      f"**Configurations:** {len(df):,} rows across {df['recipe'].nunique()} recipes")
+```
+
+# Rows per legacy verdict
+
+```{python}
+verdict_counts = df["legacy_verdict"].value_counts().reindex(VERDICT_ORDER)
+
+fig, ax = plt.subplots(figsize=(8, 0.5 * len(verdict_counts) + 1))
+bars = ax.barh(verdict_counts.index, verdict_counts.values,
+               color=[VERDICT_COLORS[v] for v in verdict_counts.index], height=0.6)
+ax.invert_yaxis()
+ax.grid(axis="y", visible=False)
+ax.xaxis.set_major_formatter(thousands)
+ax.bar_label(bars, labels=[f"{n:,}  ({n / len(df):.{1 if n / len(df) >= 0.001 else 2}%})"
+                           for n in verdict_counts.values],
+             padding=4, color=INK_2, fontsize=9)
+ax.set_xlim(0, verdict_counts.max() * 1.22)
+ax.set_xlabel("rows (bowl configurations)")
+ax.set_title(f"Legacy verdict across all {len(df):,} configurations")
+plt.tight_layout()
+plt.show()
+```
+
+{{< pagebreak >}}
+
+# Rows per legacy verdict, faceted by recipe
+
+Shared x-axis so bar lengths compare across recipes. Recipes are ordered by
+share of `fits`, best first.
+
+```{python}
+recipe_counts = (df.groupby(["recipe", "legacy_verdict"]).size()
+                   .unstack(fill_value=0)
+                   .reindex(columns=VERDICT_ORDER, fill_value=0))
+recipe_counts = recipe_counts.loc[recipe_counts["fits"].div(recipe_counts.sum(axis=1))
+                                  .sort_values(ascending=False).index]
+
+ncols = 3
+nrows = int(np.ceil(len(recipe_counts) / ncols))
+fig, axes = plt.subplots(nrows, ncols, figsize=(12, 2.5 * nrows), sharex=True, sharey=True,
+                         squeeze=False)
+xmax = recipe_counts.values.max() * 1.3
+
+for ax, (recipe, row) in zip(axes.flat, recipe_counts.iterrows()):
+    bars = ax.barh(row.index, row.values,
+                   color=[VERDICT_COLORS[v] for v in row.index], height=0.6)
+    ax.bar_label(bars, labels=[f"{n:,}" for n in row.values], padding=3, color=INK_2, fontsize=8)
+    ax.set_title(textwrap.fill(recipe, 34), fontsize=10)
+    ax.grid(axis="y", visible=False)
+    ax.set_xlim(0, xmax)
+    ax.xaxis.set_major_formatter(thousands)
+axes.flat[0].invert_yaxis()  # shared y: inverting once flips all
+for ax in axes.flat[len(recipe_counts):]:
+    ax.set_visible(False)
+
+fig.suptitle("Legacy verdict by recipe", x=0.01, ha="left", fontweight="semibold")
+fig.supxlabel("rows (bowl configurations)", color=INK_2, fontsize=10)
+plt.tight_layout()
+plt.show()
+```
+
+Same data as a table (small categories are hard to read on a linear axis):
+
+```{python}
+md_table(recipe_counts.assign(total=recipe_counts.sum(axis=1),
+                              **{"fits %": lambda t: (t["fits"] / t["total"] * 100).round(1)}))
+```
+
+{{< pagebreak >}}
+
+# Verdict mix by ingredient count
+
+Share of rows in each verdict, per number of ingredients in the bowl.
+
+```{python}
+def verdict_share_chart(col, title, order=None, label=None, sort_by_fits=False):
+    """100% stacked horizontal bar of legacy_verdict share for each value of `col`."""
+    share = (pd.crosstab(df[col], df["legacy_verdict"], normalize="index")
+               .reindex(columns=VERDICT_ORDER, fill_value=0))
+    if order is not None:
+        share = share.reindex([k for k in order if k in share.index]
+                              + [k for k in share.index if k not in order])
+    elif sort_by_fits:
+        share = share.sort_values("fits", ascending=False)
+    n = df[col].value_counts()
+    label = label or str
+    ylabels = [f"{label(k)}  (n={n[k]:,})" for k in share.index]
+
+    fig, ax = plt.subplots(figsize=(9, 0.55 * len(share) + 1.4))
+    left = np.zeros(len(share))
+    for v in VERDICT_ORDER:
+        ax.barh(ylabels, share[v].values, left=left, color=VERDICT_COLORS[v],
+                height=0.65, edgecolor=SURFACE, linewidth=2, label=v)
+        for y, (l, w) in enumerate(zip(left, share[v].values)):
+            if w >= 0.08:
+                ax.text(l + w / 2, y, f"{w:.0%}", ha="center", va="center", fontsize=8, color=INK)
+        left += share[v].values
+    ax.invert_yaxis()
+    ax.grid(False)
+    ax.set_xlim(0, 1)
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1.0))
+    ax.set_title(title)
+    ax.legend(ncols=4, loc="upper left", bbox_to_anchor=(0, -0.12), frameon=False, fontsize=9)
+    plt.tight_layout()
+    plt.show()
+    return share
+
+
+verdict_share_chart("ingredients", "Legacy verdict share by ingredient count",
+                    label=lambda k: f"{k} ingredients");
+```
+
+{{< pagebreak >}}
+
+# Where do legacy verdicts land under the adaptive method?
+
+Rows are the legacy verdict, columns the adaptive status. Cell text is the row
+count and the share of that legacy verdict.
+
+```{python}
+ADAPTIVE_ORDER = ordered(df["adaptive_status"],
+                         ["no adjustment", "adjusted", "underfilled", "still over at max reduction"])
+xt = (pd.crosstab(df["legacy_verdict"], df["adaptive_status"])
+        .reindex(index=VERDICT_ORDER, columns=ADAPTIVE_ORDER, fill_value=0))
+row_share = xt.div(xt.sum(axis=1), axis=0)
+
+fig, ax = plt.subplots(figsize=(9, 0.8 * len(xt) + 0.6))
+im = ax.imshow(row_share.values, cmap="Blues", vmin=0, vmax=1, aspect="auto")
+ax.set_xticks(range(len(xt.columns)), [textwrap.fill(c, 14) for c in xt.columns])
+ax.set_yticks(range(len(xt.index)), xt.index)
+ax.grid(False)
+for s in ax.spines.values():
+    s.set_visible(False)
+for i in range(xt.shape[0]):
+    for j in range(xt.shape[1]):
+        share = row_share.iat[i, j]
+        ax.text(j, i, f"{xt.iat[i, j]:,}\n{share:.0%}", ha="center", va="center", fontsize=8,
+                color="white" if share > 0.55 else INK)
+ax.set_xlabel("adaptive status")
+ax.set_ylabel("legacy verdict")
+ax.set_title("Legacy verdict → adaptive status (share of each legacy row)")
+fig.colorbar(im, ax=ax, format=mticker.PercentFormatter(1.0), shrink=0.85)
+plt.tight_layout()
+plt.show()
+```
+
+{{< pagebreak >}}
+
+# Fill % distribution: legacy vs adaptive
+
+Two panels on one shared x-axis (not overlaid) so each distribution reads on its own.
+
+```{python}
+fill_cols = ["legacy_fill_pct", "adaptive_fill_pct"]
+lo = int(np.floor(df[fill_cols].min().min() / 10) * 10)
+hi = int(np.ceil(df[fill_cols].max().max() / 10) * 10) + 2
+bins = np.arange(lo, hi, 2)
+
+fig, axes = plt.subplots(2, 1, figsize=(9, 5), sharex=True, sharey=True)
+for ax, col, label, color in [
+    (axes[0], "legacy_fill_pct", "Legacy", "#2a78d6"),
+    (axes[1], "adaptive_fill_pct", "Adaptive", "#eb6834"),
+]:
+    ax.hist(df[col], bins=bins, color=color, edgecolor=SURFACE, linewidth=0.5)
+    med = df[col].median()
+    ax.axvline(med, color=INK, linewidth=1, linestyle="--")
+    ax.text(med - 1, 0.92, f"median {med:.0f}%", transform=ax.get_xaxis_transform(),
+            ha="right", fontsize=8, color=INK)
+    ax.axvline(100, color=INK_2, linewidth=1)
+    ax.set_title(f"{label} fill %", fontsize=10)
+    ax.yaxis.set_major_formatter(thousands)
+    ax.grid(axis="x", visible=False)
+axes[1].text(101, 0.92, "100% (bowl full)", transform=axes[1].get_xaxis_transform(),
+             fontsize=8, color=INK_2)
+axes[1].xaxis.set_major_formatter(mticker.PercentFormatter(100))
+axes[1].set_xlabel("fill % of bowl")
+fig.supylabel("rows", color=INK_2, fontsize=10)
+plt.tight_layout()
+plt.show()
+```
+
+{{< pagebreak >}}
+
+# Verdict by base
+
+`bases` is a `|`-separated list. Each base is classed as a **green** (Romaine,
+Kale) or a **grain** (White Rice, Mexican Rice, Brown Rice and Lentils). A
+2-base bowl is `green`, `grain`, or `green + grain` when it mixes one of each.
+
+```{python}
+GREENS = {"Romaine Base", "Massaged Kale"}
+GRAINS = {"White Rice", "Mexican Rice", "Brown Rice and Lentils"}
+
+
+def base_type(bases):
+    kinds = {"green" if b in GREENS else "grain" if b in GRAINS else "other" for b in bases}
+    return " + ".join(sorted(kinds, key=["green", "grain", "other"].index))
+
+
+base_lists = df["bases"].str.split("|")
+df["base_count"] = base_lists.str.len()
+df["base_type"] = base_lists.map(base_type)
+df["base_group"] = (df["base_count"].map(lambda n: f"{n} base" + ("s" if n > 1 else ""))
+                    + " · " + df["base_type"])
+unknown = sorted({b for bl in base_lists for b in bl} - GREENS - GRAINS)
+assert not unknown, f"classify these bases as GREENS or GRAINS: {unknown}"
+
+md_table(df.groupby(["base_count", "base_type"]).size().rename("rows").reset_index(),
+         index=False)
+```
+
+## One base vs two
+
+```{python}
+verdict_share_chart("base_count", "Legacy verdict share by number of bases",
+                    label=lambda k: f"{k} base" + ("s" if k > 1 else ""));
+```
+
+## Base count × green / grain
+
+```{python}
+verdict_share_chart("base_group", "Legacy verdict share by base count and type",
+                    order=["1 base · green", "1 base · grain",
+                           "2 bases · green", "2 bases · green + grain", "2 bases · grain"]);
+```
+
+## Every base combination
+
+```{python}
+verdict_share_chart("bases", "Legacy verdict share by base combination (sorted by fits)",
+                    label=lambda k: k.replace("|", " + "), sort_by_fits=True);
+```

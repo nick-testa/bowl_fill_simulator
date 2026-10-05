@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QSet>
+#include <QTextStream>
 
 #include <algorithm>
 #include <map>
@@ -19,12 +20,53 @@ const QStringList kBases = {"Romaine Base", "Massaged Kale", "White Rice",
 const QStringList kProteins = {"Chicken Herby", "Chicken Tex-Mex", "Braised Beef",
                                "Beef Shawarma", "Broccoli", "Seared Pork"};
 
+///
+/// The menu never says what kind an ingredient is, and brand refreshes rename
+/// everything ("White Rice" becomes "White Jasmine Rice retherm v11"), so beyond the
+/// names above the kind is read from words in the name. A prepared salad stays a
+/// topping even when it names a meat.
+///
+const QSet<QString> kGreenWords = {"romaine", "kale", "lettuce", "greens", "spinach",
+                                   "arugula"};
+const QSet<QString> kGrainWords = {"rice", "quinoa", "farro", "grains"};
+const QSet<QString> kProteinWords = {"chicken", "beef", "pork", "steak", "carnitas",
+                                     "suadero", "pastor", "shawarma", "barbacoa",
+                                     "chorizo", "lamb", "turkey", "tofu", "salmon",
+                                     "shrimp", "fish"};
+const QSet<QString> kNotProteinWords = {"salad", "broth", "stock"};
+
+/// Portioned into cups rather than dispensed into the bowl. The simulator carries
+/// sauce as SauceCups, so these must never be swept or dispensed as toppings. An
+/// explicit list from the culinary team, not a keyword guess: Seeds and Cotija go in
+/// cups, and nothing about their names says so. Matched as a whole phrase in the
+/// lower-cased name, so a brand's spelling ("Cantina Salsa Roja", "Green Salsa
+/// Macha") still lands; a per-brand mapping with kind "sauce" or "topping" overrides.
+const QSet<QString> kSauceNames = {"ranch",        "salsa matcha",   "chipotle crema",
+                                   "citrus vin",   "salsa macha",    "seeds",
+                                   "tzatziki",     "cilantro crema", "harissa",
+                                   "salsa roja",   "sour cream",     "cotija",
+                                   "chili crisp",  "miso ginger",    "spicy tahini",
+                                   "guacachile salsa", "salsa cremosa"};
+
+QSet<QString> tokens(const QString &text);
+QString clean_name(const QString &raw);
+
+bool mentions(const QSet<QString> &toks, const QSet<QString> &words)
+{
+    for (const QString &t : toks)
+        if (words.contains(t)) return true;
+    return false;
+}
+
 /// Bases split into two families with very different portion sizes; a grain must
 /// never borrow a leaf's weight, so the class fallback stays inside the family.
 QString family_of(const QString &name)
 {
     if (name == "Romaine Base" || name == "Massaged Kale") return "green";
     if (kBases.contains(name)) return "grain";
+    const QSet<QString> toks = tokens(name);
+    if (mentions(toks, kGreenWords)) return "green";
+    if (mentions(toks, kGrainWords)) return "grain";
     return {};
 }
 
@@ -32,7 +74,44 @@ Kind kind_of(const QString &name)
 {
     if (kBases.contains(name)) return Kind::Base;
     if (kProteins.contains(name)) return Kind::Protein;
+    const QSet<QString> toks = tokens(name);
+    if (mentions(toks, kGreenWords) || mentions(toks, kGrainWords)) return Kind::Base;
+    if (mentions(toks, kProteinWords) && !mentions(toks, kNotProteinWords))
+        return Kind::Protein;
     return Kind::Topping;
+}
+
+/// Checked after kind_of, so a "Ranch Chicken" would still be a protein.
+bool is_sauce(const QString &name)
+{
+    if (kind_of(name) != Kind::Topping) return false;
+    const QString padded = " " + clean_name(name).toLower() + " ";
+    for (const QString &sauce : kSauceNames)
+        if (padded.contains(" " + sauce + " ")) return true;
+    return false;
+}
+
+///
+/// The name an ingredient is offered under. Menus spell one ingredient several ways
+/// across stores and recipe revisions ("White Jasmine Rice Retherm", "White Jasmine
+/// Rice, retherm v1.1", "White Jasmine Rice retherm v11"); prep state, portioning and
+/// version words say how it was made, not what it is, so they are dropped and the
+/// spellings collapse onto one option.
+///
+QString clean_name(const QString &raw)
+{
+    static const QRegularExpression brackets(R"(\[[^\]]*\]|\([^)]*\))");
+    static const QRegularExpression prep(
+        R"(\b(retherm|rethermed|cooked|portion|portioned|v\d+(\.\d+)*)\b)",
+        QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression punct(R"([^\w\s'&+-])");
+    static const QRegularExpression space(R"(\s+)");
+    QString s = raw;
+    s.remove(brackets);
+    s.remove(prep);
+    s.replace(punct, " ");
+    s = s.replace(space, " ").trimmed();
+    return s.isEmpty() ? raw.trimmed() : s;
 }
 
 const QSet<QString> kStopWords = {"base", "and", "a",  "the", "plain", "single",
@@ -178,6 +257,14 @@ const Ingredient *Menu::find(const QString &name) const
     return it == ingredients.end() ? nullptr : &it->second;
 }
 
+QStringList Menu::sauces_in(const Recipe &recipe) const
+{
+    QStringList out;
+    for (const RecipeItem &ri : recipe.items)
+        if (is_sauce(ri.name) && !out.contains(ri.name)) out << ri.name;
+    return out;
+}
+
 QStringList Menu::names_of(Kind kind) const
 {
     QStringList out;
@@ -204,23 +291,75 @@ namespace {
 /// dynamic_portion_increases at all, so its template targets can only be named by
 /// borrowing the vocabulary of the other brands.
 ///
-QStringList canonical_names(const std::vector<QJsonObject> &raw)
+/// The name a brand's menu spelling is offered under: the person's mapping if there
+/// is one, otherwise the automatic clean-up.
+QString mapped_name(const NameMappings *mappings, const QString &brand, const QString &raw)
+{
+    if (mappings) {
+        auto it = mappings->find({brand, raw});
+        if (it != mappings->end() && !it->second.name.trimmed().isEmpty())
+            return it->second.name.trimmed();
+    }
+    return clean_name(raw);
+}
+
+QStringList canonical_names(const std::vector<QJsonObject> &raw, const QStringList &brands,
+                            const NameMappings *mappings)
 {
     QSet<QString> names;
-    for (const QJsonObject &m : raw) {
+    for (size_t b = 0; b < raw.size(); ++b) {
+        const QJsonObject &m = raw[b];
         for (const QJsonValue d : m["dynamic_portion_increases"].toArray())
             for (const QJsonValue i : d["ingredients"].toArray())
-                names.insert(i["ingredient_name"].toString());
+                names.insert(mapped_name(mappings, brands[b], i["ingredient_name"].toString()));
         for (const QJsonValue i : m["ingredients"].toArray())
-            names.insert(i["ingredient_name"].toString());
+            names.insert(mapped_name(mappings, brands[b], i["ingredient_name"].toString()));
     }
     return QStringList(names.begin(), names.end());
 }
 
-Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &canon)
+Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &canon,
+                const NameMappings *mappings, QStringList &issues)
 {
     Menu menu;
     menu.brand = brand;
+
+    // ---- names: every spelling goes through here ---------------------------
+    // Kind overrides are keyed by the name in use, so two spellings mapped onto one
+    // name share whichever kind was set for either.
+    std::map<QString, QString> kind_override;
+    if (mappings)
+        for (const auto &[key, mapping] : *mappings)
+            if (key.first == brand && !mapping.kind.isEmpty())
+                kind_override[mapped_name(mappings, brand, key.second)] = mapping.kind;
+
+    auto kind_for = [&](const QString &name) {
+        auto it = kind_override.find(name);
+        if (it == kind_override.end()) return kind_of(name);
+        if (it->second == "base") return Kind::Base;
+        if (it->second == "protein") return Kind::Protein;
+        return Kind::Topping;   // topping, and sauce (which never reaches a pool)
+    };
+    auto sauce_for = [&](const QString &name) {
+        auto it = kind_override.find(name);
+        return it == kind_override.end() ? is_sauce(name) : it->second == "sauce";
+    };
+    auto add_sauce = [&](const QString &name) {
+        if (!menu.sauces.contains(name)) menu.sauces << name;
+    };
+
+    std::map<QString, MenuName> seen;   // by raw spelling
+    auto name_of = [&](const QString &raw) {
+        const QString name = mapped_name(mappings, brand, raw);
+        if (!seen.count(raw)) {
+            MenuName n;
+            n.raw = raw;
+            n.automatic = clean_name(raw);
+            n.name = name;
+            seen[raw] = n;
+        }
+        return name;
+    };
     menu.version = m["menu_package_version"].toObject()["version_identifier"].toString();
 
     // Ramp settings, in the order the menu lists them. Farmstand names Broccoli
@@ -229,11 +368,15 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
     for (const QJsonValue d : m["dynamic_portion_increases"].toArray()) {
         for (const QJsonValue iv : d["ingredients"].toArray()) {
             const QJsonObject i = iv.toObject();
-            const QString name = i["ingredient_name"].toString();
+            const QString name = name_of(i["ingredient_name"].toString());
+            if (sauce_for(name)) {
+                add_sauce(name);
+                continue;
+            }
             if (menu.ingredients.count(name)) continue;
             Ingredient ing;
             ing.name = name;
-            ing.kind = kind_of(name);
+            ing.kind = kind_for(name);
             ing.step_increment_g = i["step_increment_g"].toDouble();
             ing.max_dispense_weight_g = i["max_dispense_weight_g"].toDouble();
             menu.ingredients[name] = ing;
@@ -246,11 +389,25 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
     std::map<QString, double> minimums;
     for (const QJsonValue iv : m["ingredients"].toArray()) {
         const QJsonObject i = iv.toObject();
-        const QString name = i["ingredient_name"].toString();
+        const QString name = name_of(i["ingredient_name"].toString());
         const double w = i["per_portion_weight_g"].toDouble();
+        if (sauce_for(name)) add_sauce(name);
         if (w > 0) named[name].push_back(w);
         if (!minimums.count(name))
             minimums[name] = i["per_portion_minimum_weight_g"].toDouble();
+    }
+
+    // It also names what the brand serves. A brand with no dynamic_portion_increases
+    // still offers everything listed here; it just has no ramp (step and cap stay 0,
+    // so the legacy model holds the portion and adaptive can only trim it). Sauces are
+    // left out because the simulator carries them as sauce cups (menu.sauces).
+    for (const auto &[name, weights] : named) {
+        if (menu.ingredients.count(name) || sauce_for(name)) continue;
+        Ingredient ing;
+        ing.name = name;
+        ing.kind = kind_for(name);
+        menu.ingredients[name] = ing;
+        order << name;
     }
 
     // recipes[] carries only a menu_item_id, whose slug holds the dish name.
@@ -277,7 +434,8 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
         for (const QJsonValue rn : t["removal_ingredient_names"].toArray()) {
             QString s = slug_of(t["source_item_id"].toString());
             if (s.startsWith("no-")) s.remove(0, 3);
-            if (!s.isEmpty()) alias[rn.toString()].push_back(tokens(s));
+            if (!s.isEmpty())
+                alias[mapped_name(mappings, brand, rn.toString())].push_back(tokens(s));
         }
     }
 
@@ -346,9 +504,9 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
             const QJsonObject a = av.toObject();
             FloorRule f;
             for (const QJsonValue v : a["ingredient_names"]["must_have"].toArray())
-                f.must_have << v.toString();
+                f.must_have << mapped_name(mappings, brand, v.toString());
             for (const QJsonValue v : a["ingredient_names"]["must_not_have"].toArray())
-                f.must_not_have << v.toString();
+                f.must_not_have << mapped_name(mappings, brand, v.toString());
             f.op = a["filter_op"].toString() == "ExactlyOne" ? FilterOp::ExactlyOne
                                                              : FilterOp::Any;
             f.minimum_product_weight_g = a["minimum_product_weight_g"].toDouble();
@@ -365,12 +523,40 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
 
     // Preconfigured bowls. Names repeat across per-store rows, so keep whichever
     // row carries the most real weights.
-    auto resolve = [&](const QString &id) -> QString {
+    // The brand's own names come first, so a target resolves to what this menu
+    // actually serves; other brands' vocabulary is only a fallback.
+    // A target slug still spells the menu's own words ("guajillo-cumin-chicken"), so
+    // it is matched against the automatic spelling as well as any mapped name, and
+    // always lands on the mapped one.
+    std::vector<std::pair<QString, QString>> own;   // (spelling to match, name in use)
+    for (const auto &[n, ing] : menu.ingredients) own.push_back({n, n});
+    for (const auto &[raw, n] : seen) own.push_back({n.automatic, n.name});
+    QSet<QString> warned;
+    auto resolve = [&](const QString &id, const QString &recipe) -> QString {
         const QSet<QString> st = tokens(slug_of(id));
-        QString best;
+        QString best, best_match;
+        for (const auto &[match, name] : own)
+            if (covers(tokens(match), st) && match.size() > best_match.size()) {
+                best_match = match;
+                best = name;
+            }
+        if (!best.isEmpty()) return best;
         for (const QString &n : canon)
             if (covers(tokens(n), st) && n.size() > best.size()) best = n;
-        if (!best.isEmpty()) return best;
+        // A brand that lists its own ingredients but whose template names another
+        // brand's is carrying a stale target (M+R2's "Meat Rice Meat" still points at
+        // White Rice); serving it would invent an option the brand does not offer.
+        // Sauces are exempt: they legitimately live only inside preconfigured bowls.
+        if (!best.isEmpty()) {
+            if (named.empty() || sauce_for(best)) return name_of(best);
+            if (!warned.contains(recipe + best)) {
+                warned.insert(recipe + best);
+                issues << QString("%1: %2 targets \"%3\", which this menu does not "
+                                    "list; left out")
+                                .arg(brand, recipe, best);
+            }
+            return {};
+        }
         const QString tail = id.section(':', -1);
         return is_guid(tail) ? QString() : title_from_slug(tail);
     };
@@ -384,8 +570,14 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
         rec.name = title_from_slug(p["source_item_id"].toString().section(':', 1, 1));
         for (const QJsonValue tv : targets) {
             const QString id = tv.toString();
-            const QString name = resolve(id);
+            QString name = resolve(id, rec.name);
             if (name.isEmpty()) continue;
+            // A name this menu already uses stays as it is; anything else (a sauce
+            // borrowed from another brand's vocabulary) is a spelling in its own right
+            // and can be mapped like one.
+            const bool known = std::any_of(seen.begin(), seen.end(),
+                                           [&](const auto &e) { return e.second.name == name; });
+            if (!known) name = name_of(name);
             double g = weight_by_id.count(id) ? weight_by_id[id] : 0.0;
             if (g > 0) {
                 rec.weighted++;
@@ -401,15 +593,20 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
             best_recipe[rec.name] = rec;
     }
 
-    // Sauces and the like appear only inside preconfigured bowls: no ramp settings,
-    // so they sit in the bowl at a fixed weight and never step.
+    // Some ingredients appear only inside preconfigured bowls: no ramp settings, so
+    // they sit in the bowl at a fixed weight and never step. A recipe's sauces stay on
+    // the recipe -- they decide its cups -- but never become bowl ingredients.
     for (const auto &[name, rec] : best_recipe) {
         menu.recipes.push_back(rec);
         for (const RecipeItem &it : rec.items) {
+            if (sauce_for(it.name)) {
+                add_sauce(it.name);
+                continue;
+            }
             if (menu.ingredients.count(it.name)) continue;
             Ingredient ing;
             ing.name = it.name;
-            ing.kind = kind_of(it.name);
+            ing.kind = kind_for(it.name);
             ing.max_dispense_weight_g = it.grams;
             if (it.grams > 0) ing.weights = {it.grams};
             ing.source = WeightSource::Recipe;
@@ -418,13 +615,20 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
     }
     std::sort(menu.recipes.begin(), menu.recipes.end(),
               [](const Recipe &a, const Recipe &b) { return a.items.size() > b.items.size(); });
+    menu.sauces.sort(Qt::CaseInsensitive);
 
+    for (auto &[raw, n] : seen) {
+        n.kind = sauce_for(n.name) ? QString("sauce") : to_string(kind_for(n.name));
+        n.guessed_kind = is_sauce(n.automatic) ? QString("sauce") : to_string(kind_of(n.automatic));
+        menu.names.push_back(n);
+    }
     return menu;
 }
 
 }  // namespace
 
-LoadResult load_menus(const QString &dir)
+LoadResult load_menus(const QString &dir, const NameMappings *mappings,
+                      const PieceHeights *pieces)
 {
     LoadResult result;
     QDir d(dir);
@@ -445,11 +649,192 @@ LoadResult load_menus(const QString &dir)
         brands << brand.replace('_', ' ');
     }
 
-    const QStringList canon = canonical_names(raw);
+    const QStringList canon = canonical_names(raw, brands, mappings);
     for (size_t i = 0; i < raw.size(); ++i)
-        result.menus.push_back(build_menu(raw[i], brands[i], canon));
+        result.menus.push_back(build_menu(raw[i], brands[i], canon, mappings, result.issues));
 
+    for (Menu &menu : result.menus)
+        for (auto &[name, ing] : menu.ingredients) {
+            auto it = pieces ? pieces->find(name) : PieceHeights::const_iterator{};
+            if (pieces && it != pieces->end()) {
+                ing.piece_height_mm = std::max(0.0, it->second);
+            } else if (ing.kind == Kind::Protein) {
+                ing.piece_height_mm = kPlaceholderProteinPieceMm;
+                ing.piece_height_placeholder = true;
+            }
+        }
     return result;
+}
+
+//
+// ############################################################################
+// Name mappings
+//
+
+const QStringList kMappingKinds = {"base", "protein", "topping", "sauce"};
+
+namespace {
+
+/// One CSV record. Names carry commas ("Guajillo / Cumin Chicken, [cooked]"), so
+/// quoted fields and doubled quotes are honoured.
+QStringList split_csv(const QString &line)
+{
+    QStringList out;
+    QString field;
+    bool quoted = false;
+    for (int i = 0; i < line.size(); ++i) {
+        const QChar c = line[i];
+        if (quoted) {
+            if (c == '"' && i + 1 < line.size() && line[i + 1] == '"') { field += '"'; ++i; }
+            else if (c == '"') quoted = false;
+            else field += c;
+        } else if (c == '"') {
+            quoted = true;
+        } else if (c == ',') {
+            out << field;
+            field.clear();
+        } else {
+            field += c;
+        }
+    }
+    out << field;
+    return out;
+}
+
+QString csv_field(const QString &s)
+{
+    if (!s.contains(',') && !s.contains('"') && s.trimmed() == s) return s;
+    return '"' + QString(s).replace("\"", "\"\"") + '"';
+}
+
+}  // namespace
+
+bool load_name_mappings(const QString &path, NameMappings &out, QString *error)
+{
+    QFile file(path);
+    if (!file.exists()) return true;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (error) *error = QString("could not open %1").arg(path);
+        return false;
+    }
+    NameMappings read;
+    int col_brand = -1, col_raw = -1, col_name = -1, col_kind = -1;
+    int line_no = 0;
+    while (!file.atEnd()) {
+        QString line = QString::fromUtf8(file.readLine());
+        ++line_no;
+        if (line.startsWith(QChar(0xFEFF))) line.remove(0, 1);   // spreadsheet BOM
+        line = line.trimmed();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        const QStringList f = split_csv(line);
+        if (col_brand < 0) {
+            for (int i = 0; i < f.size(); ++i) {
+                const QString h = f[i].trimmed().toLower();
+                if (h == "brand") col_brand = i;
+                else if (h == "ingredient_menu") col_raw = i;
+                else if (h == "ingredient_name") col_name = i;
+                else if (h == "kind") col_kind = i;
+            }
+            if (col_brand < 0 || col_raw < 0 || col_name < 0) {
+                if (error)
+                    *error = QString("%1: the header must name brand, ingredient_menu and "
+                                     "ingredient_name").arg(path);
+                return false;
+            }
+            continue;
+        }
+        const QString brand = f.value(col_brand).trimmed();
+        const QString raw = f.value(col_raw);
+        if (brand.isEmpty() || raw.trimmed().isEmpty()) continue;
+        NameMapping m;
+        m.name = f.value(col_name).trimmed();
+        m.kind = col_kind >= 0 ? f.value(col_kind).trimmed().toLower() : QString();
+        if (!m.kind.isEmpty() && !kMappingKinds.contains(m.kind)) {
+            if (error)
+                *error = QString("%1, line %2: kind \"%3\" is not one of %4")
+                             .arg(path).arg(line_no).arg(m.kind, kMappingKinds.join(", "));
+            return false;
+        }
+        read[{brand, raw}] = m;
+    }
+    out = std::move(read);
+    return true;
+}
+
+bool load_piece_heights(const QString &path, PieceHeights &out, QString *error)
+{
+    QFile file(path);
+    if (!file.exists()) return true;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (error) *error = QString("could not open %1").arg(path);
+        return false;
+    }
+    PieceHeights read;
+    int col_name = -1, col_mm = -1, line_no = 0;
+    while (!file.atEnd()) {
+        QString line = QString::fromUtf8(file.readLine());
+        ++line_no;
+        if (line.startsWith(QChar(0xFEFF))) line.remove(0, 1);
+        line = line.trimmed();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        const QStringList f = split_csv(line);
+        if (col_name < 0) {
+            for (int i = 0; i < f.size(); ++i) {
+                const QString h = f[i].trimmed().toLower();
+                if (h == "ingredient") col_name = i;
+                else if (h == "piece_height_mm") col_mm = i;
+            }
+            if (col_name < 0 || col_mm < 0) {
+                if (error)
+                    *error = QString("%1: the header must name ingredient and "
+                                     "piece_height_mm").arg(path);
+                return false;
+            }
+            continue;
+        }
+        const QString name = f.value(col_name).trimmed();
+        if (name.isEmpty() || f.value(col_mm).trimmed().isEmpty()) continue;
+        bool ok = false;
+        const double mm = f.value(col_mm).trimmed().toDouble(&ok);
+        if (!ok || mm < 0) {
+            if (error)
+                *error = QString("%1, line %2: \"%3\" is not a height in mm")
+                             .arg(path).arg(line_no).arg(f.value(col_mm));
+            return false;
+        }
+        read[name] = mm;
+    }
+    out = std::move(read);
+    return true;
+}
+
+bool save_piece_heights(const QString &path, const PieceHeights &pieces, QString *error)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        if (error) *error = QString("could not write %1").arg(path);
+        return false;
+    }
+    QTextStream out(&file);
+    out << "ingredient,piece_height_mm\n";
+    for (const auto &[name, mm] : pieces)
+        out << csv_field(name) << ',' << QString::number(mm, 'f', 1) << '\n';
+    return true;
+}
+
+bool save_name_mappings(const QString &path, const NameMappings &mappings, QString *error)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        if (error) *error = QString("could not write %1").arg(path);
+        return false;
+    }
+    QTextStream out(&file);
+    out << "brand,ingredient_menu,ingredient_name,kind\n";
+    for (const auto &[key, m] : mappings)
+        out << csv_field(key.first) << ',' << csv_field(key.second) << ','
+            << csv_field(m.name) << ',' << csv_field(m.kind) << '\n';
+    return true;
 }
 
 }  // namespace bowlfill

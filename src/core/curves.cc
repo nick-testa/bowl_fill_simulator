@@ -1,6 +1,7 @@
 #include "curves.hh"
 
 #include <QFile>
+#include <QRegularExpression>
 #include <QTextStream>
 
 #include <algorithm>
@@ -298,9 +299,10 @@ int CurveSet::count(const QString &ingredient, Method method) const
 QString proxy_curve_for(const QString &ingredient, const CurveSet &curves)
 {
     if (curves.fit(ingredient, Method::Pooled)) return {};
-    // White Rice and Brown Rice and Lentils were never measured; Mexican Rice is
-    // the closest thing that was.
-    if (ingredient == "White Rice" || ingredient == "Brown Rice and Lentils") {
+    // Mexican Rice is the only rice ever measured, so every other rice (White Rice,
+    // Brown Rice and Lentils, White Jasmine Rice, ...) borrows its curve.
+    if (ingredient.contains(QRegularExpression(R"(\brice\b)",
+                                               QRegularExpression::CaseInsensitiveOption))) {
         if (curves.fit("Mexican Rice", Method::Pooled)) return "Mexican Rice";
     }
     return {};

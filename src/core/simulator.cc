@@ -17,6 +17,63 @@ double BowlItem::marginal_oz_per_100g(double grams) const
     return has_curve ? K * p * std::pow(grams, p - 1.0) * 100.0 : flat_oz_per_100g;
 }
 
+double SauceCups::volume_oz() const
+{
+    constexpr double kOzPerMl = 1.0 / 29.5735295625;
+    return std::clamp(cups, 0, kMax) * cup_ml * kOzPerMl;
+}
+
+double food_capacity_oz(double bowl_capacity_oz, const SauceCups &sauce,
+                        const BowlGeometry &g, double chunk_height_mm)
+{
+    if (!g.enabled || g.depth_mm <= 0)
+        return std::max(0.0, bowl_capacity_oz - sauce.volume_oz());
+
+    constexpr double kMlPerOz = 29.5735295625;
+    const double cap_mm3 = bowl_capacity_oz * kMlPerOz * 1000.0;
+    const double area = cap_mm3 / g.depth_mm;   // footprint of the equivalent cylinder
+    const double dome = std::max(0.0, g.lid_headroom_mm);
+    const double limit = g.depth_mm + dome;     // clearance at the centre of the lid
+
+    // Volume below a level surface at height s. Above the rim the lid is a shallow
+    // paraboloid, whose cross-section shrinks linearly to nothing at its crown.
+    auto volume_below = [&](double s) {
+        s = std::clamp(s, 0.0, limit);
+        if (s <= g.depth_mm) return area * s;
+        const double t = s - g.depth_mm;
+        return area * (g.depth_mm + t - t * t / (2.0 * dome));
+    };
+
+    const int cups = std::clamp(sauce.cups, 0, SauceCups::kMax);
+    const double chunk = std::max(0.0, chunk_height_mm) * std::clamp(g.chunk_proud, 0.0, 1.0);
+    double food = 0.0;
+    if (g.cups_pressed || cups == 0) {
+        // The surface may rise to the lid less the chunks' proud height, except under
+        // each cup, where it stops a cup height below the lid. The cup column is the
+        // shortfall under the footprint.
+        const double footprint = M_PI * std::pow(g.cup_diameter_mm / 2.0, 2);
+        const double column = std::max(0.0, g.cup_height_mm - chunk);
+        food = volume_below(limit - chunk) - cups * footprint * column;
+    } else {
+        // Cups on a level surface: everything stays a cup height below the lid.
+        food = volume_below(limit - std::max(chunk, g.cup_height_mm));
+    }
+    return std::max(0.0, food) / 1000.0 / kMlPerOz;
+}
+
+double tallest_chunk_mm(const std::vector<BowlItem> &items)
+{
+    double tallest = 0.0;
+    for (const BowlItem &it : items)
+        if (it.start_g > 0 || it.final_g > 0) tallest = std::max(tallest, it.piece_height_mm);
+    return tallest;
+}
+
+double SimSettings::food_capacity_oz() const
+{
+    return bowlfill::food_capacity_oz(bowl_capacity_oz, sauce, geometry, chunk_height_mm);
+}
+
 QString to_string(Verdict v)
 {
     switch (v) {
@@ -60,6 +117,7 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
 {
     SimResult result;
     result.settings = settings;
+    result.settings.chunk_height_mm = tallest_chunk_mm(items);
 
     std::vector<double> weight(items.size());
     for (size_t i = 0; i < items.size(); ++i) weight[i] = items[i].start_g;
@@ -112,7 +170,7 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
     result.items = std::move(items);
     result.passes = static_cast<int>(result.frames.size()) - 1;
 
-    const double cap = settings.bowl_capacity_oz;
+    const double cap = result.settings.food_capacity_oz();
     result.saturated =
         settings.floor_g > 0 && result.frames.back().grams <= settings.floor_g;
 
@@ -155,6 +213,7 @@ BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method 
     item.max_g = ingredient.max_dispense_weight_g;
     item.flat_oz_per_100g =
         ingredient.kind == Kind::Protein ? flat_protein_rate : flat_topping_rate;
+    item.piece_height_mm = ingredient.piece_height_mm;
 
     QString curve_name = ingredient.name;
     if (const QString proxy = proxy_curve_for(ingredient.name, curves); !proxy.isEmpty())

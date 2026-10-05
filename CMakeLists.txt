@@ -42,6 +42,7 @@ add_library(bowlfill_core STATIC
   src/core/simulator.cc
   src/core/adaptive.cc
   src/core/feasibility.cc
+  src/core/sweep.cc
 )
 target_include_directories(bowlfill_core PUBLIC src)
 target_link_libraries(bowlfill_core PUBLIC Qt6::Core)
@@ -51,6 +52,8 @@ qt_add_executable(bowl-fill-simulator
   src/main.cc
   src/ui/main_window.cc
   src/ui/report_dialog.cc
+  src/ui/mapping_dialog.cc
+  src/ui/sweep_dialog.cc
   src/ui/ramp_chart.cc
   src/ui/curve_chart.cc
   src/ui/bowl_diagram.cc
@@ -75,3 +78,11 @@ target_compile_definitions(bowlfill-verify PRIVATE
 
 enable_testing()
 add_test(NAME verify COMMAND bowlfill-verify)
+
+# Headless romaine fill sweep: solves romaine to a fill target per menu combination.
+add_executable(romaine-fill tools/romaine_fill.cc)
+target_link_libraries(romaine-fill PRIVATE bowlfill_core)
+target_compile_options(romaine-fill PRIVATE -Wall -Wextra)
+target_compile_definitions(romaine-fill PRIVATE
+  BOWLFILL_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)

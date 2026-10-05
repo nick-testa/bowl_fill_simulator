@@ -20,8 +20,9 @@ public:
 
     void set_result(const AdaptiveResult &result);
 
-    QSize minimumSizeHint() const override { return {440, 200}; }
-    QSize sizeHint() const override { return {720, 300}; }
+    /// As tall as its rows: a two-ingredient bowl should not sit in a tall empty box.
+    QSize minimumSizeHint() const override;
+    QSize sizeHint() const override;
 
 protected:
     void paintEvent(QPaintEvent *event) override;

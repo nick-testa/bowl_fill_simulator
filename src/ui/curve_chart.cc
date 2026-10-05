@@ -78,7 +78,7 @@ void CurveChart::paintEvent(QPaintEvent *)
     auto X = [&](double g) { return kLeft + g / g_max * pw; };
     auto Y = [&](double oz) { return kTop + ph - oz / oz_max * ph; };
 
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     for (double shown : ticks(units::from_oz(oz_max), 4)) {
         const double y = Y(units::to_oz(shown));
         p.setPen(pal.rule);
@@ -127,7 +127,7 @@ void CurveChart::paintEvent(QPaintEvent *)
 
         QString label = name;
         label.remove(" Base");
-        p.setFont(theme::mono(8, QFont::Bold));
+        p.setFont(theme::font(theme::Text::Caption, true));
         p.setPen(colour);
         const QPointF end(X(f->hi_g), Y(f->volume_oz(f->hi_g)));
         if (f->hi_g >= widest - 1e-9)
@@ -145,7 +145,7 @@ void CurveChart::paintEvent(QPaintEvent *)
         }
     }
 
-    p.setFont(theme::mono(8));
+    p.setFont(theme::font(theme::Text::Caption));
     p.setPen(pal.ink_soft);
     p.drawText(QRectF(kLeft, height() - 16, pw, 14), Qt::AlignCenter,
                "ingredient mass (g)");

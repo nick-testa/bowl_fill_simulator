@@ -61,15 +61,19 @@ QString RecipeAudit::legacy_summary() const
         return "Customer builds this bowl; nothing is dispensed as written.";
     if (legacy.frames.empty()) return "No ingredients resolve from the menu.";
 
+    // Percentages are of the whole bowl, so the cups belong in the numerator; the
+    // verdicts themselves are judged against the space left for food.
     const double cap = legacy.settings.bowl_capacity_oz;
+    const double sauce = legacy.settings.overhead_oz();
     const double last = legacy.last().ounces;
+    const auto pct = [&](double oz) { return std::round((oz + sauce) / cap * 100); };
     switch (legacy.verdict) {
     case Verdict::OverAtStart: {
         const double start = legacy.first().ounces;
         return QString("Overflows as written — %1 oz at the specified weights, %2% of "
                        "the bowl, and the ramp takes it to %3 oz.")
             .arg(start, 0, 'f', 1)
-            .arg(std::round(start / cap * 100))
+            .arg(pct(start))
             .arg(last, 0, 'f', 1);
     }
     case Verdict::OverWhileRamping:
@@ -93,7 +97,7 @@ QString RecipeAudit::legacy_summary() const
         return QString("Fits: clears the floor at %1 g and %2 oz, %3% of the bowl.")
             .arg(std::round(legacy.last().grams))
             .arg(last, 0, 'f', 1)
-            .arg(std::round(last / cap * 100));
+            .arg(pct(last));
     }
     return {};
 }
@@ -191,6 +195,7 @@ QString BrandAudit::to_csv() const
         "adaptive_status,adaptive_fill_pct,adaptive_detail\n";
     for (const RecipeAudit &r : rows) {
         const double cap = r.legacy.settings.bowl_capacity_oz;
+        const double sauce = r.legacy.settings.overhead_oz();
         const double final_oz = r.legacy.frames.empty() ? 0.0 : r.legacy.last().ounces;
         out += QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14\n")
                    .arg(csv_escape(brand), csv_escape(r.recipe),
@@ -204,7 +209,9 @@ QString BrandAudit::to_csv() const
                    .arg(r.customer_built ? QString("n/a")
                                          : csv_escape(to_string(r.legacy.verdict)))
                    .arg(final_oz, 0, 'f', 2)
-                   .arg(cap > 0 ? final_oz / cap * 100 : 0.0, 0, 'f', 0)
+                   .arg(r.customer_built || cap <= 0
+                            ? QString("n/a")
+                            : QString::number((final_oz + sauce) / cap * 100, 'f', 0))
                    .arg(csv_escape(r.legacy_summary()),
                         r.customer_built ? QString("n/a")
                                          : csv_escape(to_string(r.adaptive.status)))
@@ -237,8 +244,14 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
             row.floor_matched = true;
         }
 
+        // A recipe that names its sauces is charged exactly those cups; one that names
+        // none leaves the cups to the caller's setting, as a customer would choose.
+        const int recipe_cups =
+            std::min(static_cast<int>(menu.sauces_in(recipe).size()), SauceCups::kMax);
+
         SimSettings ls = legacy_settings;
         ls.floor_g = row.floor_g;
+        if (recipe_cups > 0) ls.sauce.cups = recipe_cups;
         row.legacy = simulate(items, ls);
         if (!row.legacy.frames.empty()) {
             row.nominal_oz = row.legacy.first().ounces;
@@ -246,6 +259,7 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
         }
 
         AdaptiveSettings as = adaptive_settings;
+        if (recipe_cups > 0) as.sauce.cups = recipe_cups;
         row.adaptive = solve_adaptive(items, as, costs);
 
         if (recipe.customer_built) ++audit.customer_built;
@@ -261,8 +275,10 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
             } else if (!row.legacy_ok()) {
                 ++audit.legacy_over;
             }
-            if (row.adaptive.status == AdaptiveStatus::StillOver) ++audit.adaptive_over;
-            else if (row.adaptive.status == AdaptiveStatus::Underfilled && row.complete_bowl)
+            // "Still over" in the solver means it could not reach the target; only a
+            // bowl past its capacity is an overfill the report should claim.
+            if (row.adaptive.occupancy() > 1.0) ++audit.adaptive_over;
+            if (row.adaptive.status == AdaptiveStatus::Underfilled && row.complete_bowl)
                 ++audit.adaptive_short;
         }
         audit.rows.push_back(std::move(row));
