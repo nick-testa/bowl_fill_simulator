@@ -22,12 +22,17 @@ struct Observation {
 };
 
 ///
-/// oz = K * g^p, fitted by ordinary least squares on log-log.
+/// oz = K * g^p. Preferred over a straight line because it passes through the
+/// origin: a linear fit needs a 7.3 oz intercept for kale, i.e. volume at zero mass.
+/// p < 1 is compaction -- each added gram buys less volume than the one before it.
 ///
-/// Preferred over a straight line because it passes through the origin: a linear
-/// fit needs a 7.3 oz intercept for kale, i.e. volume at zero mass. p < 1 is
-/// compaction -- each added gram buys less volume than the one before it.
+/// Fitted by least squares on the volume itself (FitSpace::Linear, the default).
+/// The log-log fit the HTML simulator used weights every point by its relative
+/// error, so a 4 ml reading counts as much as a 400 ml one; the camera's error is
+/// a few ml whatever the fill, so its smallest readings bent those curves upward.
 ///
+enum class FitSpace { Linear, Log };
+
 struct Fit {
     double K = 0.0;
     double p = 1.0;
@@ -59,6 +64,11 @@ public:
                   QStringList *new_ingredients = nullptr);
     void add(const Observation &obs);
     void refit();
+    void clear();
+    /// How curves are fitted; refits when it changes. Log reproduces the HTML
+    /// simulator's published fits.
+    void set_fit_space(FitSpace space);
+    FitSpace fit_space() const { return space_; }
     void reset_to_builtin(const QString &builtin_csv_path);
 
     const Fit *fit(const QString &ingredient, Method method) const;
@@ -69,6 +79,10 @@ public:
 private:
     std::vector<Observation> obs_;
     std::map<QString, std::map<Method, Fit>> fits_;
+    /// Names match regardless of case ("white rice" from a bowl sheet is the menu's
+    /// "White Rice"); lower-cased name -> the spelling the curve is shown under.
+    std::map<QString, QString> display_;
+    FitSpace space_ = FitSpace::Linear;
 };
 
 /// Bases with no measurements of their own borrow the closest measured curve.

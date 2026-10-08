@@ -16,6 +16,9 @@
 // Every solved bowl is re-run through simulate() with no floor, and the tool fails
 // loudly if the simulator's volume disagrees with the solve.
 
+#include "core/measurements.hh"
+
+#include <QSettings>
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 
@@ -129,10 +132,16 @@ int main(int argc, char **argv)
 
     CurveSet curves;
     QString error;
-    if (!curves.load_csv(asset_dir + "/data/mass_to_volume.csv", &error)) {
-        err << "curves: " << error << "\n";
-        return 2;
-    }
+    // The same measurement store the app loads.
+    const QSettings prefs("Lab37", "Bowl Fill Simulator");
+    MeasurementOptions options;
+    options.empty_bowl_ml =
+        prefs.value("measurements/empty_bowl_ml", kDefaultEmptyBowlMl).toDouble();
+    options.backfill = prefs.value("measurements/backfill", false).toBool();
+    options.drop_impossible = prefs.value("measurements/drop_impossible", false).toBool();
+    const MeasurementSet stored = load_measurements(asset_dir + kMeasurementsDir, curves, options);
+    for (const MeasurementFile &f : stored.files)
+        if (f.failed) err << "data/measurements/" << f.name << ": " << f.problem << "\n";
     // Same name mappings and piece heights the app applies, so names agree with it.
     NameMappings maps;
     PieceHeights pieces;

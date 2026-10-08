@@ -4,10 +4,14 @@ bowlfill_core_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeSystem.cmake \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/menu_loader.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \

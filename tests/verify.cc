@@ -4,6 +4,8 @@
 /// this rewrite must not do.
 ///
 #include "core/adaptive.hh"
+#include "core/bowl_data.hh"
+#include "core/measurements.hh"
 #include "core/curves.hh"
 #include "core/feasibility.hh"
 #include "core/menu_model.hh"
@@ -11,7 +13,9 @@
 #include "core/sweep.hh"
 
 #include <QDir>
+#include <QTemporaryDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -132,8 +136,11 @@ int main()
 
     std::printf("Curve fitting (robot arm, against the published power-law fits)\n");
     CurveSet curves;
+    // The published fits, and everything checked against the HTML simulator below,
+    // were made on log-log; the app's default fits on the volume itself.
+    curves.set_fit_space(FitSpace::Log);
     QString err;
-    if (!curves.load_csv(assets + "/data/mass_to_volume.csv", &err)) {
+    if (!curves.load_csv(assets + "/tests/data/mass_to_volume.csv", &err)) {
         std::printf("  FATAL could not load mass_to_volume.csv: %s\n", qPrintable(err));
         return 1;
     }
@@ -375,7 +382,7 @@ int main()
     {
         CurveSet c2;
         QString e;
-        c2.load_csv(assets + "/data/mass_to_volume.csv", &e);
+        c2.load_csv(assets + "/tests/data/mass_to_volume.csv", &e);
         expect_near("built-in rows", c2.observations().size(), 36, 0.01);
         expect_near("built-in ingredients", c2.ingredients().size(), 3, 0.01);
 
@@ -421,7 +428,7 @@ int main()
         }
 
         // Reset must discard uploads and restore exactly the bundled set.
-        c2.reset_to_builtin(assets + "/data/mass_to_volume.csv");
+        c2.reset_to_builtin(assets + "/tests/data/mass_to_volume.csv");
         expect_near("rows after reset", c2.observations().size(), 36, 0.01);
         expect_near("ingredients after reset", c2.ingredients().size(), 3, 0.01);
 
@@ -893,6 +900,307 @@ int main()
             if (csv.contains("," + r.name + ",")) ++distinct;
         expect_near("every recipe appears in the sweep", distinct,
                     farmstand->recipes.size(), 0.01);
+    }
+
+
+    std::printf("\nBowl data import (one row per scanned bowl)\n");
+    {
+        // Volumes generated from the model at a known squash, so the fit must recover it.
+        const double truth = 3.0;
+        auto row = [](std::vector<std::pair<QString, double>> items, int cups) {
+            BowlRow r;
+            r.items = std::move(items);
+            r.cups = cups;
+            return r;
+        };
+        const std::vector<BowlRow> mixed = {
+            row({{"Romaine Base", 55}, {"White Jasmine Rice", 90}, {"Chicken Al Pastor", 100},
+                 {"Pico de Gallo", 50}}, 2),
+            row({{"Romaine Base", 100}, {"Pico de Gallo", 50}, {"Feta", 25}}, 0),
+            row({{"Romaine Base", 80}, {"Massaged Kale", 40}, {"Chicken Al Pastor", 100}}, 1),
+        };
+        auto ml = [&](const BowlRow &r) {
+            return predicted_scan_oz(r, curves, Method::Robot, truth) * CurveSet::kMlPerFlOz;
+        };
+
+        QTemporaryDir dir;
+        const QString path = dir.path() + "/bowls.csv";
+        QFile f(path);
+        expect_true("temp file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
+        QTextStream out(&f);
+        // Station spellings, in station (dispense) order.
+        out << "Romaine Base,Massaged Kale,White Jasmine Rice retherm v11,"
+               "Chicken Al Pastor [Cooked],Pico de Gallo,Feta,ml,cups,lid,notes\n";
+        out << "55,,90,100,50,," << ml(mixed[0]) << ",2,closed,first bowl\n";
+        out << "100,,,,50,25," << ml(mixed[1]) << ",,,\n";
+        out << "80,40,,100,,," << ml(mixed[2]) << ",1,forced,\n";
+        out << "60,,,,,,390,,,ladder\n";
+        out << "120,,,,,,760,,,ladder\n";
+        out << ",,,,,,,,,blank row with a note\n";
+        f.close();
+
+        BowlSheet sheet;
+        QString err;
+        expect_true("bowl sheet loads", load_bowl_csv(path, sheet, &err));
+        expect_eq("station names are cleaned",
+                  sheet.ingredients.join(" | "),
+                  "Romaine Base | Massaged Kale | White Jasmine Rice | Chicken Al Pastor | "
+                  "Pico de Gallo | Feta");
+        expect_near("bowls read", sheet.rows.size(), 5, 0.01);
+        expect_near("mixed bowls", sheet.mixed_rows(), 3, 0.01);
+        expect_near("rows skipped", sheet.skipped, 1, 0.01);
+        expect_eq("columns keep dispense order",
+                  sheet.rows[0].items.front().first + " > " + sheet.rows[0].items.back().first,
+                  "Romaine Base > Pico de Gallo");
+        expect_near("cups read", sheet.rows[0].cups, 2, 0.01);
+        expect_eq("lid read", sheet.rows[2].lid, "forced");
+
+        const std::vector<Observation> pts = single_ingredient_points(sheet);
+        expect_near("ladder rows become curve points", pts.size(), 2, 0.01);
+        expect_near("ml converted to oz", pts.empty() ? 0 : pts[0].ounces,
+                    390 / CurveSet::kMlPerFlOz, 1e-9);
+
+        const SquashFit fit = fit_squash(sheet, curves, Method::Robot);
+        expect_true("squash fit is valid", fit.valid);
+        expect_near("squash recovers the generating factor", fit.load_transfer, truth, 0.01);
+        expect_near("fitted error is ~0", fit.rmse_fitted_oz, 0.0, 0.01);
+        expect_true("fitted beats no squash", fit.rmse_fitted_oz < fit.rmse_uncompressed_oz);
+        expect_true("unmeasured ingredients are flagged",
+                    fit.flat_rate.contains("Chicken Al Pastor")
+                        && fit.flat_rate.contains("Pico de Gallo"));
+    }
+
+    std::printf("\nCurve fitting on the volume itself\n");
+    {
+        const double kOz = CurveSet::kMlPerFlOz;
+        auto fit_of = [](const std::vector<std::pair<double, double>> &pts, FitSpace space) {
+            CurveSet c;
+            c.set_fit_space(space);
+            for (const auto &[g, oz] : pts) c.add({"probe", Method::Robot, g, oz});
+            c.refit();
+            const Fit *f = c.fit("probe", Method::Robot);
+            return f ? *f : Fit{};
+        };
+        // Exact power-law data is recovered exactly.
+        std::vector<std::pair<double, double>> exact;
+        for (double g = 20; g <= 400; g += 20) exact.push_back({g, 0.5 * std::pow(g, 0.8)});
+        const Fit lin = fit_of(exact, FitSpace::Linear);
+        expect_near("recovers K", lin.K, 0.5, 1e-4);
+        expect_near("recovers p", lin.p, 0.8, 1e-4);
+
+        // A camera reading 5 ml low on every scan bends a log-log fit far more than a
+        // fit on the volume: the small readings carry the log fit.
+        std::vector<std::pair<double, double>> low;
+        for (double g = 10; g <= 450; g += 20)
+            low.push_back({g, (1.1 * g - 5.0) / kOz});   // truly linear, 5 ml short
+        const double p_log = fit_of(low, FitSpace::Log).p, p_lin = fit_of(low, FitSpace::Linear).p;
+        expect_true(QString("a 5 ml zero error bends log-log (p %1) more than linear (p %2)")
+                        .arg(p_log, 0, 'f', 3).arg(p_lin, 0, 'f', 3),
+                    p_log > p_lin && p_lin < 1.03);
+
+        // Compression must leave a curve with p >= 1 at its measured volume: it shows
+        // no self-compaction to scale. It used to collapse to K*g, even unloaded.
+        {
+            BowlItem rice;
+            rice.name = "white rice";
+            rice.kind = Kind::Base;
+            rice.has_curve = true;
+            rice.K = 0.02;
+            rice.p = 1.13;
+            rice.start_g = 150;
+            BowlItem chicken;
+            chicken.kind = Kind::Protein;
+            chicken.start_g = 120;
+            SimSettings on;
+            on.compress = true;
+            on.load_transfer = 1.0;
+            const double want = rice.volume_oz(150);
+            expect_near("p > 1 base keeps its volume under load",
+                        simulate({rice, chicken}, on).first().per_item_oz[0], want, 1e-9);
+            expect_near("p > 1 base keeps its volume alone",
+                        simulate({rice}, on).first().per_item_oz[0], want, 1e-9);
+        }
+
+        // The empty-bowl correction rescues small scans that read below zero.
+        const QString path = QDir::temp().filePath("bowlfill-verify-zero.csv");
+        {
+            QFile f(path);
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            f.write("test beans,ml\n2.3,-3\n4.4,-1\n100,105\n");
+        }
+        BowlSheet raw, fixed;
+        load_bowl_csv(path, raw);
+        load_bowl_csv(path, fixed, nullptr, -5.0);
+        expect_near("uncorrected, negative readings are dropped", raw.rows.size(), 1, 0.01);
+        expect_near("corrected by -5 ml, they count", fixed.rows.size(), 3, 0.01);
+        expect_near("-3 ml reads as 2 ml", fixed.rows[0].ounces * kOz, 2.0, 1e-9);
+        expect_near("105 ml reads as 110 ml", fixed.rows[2].ounces * kOz, 110.0, 1e-9);
+        QFile::remove(path);
+    }
+
+    std::printf("\nComposite curves for unmeasured proteins and toppings\n");
+    {
+        CurveSet c;
+        // Two measured proteins, linear for easy averaging: 1.0 and 2.0 ml per g.
+        // Al Pastor has far more readings; each must still count once.
+        const double kOz = CurveSet::kMlPerFlOz;
+        for (double g = 50; g <= 200; g += 5)
+            c.add({"Chicken Al Pastor", Method::Robot, g, 1.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"Suadero Beef", Method::Robot, g, 2.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"test beans", Method::Robot, g, 9.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"Mexican Slaw", Method::Robot, g, 3.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"white rice", Method::Robot, g, 1.5 * g / kOz});
+        c.refit();
+
+        QStringList members;
+        const Fit pro = composite_curve(Kind::Protein, c, Method::Robot, &members);
+        expect_eq("protein composite takes the measured proteins only",
+                  members.join(", "), "Chicken Al Pastor, Suadero Beef");
+        expect_near("each member counts once: halfway between 1.0 and 2.0 ml/g",
+                    pro.volume_oz(120) * kOz, 1.5 * 120, 0.5);
+        QStringList tops;
+        composite_curve(Kind::Topping, c, Method::Robot, &tops);
+        expect_eq("test curves are references, not food", tops.join(", "), "Mexican Slaw");
+        expect_true("bases never get a composite",
+                    !composite_curve(Kind::Base, c, Method::Robot).valid);
+
+        const CurveChoice guajillo = choose_curve("Guajillo Cumin Chicken", Kind::Protein, c, Method::Robot);
+        expect_true("an unmeasured protein uses the composite",
+                    guajillo.source == CurveSource::Composite && guajillo.from.size() == 2);
+        expect_true("a measured protein uses its own curve",
+                    choose_curve("Suadero Beef", Kind::Protein, c, Method::Robot).source
+                        == CurveSource::Own);
+        expect_true("a family stand-in wins over the composite",
+                    choose_curve("White Jasmine Rice", Kind::Base, c, Method::Robot).source
+                        == CurveSource::Family);
+        CurveSet empty;
+        expect_true("nothing measured: flat rate",
+                    choose_curve("Guajillo Cumin Chicken", Kind::Protein, empty, Method::Robot).source
+                        == CurveSource::Flat);
+    }
+
+    std::printf("\nBackfill from a rigid reference, and impossible readings\n");
+    {
+        // A camera that reads true volume t as 0.8 * t^1.1 ml. Test beans are rigid
+        // (true = g / 0.8); the food's true volume is 1.5 ml per g.
+        auto camera = [](double true_ml) { return 0.8 * std::pow(true_ml, 1.1); };
+        QDir root(QDir::temp().filePath("bowlfill-verify-backfill"));
+        root.removeRecursively();
+        QDir().mkpath(root.path());
+        {
+            QFile f(root.filePath("beans.csv"));
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            QTextStream out(&f);
+            out << "test beans,ml\n";
+            for (double g = 10; g <= 460; g += 15) out << g << "," << camera(g / 0.8) << "\n";
+        }
+        {
+            QFile f(root.filePath("food.csv"));
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            QTextStream out(&f);
+            out << "slaw,ml\n";
+            for (double g : {20.0, 60.0, 120.0, 200.0}) out << g << "," << camera(1.5 * g) << "\n";
+        }
+        {
+            QFile f(root.filePath("wet.csv"));
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            f.write("pico,ml\n40,12\n60,70\n");   // 40 g reading 12 ml: below its solids
+        }
+
+        const double kOz = CurveSet::kMlPerFlOz;
+        auto slaw_ratio = [&](const CurveSet &c, double g) {
+            for (const Observation &o : c.observations())
+                if (o.ingredient == "slaw" && std::fabs(o.grams - g) < 1e-6)
+                    return o.ounces * kOz / (1.5 * g);
+            return -1.0;
+        };
+        CurveSet plain, back;
+        load_measurements(root.path(), plain);
+        MeasurementOptions bo;
+        bo.backfill = true;
+        const MeasurementSet bs = load_measurements(root.path(), back, bo);
+        expect_true("the reference is found", bs.backfill.valid && bs.backfill.reference == "test beans");
+        expect_near("it learns the camera's bend", bs.backfill.p, 1.1, 0.01);
+        const double low = slaw_ratio(back, 20), high = slaw_ratio(back, 200);
+        expect_true(QString("without it, small readings run low (read/true %1 at 20 g, %2 at 200 g)")
+                        .arg(slaw_ratio(plain, 20), 0, 'f', 2).arg(slaw_ratio(plain, 200), 0, 'f', 2),
+                    slaw_ratio(plain, 20) < slaw_ratio(plain, 200) * 0.85);
+        expect_near("backfilled, every size reads in the same proportion", low / high, 1.0, 0.01);
+        CurveSet ref_check;
+        bool beans_untouched = true;
+        for (const Observation &o : back.observations())
+            if (o.ingredient == "test beans")
+                beans_untouched &= std::fabs(o.ounces * kOz - camera(o.grams / 0.8)) < 1e-3;
+        expect_true("the reference itself is not corrected", beans_untouched);
+
+        MeasurementOptions drop;
+        drop.drop_impossible = true;
+        CurveSet dropped_set;
+        const MeasurementSet ds = load_measurements(root.path(), dropped_set, drop);
+        expect_near("a reading below its solids is ignored", ds.dropped.count("pico") ? ds.dropped.at("pico") : 0, 1, 0.01);
+        expect_near("the rest of that ingredient stays", dropped_set.count("pico", Method::Pooled), 1, 0.01);
+        expect_near("off again, it is back", plain.count("pico", Method::Pooled), 2, 0.01);
+        QFile wet(root.filePath("wet.csv"));
+        wet.open(QIODevice::ReadOnly);
+        expect_true("the file is not changed", wet.readAll().contains("40,12"));
+        root.removeRecursively();
+    }
+
+    std::printf("\nMeasurement store (data/measurements)\n");
+    {
+        QDir root(QDir::temp().filePath("bowlfill-verify-store"));
+        root.removeRecursively();
+        QDir().mkpath(root.path());
+        auto write = [&](const QString &name, const QString &text) {
+            QFile f(root.filePath(name));
+            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            f.write(text.toUtf8());
+        };
+        write("curves.csv", "method,ingredient,g,ml\nrobot,white rice,100,90\nrobot,White Rice,200,170\n");
+        write("bowls.csv", "Romaine Base,Pico de Gallo,ml,notes\n60,,390,\n120,,760,\n55,50,500,mixed\n");
+        write(".~lock.bowls.csv#", "junk");
+        write("broken.csv", "not,a,measurement\n");
+
+        CurveSet curves;
+        const MeasurementSet set = load_measurements(root.path(), curves);
+        expect_near("both formats load from one folder", curves.observations().size(), 4, 0.01);
+        expect_near("lock files are ignored", set.files.size(), 3, 0.01);
+        expect_near("a broken file is reported, not fatal", set.failed_files(), 1, 0.01);
+        expect_near("mixed bowls are kept for the squash fit", set.bowls.mixed_rows(), 1, 0.01);
+        expect_true("names match regardless of case",
+                    curves.fit("WHITE RICE", Method::Robot) && curves.count("White rice", Method::Pooled) == 2);
+        expect_eq("an unmeasured rice borrows a measured one",
+                  proxy_curve_for("White Jasmine Rice", curves).toLower(), "white rice");
+
+        CurveSet couscous;
+        couscous.add({"lemon couscous", Method::Robot, 109, 98 / CurveSet::kMlPerFlOz});
+        couscous.add({"lemon couscous", Method::Robot, 183, 213 / CurveSet::kMlPerFlOz});
+        couscous.refit();
+        expect_eq("plain couscous borrows lemon couscous", proxy_curve_for("Couscous", couscous),
+                  "lemon couscous");
+        expect_eq("a measured ingredient borrows nothing",
+                  proxy_curve_for("Lemon Couscous", couscous), "");
+
+        CurveSet reloaded;
+        load_measurements(root.path(), reloaded);
+        expect_near("loading twice does not double up", reloaded.observations().size(), 4, 0.01);
+
+        // Uploads land in the folder; the same file twice is stored once.
+        QDir outside(QDir::temp().filePath("bowlfill-verify-upload"));
+        outside.removeRecursively();
+        QDir().mkpath(outside.path());
+        const QString up = outside.filePath("curves.csv");
+        { QFile f(up); f.open(QIODevice::WriteOnly); f.write("ingredient,g,ml\nfeta,50,60\n"); }
+        QString err;
+        const QString stored = store_measurement_file(up, root.path(), &err);
+        expect_eq("a name clash gets a numbered copy", QFileInfo(stored).fileName(), "curves_2.csv");
+        expect_eq("the same file again is not copied twice",
+                  QFileInfo(store_measurement_file(up, root.path(), &err)).fileName(), "curves_2.csv");
+        CurveSet after;
+        load_measurements(root.path(), after);
+        expect_near("a stored upload loads with the rest", after.observations().size(), 5, 0.01);
+        root.removeRecursively();
+        outside.removeRecursively();
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

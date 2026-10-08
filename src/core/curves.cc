@@ -54,30 +54,74 @@ QStringList split_csv(const QString &line)
     return out;
 }
 
-Fit fit_power_law(const std::vector<const Observation *> &pts)
+/// oz = K * g^p by least squares, either on the volume itself or on log-log.
+Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
 {
     Fit f;
     f.n = static_cast<int>(pts.size());
     if (f.n < 2) return f;
-
-    // OLS of log(oz) on log(g).
-    double sx = 0, sy = 0;
-    for (const Observation *o : pts) {
+    for (const Observation *o : pts)
         if (o->grams <= 0 || o->ounces <= 0) return f;
-        sx += std::log(o->grams);
-        sy += std::log(o->ounces);
-    }
-    const double mx = sx / f.n, my = sy / f.n;
-    double sxx = 0, sxy = 0;
-    for (const Observation *o : pts) {
-        const double dx = std::log(o->grams) - mx;
-        sxx += dx * dx;
-        sxy += dx * (std::log(o->ounces) - my);
-    }
-    if (sxx <= 0) return f;                 // every point at the same mass
+    auto [lo, hi] = std::minmax_element(
+        pts.begin(), pts.end(),
+        [](const Observation *a, const Observation *b) { return a->grams < b->grams; });
+    if ((*hi)->grams <= (*lo)->grams) return f;   // every point at the same mass
 
-    f.p = sxy / sxx;
-    f.K = std::exp(my - f.p * mx);
+    if (space == FitSpace::Log) {
+        // OLS of log(oz) on log(g).
+        double sx = 0, sy = 0;
+        for (const Observation *o : pts) {
+            sx += std::log(o->grams);
+            sy += std::log(o->ounces);
+        }
+        const double mx = sx / f.n, my = sy / f.n;
+        double sxx = 0, sxy = 0;
+        for (const Observation *o : pts) {
+            const double dx = std::log(o->grams) - mx;
+            sxx += dx * dx;
+            sxy += dx * (std::log(o->ounces) - my);
+        }
+        f.p = sxy / sxx;
+        f.K = std::exp(my - f.p * mx);
+    } else {
+        // Least squares on the volume. For a given p the best K is closed-form,
+        // K = sum(v g^p) / sum(g^2p), leaving a one-dimensional search over p for
+        // the smallest squared error, sum(v^2) - sum(v g^p)^2 / sum(g^2p).
+        // Masses are scaled by the largest so the powers stay well conditioned.
+        const double gmax = (*hi)->grams;
+        double svv = 0;
+        for (const Observation *o : pts) svv += o->ounces * o->ounces;
+        auto sse = [&](double p, double *k) {
+            double svg = 0, sgg = 0;
+            for (const Observation *o : pts) {
+                const double gp = std::pow(o->grams / gmax, p);
+                svg += o->ounces * gp;
+                sgg += gp * gp;
+            }
+            if (k) *k = svg / sgg;
+            return svv - svg * svg / sgg;
+        };
+        constexpr double kLo = 0.2, kHi = 3.0;
+        double best_p = 1.0, best = sse(1.0, nullptr);
+        for (double p = kLo; p <= kHi + 1e-9; p += 0.01) {
+            const double e = sse(p, nullptr);
+            if (e < best) { best = e; best_p = p; }
+        }
+        // Golden-section search inside the best grid cell.
+        double a = std::max(kLo, best_p - 0.01), b = std::min(kHi, best_p + 0.01);
+        const double r = (std::sqrt(5.0) - 1) / 2;
+        double c = b - r * (b - a), d = a + r * (b - a);
+        for (int i = 0; i < 60; ++i) {
+            if (sse(c, nullptr) < sse(d, nullptr)) b = d; else a = c;
+            c = b - r * (b - a);
+            d = a + r * (b - a);
+        }
+        f.p = (a + b) / 2;
+        double k_scaled = 0;
+        sse(f.p, &k_scaled);
+        if (k_scaled <= 0) return f;
+        f.K = k_scaled / std::pow(gmax, f.p);   // back to unscaled grams
+    }
 
     // R^2 reported on the ounces scale, not the log scale, so it means what a
     // reader expects when comparing against the linear alternative.
@@ -90,10 +134,6 @@ Fit fit_power_law(const std::vector<const Observation *> &pts)
         ss_res += (o->ounces - pred) * (o->ounces - pred);
     }
     f.r2 = ss_tot > 0 ? 1.0 - ss_res / ss_tot : 0.0;
-
-    auto [lo, hi] = std::minmax_element(
-        pts.begin(), pts.end(),
-        [](const Observation *a, const Observation *b) { return a->grams < b->grams; });
     f.lo_g = (*lo)->grams;
     f.hi_g = (*hi)->grams;
     f.valid = true;
@@ -254,27 +294,46 @@ bool CurveSet::load_csv(const QString &path, QString *error, int *rows_added,
 void CurveSet::refit()
 {
     fits_.clear();
+    display_.clear();
     std::map<QString, std::map<Method, std::vector<const Observation *>>> buckets;
     for (const Observation &o : obs_) {
-        buckets[o.ingredient][o.method].push_back(&o);
-        buckets[o.ingredient][Method::Pooled].push_back(&o);
+        // The first spelling seen names the curve; later ones in other cases join it.
+        const QString &name = display_.try_emplace(o.ingredient.toLower(), o.ingredient)
+                                  .first->second;
+        buckets[name][o.method].push_back(&o);
+        buckets[name][Method::Pooled].push_back(&o);
     }
     for (const auto &[ingredient, by_method] : buckets)
         for (const auto &[method, pts] : by_method)
-            fits_[ingredient][method] = fit_power_law(pts);
+            fits_[ingredient][method] = fit_power_law(pts, space_);
+}
+
+void CurveSet::set_fit_space(FitSpace space)
+{
+    if (space == space_) return;
+    space_ = space;
+    refit();
+}
+
+void CurveSet::clear()
+{
+    obs_.clear();
+    fits_.clear();
+    display_.clear();
 }
 
 void CurveSet::reset_to_builtin(const QString &builtin_csv_path)
 {
-    obs_.clear();
-    fits_.clear();
+    clear();
     QString ignored;
     load_csv(builtin_csv_path, &ignored);
 }
 
 const Fit *CurveSet::fit(const QString &ingredient, Method method) const
 {
-    auto i = fits_.find(ingredient);
+    auto d = display_.find(ingredient.toLower());
+    if (d == display_.end()) return nullptr;
+    auto i = fits_.find(d->second);
     if (i == fits_.end()) return nullptr;
     auto j = i->second.find(method);
     if (j == i->second.end() || !j->second.valid) return nullptr;
@@ -292,18 +351,31 @@ int CurveSet::count(const QString &ingredient, Method method) const
 {
     int n = 0;
     for (const Observation &o : obs_)
-        if (o.ingredient == ingredient && (method == Method::Pooled || o.method == method)) ++n;
+        if (o.ingredient.compare(ingredient, Qt::CaseInsensitive) == 0
+            && (method == Method::Pooled || o.method == method))
+            ++n;
     return n;
 }
 
 QString proxy_curve_for(const QString &ingredient, const CurveSet &curves)
 {
     if (curves.fit(ingredient, Method::Pooled)) return {};
-    // Mexican Rice is the only rice ever measured, so every other rice (White Rice,
-    // Brown Rice and Lentils, White Jasmine Rice, ...) borrows its curve.
-    if (ingredient.contains(QRegularExpression(R"(\brice\b)",
-                                               QRegularExpression::CaseInsensitiveOption))) {
-        if (curves.fit("Mexican Rice", Method::Pooled)) return "Mexican Rice";
+    // An ingredient with no data of its own borrows a measured one from its family:
+    // White Jasmine Rice or Brown Rice and Lentils borrow a measured rice, and the
+    // retired plain Couscous borrows Lemon Couscous, its near-identical successor.
+    // Within a family, a preferred member is taken first when it has data.
+    struct Family {
+        const char *word;
+        const char *preferred;
+    };
+    static const Family kFamilies[] = {{"rice", "Mexican Rice"}, {"couscous", nullptr}};
+    for (const Family &f : kFamilies) {
+        const QRegularExpression word(QString(R"(\b%1\b)").arg(f.word),
+                                      QRegularExpression::CaseInsensitiveOption);
+        if (!ingredient.contains(word)) continue;
+        if (f.preferred && curves.fit(f.preferred, Method::Pooled)) return f.preferred;
+        for (const QString &n : curves.ingredients())
+            if (n.contains(word) && curves.fit(n, Method::Pooled)) return n;
     }
     return {};
 }

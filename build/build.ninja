@@ -105,6 +105,22 @@ build CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o: CXX_COMPILER__bowlfill_c
   OBJECT_DIR = CMakeFiles/bowlfill_core.dir
   OBJECT_FILE_DIR = CMakeFiles/bowlfill_core.dir/src/core
 
+build CMakeFiles/bowlfill_core.dir/src/core/bowl_data.cc.o: CXX_COMPILER__bowlfill_core_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.cc || cmake_object_order_depends_target_bowlfill_core
+  DEFINES = -DQT_CORE_LIB -DQT_NO_DEBUG
+  DEP_FILE = CMakeFiles/bowlfill_core.dir/src/core/bowl_data.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowlfill_core_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++
+  OBJECT_DIR = CMakeFiles/bowlfill_core.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowlfill_core.dir/src/core
+
+build CMakeFiles/bowlfill_core.dir/src/core/measurements.cc.o: CXX_COMPILER__bowlfill_core_unscanned_Release /home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.cc || cmake_object_order_depends_target_bowlfill_core
+  DEFINES = -DQT_CORE_LIB -DQT_NO_DEBUG
+  DEP_FILE = CMakeFiles/bowlfill_core.dir/src/core/measurements.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=gnu++20 -Wall -Wextra -Wpedantic -fno-direct-access-external-data
+  INCLUDES = -I/home/ntesta/Projects/bowl_fill_simulator/build -I/home/ntesta/Projects/bowl_fill_simulator -I/home/ntesta/Projects/bowl_fill_simulator/build/bowlfill_core_autogen/include -I/home/ntesta/Projects/bowl_fill_simulator/src -isystem /usr/include/qt6/QtCore -isystem /usr/include/qt6 -isystem /usr/lib/qt6/mkspecs/linux-g++
+  OBJECT_DIR = CMakeFiles/bowlfill_core.dir
+  OBJECT_FILE_DIR = CMakeFiles/bowlfill_core.dir/src/core
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target bowlfill_core
@@ -113,7 +129,7 @@ build CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o: CXX_COMPILER__bowlfill_c
 #############################################
 # Link the static library libbowlfill_core.a
 
-build libbowlfill_core.a: CXX_STATIC_LIBRARY_LINKER__bowlfill_core_Release CMakeFiles/bowlfill_core.dir/bowlfill_core_autogen/mocs_compilation.cpp.o CMakeFiles/bowlfill_core.dir/src/core/menu_loader.cc.o CMakeFiles/bowlfill_core.dir/src/core/curves.cc.o CMakeFiles/bowlfill_core.dir/src/core/simulator.cc.o CMakeFiles/bowlfill_core.dir/src/core/adaptive.cc.o CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps
+build libbowlfill_core.a: CXX_STATIC_LIBRARY_LINKER__bowlfill_core_Release CMakeFiles/bowlfill_core.dir/bowlfill_core_autogen/mocs_compilation.cpp.o CMakeFiles/bowlfill_core.dir/src/core/menu_loader.cc.o CMakeFiles/bowlfill_core.dir/src/core/curves.cc.o CMakeFiles/bowlfill_core.dir/src/core/simulator.cc.o CMakeFiles/bowlfill_core.dir/src/core/adaptive.cc.o CMakeFiles/bowlfill_core.dir/src/core/feasibility.cc.o CMakeFiles/bowlfill_core.dir/src/core/sweep.cc.o CMakeFiles/bowlfill_core.dir/src/core/bowl_data.cc.o CMakeFiles/bowlfill_core.dir/src/core/measurements.cc.o || bowlfill_core_autogen bowlfill_core_autogen_timestamp_deps
   LANGUAGE_COMPILE_FLAGS = -O3 -DNDEBUG
   OBJECT_DIR = CMakeFiles/bowlfill_core.dir
   POST_BUILD = :

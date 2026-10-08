@@ -165,6 +165,39 @@ double split_base_start(const Ingredient &ingredient, bool split_on, bool two_ba
 constexpr double kFlatProteinRate = 3.5;
 constexpr double kFlatToppingRate = 4.5;
 
+///
+/// Where an ingredient's mass-to-volume curve comes from, best first:
+///   Own        its own measurements
+///   Family     a measured relative (any rice for White Jasmine Rice; see
+///              proxy_curve_for)
+///   Composite  a protein or topping with neither: the average of every measured
+///              curve of the same kind, so Guajillo Cumin Chicken stands on Chicken
+///              Al Pastor and Suadero Beef rather than a flat rate
+///   Flat       nothing measured to lean on: the flat per-100 g rate
+///
+enum class CurveSource { Own, Family, Composite, Flat };
+
+struct CurveChoice {
+    CurveSource source = CurveSource::Flat;
+    double K = 0.0, p = 1.0;
+    QStringList from;   ///< the curve borrowed, or the composite's members
+};
+
+/// The curve to use for `name`, of kind `kind` (see CurveSource).
+CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves, Method method);
+
+///
+/// The average curve of every measured ingredient of `kind`, each counted once
+/// however many readings it has, refitted as a single power law over the range they
+/// span. Curves named "test ..." are calibration references, not food, and bases
+/// never get a composite. Invalid when nothing of that kind is measured.
+///
+Fit composite_curve(Kind kind, const CurveSet &curves, Method method,
+                    QStringList *members = nullptr);
+
+/// One line for the UI: "own curve", "composite of A, B", ...
+QString describe(const CurveChoice &choice);
+
 /// Builds a bowl item from menu configuration plus the fitted curves.
 BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method method,
                    double flat_protein_rate = kFlatProteinRate,

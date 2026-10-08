@@ -168,6 +168,18 @@ bool load_piece_heights(const QString &path, PieceHeights &out, QString *error =
 bool save_piece_heights(const QString &path, const PieceHeights &pieces,
                         QString *error = nullptr);
 
+/// The name a menu spelling is offered under, with prep and version words dropped:
+/// "White Jasmine Rice retherm v11" -> "White Jasmine Rice". The same cleaning the
+/// loader applies, for data typed straight from station or menu labels.
+QString clean_ingredient_name(const QString &raw);
+
+/// Base, protein or topping, read from the name alone, as the loader does when no
+/// mapping says otherwise.
+Kind guess_kind(const QString &name);
+
+/// On the culinary team's list of things served in sauce cups.
+bool is_sauce_name(const QString &name);
+
 LoadResult load_menus(const QString &dir, const NameMappings *mappings = nullptr,
                       const PieceHeights *pieces = nullptr);
 

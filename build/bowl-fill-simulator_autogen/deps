@@ -4,8 +4,10 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeSystem.cmake \
 	/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/moc_predefs.h \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/menu_model.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/sweep.hh \

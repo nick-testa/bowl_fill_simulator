@@ -1,0 +1,37 @@
+method,ingredient,g,oz
+robot,romaine,86,20
+robot,romaine,99,24
+robot,romaine,127,28
+robot,mexican rice,224,14
+robot,mexican rice,300,18
+robot,mexican rice,205,14
+robot,romaine,141,33
+robot,romaine,105,24
+robot,romaine,67,16
+robot,mexican rice,226,16
+robot,mexican rice,300,19
+robot,mexican rice,183,13
+robot,kale,73,25
+robot,kale,47,17
+robot,kale,67,24
+robot,kale,99,30
+robot,kale,99,29
+robot,kale,72,23
+hand,romaine,50,14
+hand,romaine,50,14
+hand,romaine,100,24
+hand,romaine,100,25
+hand,romaine,150,35
+hand,romaine,150,34
+hand,mexican rice,150,11
+hand,mexican rice,150,11
+hand,mexican rice,200,13
+hand,mexican rice,200,13
+hand,mexican rice,250,16
+hand,mexican rice,250,17
+hand,kale,40,18
+hand,kale,40,18
+hand,kale,60,24
+hand,kale,60,22
+hand,kale,80,30
+hand,kale,80,29

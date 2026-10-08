@@ -2,6 +2,7 @@
 
 #include "core/adaptive.hh"
 #include "core/curves.hh"
+#include "core/measurements.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 
@@ -28,7 +29,8 @@ class ToleranceChart;
 class PhotoLabel;
 
 /// Per-ingredient edits the user has made, keyed by ingredient name. Absent fields
-/// fall back to the menu's configuration.
+/// fall back to the recipe's pinned weight, then the menu's configuration. Kept
+/// across changes to the bowl and the recipe; cleared only when the brand changes.
 struct Override {
     std::optional<double> start_g, step_g, max_g, rate;
 };
@@ -52,6 +54,8 @@ private slots:
     void on_selection_changed();
     void on_upload_csv();
     void on_reset_curves();
+    void on_upload_bowl_data();
+    void show_bowl_help();
     void show_csv_help();
     void show_report();
     void show_issues();
@@ -70,6 +74,12 @@ private:
     void reload_menus();
     void update_mapping_note();
     QString mappings_path() const;
+    QString measurements_dir() const;
+    /// Re-reads data/measurements into the curves and refits the squash; returns the
+    /// files that could not be loaded.
+    QStringList reload_measurements();
+    QString store_and_reload(const QString &path, QStringList *problems);
+    void update_curve_note();
     QString pieces_path() const;
     BowlGeometry geometry() const;
     void update_geometry_note(double capacity_oz, const SauceCups &sauce,
@@ -92,9 +102,18 @@ private:
     QString asset_dir_;
     std::vector<Menu> menus_;
     CurveSet curves_;
+    MeasurementSet measurements_;   ///< what was loaded from data/measurements
+    QDoubleSpinBox *empty_bowl_ml_ = nullptr;   ///< the camera's zero, applied to scans
+    QCheckBox *backfill_ = nullptr;             ///< correct scans by the test-beans reference
+    QCheckBox *drop_impossible_ = nullptr;      ///< leave impossible readings out of fits
+    SquashFit squash_;              ///< fitted over every mixed bowl on file
     QStringList load_warnings_;
 
     std::map<QString, Override> overrides_;
+    /// Start weights the selected recipe pins, by ingredient. Replaced on every
+    /// recipe change, unlike overrides_, which only a brand change clears.
+    std::map<QString, double> pins_;
+    std::optional<double> floor_override_;   ///< a weight floor the user typed
     QStringList picked_proteins_, picked_toppings_;
     QStringList picked_sauces_;   ///< one sauce cup each, up to SauceCups::kMax
     int sauce_cup_count() const;
@@ -168,6 +187,7 @@ private:
     QLabel *brand_note_ = nullptr;
     QLabel *recipe_note_ = nullptr;
     QLabel *floor_note_ = nullptr;
+    QPushButton *floor_reset_ = nullptr;
     QLabel *method_note_ = nullptr;
     QLabel *split_note_ = nullptr;
     QLabel *compress_note_ = nullptr;

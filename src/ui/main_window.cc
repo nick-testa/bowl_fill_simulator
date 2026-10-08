@@ -1,5 +1,8 @@
 #include "main_window.hh"
 
+#include "core/bowl_data.hh"
+#include "core/measurements.hh"
+
 #include "bowl_diagram.hh"
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
@@ -17,7 +20,10 @@
 #include <map>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDesktopServices>
 #include <QDir>
+#include <QFileInfo>
+#include <QUrl>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
 #include <QFrame>
@@ -439,9 +445,6 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     load_warnings_ << loaded.warnings;
     menu_issues_ = loaded.issues;
 
-    QString err;
-    if (!curves_.load_csv(asset_dir_ + "/data/mass_to_volume.csv", &err))
-        load_warnings_ << QString("mass_to_volume.csv: %1").arg(err);
     QString cost_err;
     if (!costs_.load_csv(asset_dir_ + "/data/ingredient_costs.csv", &cost_err))
         load_warnings_ << QString("ingredient_costs.csv: %1").arg(cost_err);
@@ -463,6 +466,9 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
         if (capacity_label_) capacity_label_->setText("Bowl capacity (ml)");
     }
     reload_theme();
+    // After build_ui: the squash fitted from the stored bowls sets the compression
+    // controls, and this is what keeps it across restarts.
+    load_warnings_ << reload_measurements();
     populate_brand();
 
     // Stale menu data is shown in the header, where it stays visible without
@@ -734,11 +740,26 @@ QWidget *MainWindow::build_controls()
     lg->setContentsMargins(0, 0, 0, 0);
     lg->setSpacing(space::sm);
     floor_ = make_spin(0, 5000, 5, 0);
-    floor_->setToolTip("minimum_product_weight_g, matched from the menu. Edit to override.");
-    connect(floor_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+    floor_->setToolTip("minimum_product_weight_g, matched from the menu. A value you type "
+                       "stays until you change brand or use the menu's value again.");
+    // Programmatic updates are signal-blocked, so this only fires for typed values.
+    connect(floor_, &QDoubleSpinBox::valueChanged, this, [this](double v) {
+        floor_override_ = v;
+        apply_floor();
+        recompute();
+    });
     lg->addWidget(field("Weight floor (g)", floor_));
     floor_note_ = make_label("", "note");
     lg->addWidget(floor_note_);
+    floor_reset_ = new QPushButton("Use the menu's floor");
+    floor_reset_->setObjectName("quiet");
+    floor_reset_->setVisible(false);
+    connect(floor_reset_, &QPushButton::clicked, this, [this] {
+        floor_override_.reset();
+        apply_floor();
+        recompute();
+    });
+    lg->addWidget(floor_reset_, 0, Qt::AlignLeft);
     v->addWidget(legacy_group_);
 
     adaptive_group_ = new QWidget;
@@ -803,7 +824,19 @@ QWidget *MainWindow::build_controls()
         QSettings().setValue("ui/advanced_open", on);
     });
 
-    v->addWidget(section_label("Base ramp"));
+    auto *edits_row = new QHBoxLayout;
+    edits_row->addWidget(section_label("Base ramp"), 1);
+    auto *reset_edits = new QPushButton("Reset edits to menu values");
+    reset_edits->setObjectName("quiet");
+    reset_edits->setToolTip("Your edits to ramp values and the weight floor are kept as you "
+                            "change the bowl, until you change brand. This drops them now.");
+    connect(reset_edits, &QPushButton::clicked, this, [this] {
+        overrides_.clear();
+        floor_override_.reset();
+        on_selection_changed();
+    });
+    edits_row->addWidget(reset_edits);
+    v->addLayout(edits_row);
     for (int i = 0; i < 2; ++i) {
         auto *card = make_panel("sunk");
         auto *g = new QGridLayout(card);
@@ -819,8 +852,18 @@ QWidget *MainWindow::build_controls()
         g->addWidget(field("Max g", base_max_[i]), 1, 2);
         base_fit_[i] = make_label("", "note");
         g->addWidget(base_fit_[i], 2, 0, 1, 3);
-        for (QDoubleSpinBox *s : {base_start_[i], base_step_[i], base_max_[i]})
-            connect(s, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
+        // An edit belongs to the base in this slot, so it follows that ingredient: switch
+        // bases and back and the edit is still there. Programmatic updates are
+        // signal-blocked, so only typed values land here.
+        const std::pair<QDoubleSpinBox *, std::optional<double> Override::*> fields[] = {
+            {base_start_[i], &Override::start_g}, {base_step_[i], &Override::step_g},
+            {base_max_[i], &Override::max_g}};
+        for (const auto &[spin, member] : fields)
+            connect(spin, &QDoubleSpinBox::valueChanged, this, [this, i, member](double v) {
+                const QString name = (i == 0 ? base1_ : base2_)->currentData().toString();
+                if (!name.isEmpty()) overrides_[name].*member = v;
+                recompute();
+            });
         base_card_[i] = card;
         base_card_layout_[i] = g;
         v->addWidget(card);
@@ -883,11 +926,14 @@ QWidget *MainWindow::build_controls()
     compress_->setChecked(true);
     connect(compress_, &QCheckBox::toggled, this, &MainWindow::on_selection_changed);
     v->addWidget(compress_);
-    load_transfer_ = make_spin(0, 1, 0.05, 2);
+    load_transfer_ = make_spin(0, kMaxLoadTransfer, 0.05, 2);
     load_transfer_->setValue(1.0);
-    load_transfer_->setToolTip("Share of the topping weight that bears on the base.");
+    load_transfer_->setToolTip("Share of the topping weight that bears on the base. 1 is "
+                               "the weight alone; above 1 is fitted from scanned bowls, "
+                               "where lid, cups and the drop squash more than weight "
+                               "explains.");
     connect(load_transfer_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    v->addWidget(field("Load transfer (0–1)", load_transfer_));
+    v->addWidget(field("Load transfer", load_transfer_));
     compress_note_ = make_label("", "note");
     v->addWidget(compress_note_);
 
@@ -896,17 +942,100 @@ QWidget *MainWindow::build_controls()
     auto *row = new QHBoxLayout;
     row->setSpacing(space::sm);
     auto *upload = new QPushButton("Upload CSV…");
+    upload->setToolTip("One row per measurement: ingredient, g, ml. The file is copied "
+                       "into data/measurements and loaded from there from now on.");
     connect(upload, &QPushButton::clicked, this, &MainWindow::on_upload_csv);
     row->addWidget(upload, 1);
     auto *help = new QPushButton("Format");
     help->setToolTip(CurveSet::format_help());
     connect(help, &QPushButton::clicked, this, &MainWindow::show_csv_help);
     row->addWidget(help);
-    auto *reset = new QPushButton("Reset");
-    reset->setToolTip("Discard uploaded rows and return to the bundled measurements.");
-    connect(reset, &QPushButton::clicked, this, &MainWindow::on_reset_curves);
-    row->addWidget(reset);
     v->addLayout(row);
+
+    // Whole scanned bowls: single-ingredient rows extend the curves, mixed rows fit
+    // how hard the lower layers are squashed.
+    auto *bowl_row = new QHBoxLayout;
+    bowl_row->setSpacing(space::sm);
+    auto *bowls = new QPushButton("Upload bowl data…");
+    bowls->setToolTip("One row per scanned bowl: grams per ingredient in dispense order, "
+                      "then ml. Refits the curves and the base squash. The file is copied "
+                      "into data/measurements and loaded from there from now on.");
+    connect(bowls, &QPushButton::clicked, this, &MainWindow::on_upload_bowl_data);
+    bowl_row->addWidget(bowls, 1);
+    auto *bowl_help = new QPushButton("Format");
+    bowl_help->setToolTip(bowl_data_format_help());
+    connect(bowl_help, &QPushButton::clicked, this, &MainWindow::show_bowl_help);
+    bowl_row->addWidget(bowl_help);
+    v->addLayout(bowl_row);
+
+    // Every measurement lives as a file in data/measurements; editing or deleting
+    // those files and reloading is how data is corrected.
+    auto *store_row = new QHBoxLayout;
+    store_row->setSpacing(space::sm);
+    auto *reload = new QPushButton("Reload");
+    reload->setToolTip("Re-read every file in data/measurements, after editing or "
+                       "removing data by hand.");
+    connect(reload, &QPushButton::clicked, this, &MainWindow::on_reset_curves);
+    store_row->addWidget(reload, 1);
+    auto *open_dir = new QPushButton("Open folder");
+    open_dir->setToolTip("Open data/measurements in the file manager.");
+    connect(open_dir, &QPushButton::clicked, this, [this] {
+        QDir().mkpath(measurements_dir());
+        QDesktopServices::openUrl(QUrl::fromLocalFile(measurements_dir()));
+    });
+    store_row->addWidget(open_dir, 1);
+    v->addLayout(store_row);
+
+    // The camera's zero: what an empty bowl reads. Every scanned volume is corrected
+    // by it, so small portions are not under-counted by a fixed few ml.
+    empty_bowl_ml_ = make_spin(-30, 30, 0.5, 1);
+    empty_bowl_ml_->setSuffix(" ml");
+    empty_bowl_ml_->setValue(
+        QSettings().value("measurements/empty_bowl_ml", kDefaultEmptyBowlMl).toDouble());
+    empty_bowl_ml_->setToolTip("What volume-vision reads for an empty bowl (usually -4 to "
+                               "-8 ml). Subtracted from every scanned bowl in "
+                               "data/measurements before curves are fitted. Files with "
+                               "ingredient, g, ml rows are taken as given.");
+    connect(empty_bowl_ml_, &QDoubleSpinBox::valueChanged, this, [this](double v) {
+        QSettings().setValue("measurements/empty_bowl_ml", v);
+        const QStringList problems = reload_measurements();
+        if (!problems.isEmpty())
+            QMessageBox::warning(this, "Some measurement files could not be loaded",
+                                 problems.join("\n"));
+        recompute();
+    });
+    v->addWidget(field("Empty-bowl reading (camera zero)", empty_bowl_ml_));
+
+    // Both only change how the stored readings are read; the files are never edited,
+    // so turning one off brings every reading back.
+    auto measurement_toggle = [this](const QString &label, const char *key,
+                                     const QString &tip) {
+        auto *cb = new QCheckBox(label);
+        cb->setChecked(QSettings().value(key, false).toBool());
+        cb->setToolTip(tip);
+        connect(cb, &QCheckBox::toggled, this, [this, key](bool on) {
+            QSettings().setValue(key, on);
+            const QStringList problems = reload_measurements();
+            if (!problems.isEmpty())
+                QMessageBox::warning(this, "Some measurement files could not be loaded",
+                                     problems.join("\n"));
+            recompute();
+        });
+        return cb;
+    };
+    backfill_ = measurement_toggle(
+        "Backfill readings from the test-beans calibration", "measurements/backfill",
+        "Rigid test beans cannot compress, so their true volume is proportional to their "
+        "mass; any bend in their readings is the camera's. Inverting that bend corrects "
+        "every other camera scan (most at small readings, none at the deepest). Needs a "
+        "\"test ...\" ladder of at least 5 readings in data/measurements.");
+    v->addWidget(backfill_);
+    drop_impossible_ = measurement_toggle(
+        "Ignore impossible readings", "measurements/drop_impossible",
+        "Leave out of the fits any scan reading less than the food's own solid volume "
+        "(mass / 1.05 g/ml): a pile cannot take up less room than it is made of. The "
+        "test beans are exempt. The files are not changed.");
+    v->addWidget(drop_impossible_);
     curve_note_ = make_label("", "note");
     v->addWidget(curve_note_);
 
@@ -1151,6 +1280,7 @@ const Menu *MainWindow::menu() const
 
 Method MainWindow::method() const
 {
+    if (!method_hand_) return Method::Robot;
     if (method_hand_->isChecked()) return Method::Hand;
     if (method_pooled_->isChecked()) return Method::Pooled;
     return Method::Robot;
@@ -1158,6 +1288,7 @@ Method MainWindow::method() const
 
 double MainWindow::value_for(const QString &name, const QString &fieldName) const
 {
+    // Your edits win, then the recipe's pinned weight, then the menu.
     auto it = overrides_.find(name);
     if (it != overrides_.end()) {
         const Override &o = it->second;
@@ -1166,6 +1297,8 @@ double MainWindow::value_for(const QString &name, const QString &fieldName) cons
         if (fieldName == "max" && o.max_g) return *o.max_g;
         if (fieldName == "rate" && o.rate) return *o.rate;
     }
+    if (fieldName == "start")
+        if (auto pin = pins_.find(name); pin != pins_.end()) return pin->second;
     const Menu *m = menu();
     const Ingredient *ing = m ? m->find(name) : nullptr;
     if (!ing) return 0.0;
@@ -1302,7 +1435,11 @@ void MainWindow::on_brand_changed()
     if (!m) return;
 
     loading_ = true;
+    // A new brand is the one thing that drops your edits: its ingredients and ramp
+    // settings are different.
     overrides_.clear();
+    pins_.clear();
+    floor_override_.reset();
     picked_proteins_.clear();
     picked_toppings_.clear();
     picked_sauces_.clear();
@@ -1353,7 +1490,8 @@ void MainWindow::on_recipe_changed()
     if (!m) return;
 
     loading_ = true;
-    overrides_.clear();
+    // The recipe's own weights are replaced; your edits (overrides_) are kept.
+    pins_.clear();
     picked_proteins_.clear();
     picked_toppings_.clear();
     picked_sauces_.clear();
@@ -1382,7 +1520,7 @@ void MainWindow::on_recipe_changed()
         for (const RecipeItem &ri : rec->items) {
             const Ingredient *ing = m->find(ri.name);
             if (!ing) continue;
-            overrides_[ri.name].start_g = ri.grams;
+            pins_[ri.name] = ri.grams;
             if (ing->kind == Kind::Base) rec_bases << ri.name;
             else if (ing->kind == Kind::Protein) picked_proteins_ << ri.name;
             else picked_toppings_ << ri.name;
@@ -1509,8 +1647,11 @@ void MainWindow::rebuild_override_rows()
         const bool guessed =
             ing && (ing->source == WeightSource::Class || ing->source == WeightSource::None);
         if (guessed) label->setStyleSheet(QString("color:%1;").arg(pal.over.name()));
-        label->setToolTip(ing ? QString("Portion source: %1").arg(to_string(ing->source))
-                              : QString());
+        label->setToolTip(
+            ing ? QString("Portion source: %1\nCurve: %2")
+                      .arg(to_string(ing->source),
+                           describe(choose_curve(name, ing->kind, curves_, method())))
+                : QString());
         grid->addWidget(label, line++, 0, 1, 4);
 
         const char *fields[4] = {"start", "step", "max", "rate"};
@@ -1542,9 +1683,19 @@ void MainWindow::apply_floor()
     const Menu *m = menu();
     if (!m) return;
     const FloorRule *f = m->floor_for(bowl_names());
+    const double menu_floor = f ? f->minimum_product_weight_g : 0.0;
 
     const QSignalBlocker block(floor_);
-    floor_->setValue(f ? f->minimum_product_weight_g : 0.0);
+    floor_->setValue(floor_override_.value_or(menu_floor));
+    floor_reset_->setVisible(floor_override_.has_value());
+    if (floor_override_) {
+        floor_note_->setText(QString("<b>Your value, %1 g</b>, is kept as you change the "
+                                     "bowl. The menu's rule gives %2 for this bowl.")
+                                 .arg(*floor_override_, 0, 'f', 0)
+                                 .arg(f ? QString("%1 g").arg(menu_floor, 0, 'f', 0)
+                                        : QString("no floor")));
+        return;
+    }
 
     if (m->floors.empty()) {
         floor_note_->setText("This menu has no floors — the ramp never fires.");
@@ -1605,13 +1756,15 @@ void MainWindow::on_selection_changed()
         if (!ing) continue;
 
         const QSignalBlocker b1(base_start_[i]), b2(base_step_[i]), b3(base_max_[i]);
-        auto ov = overrides_.find(name);
-        const bool pinned = ov != overrides_.end() && ov->second.start_g;
-        base_start_[i]->setValue(pinned ? *ov->second.start_g
-                                        : split_base_start(*ing, split_->isChecked(),
-                                                           two_bases));
-        base_step_[i]->setValue(ing->step_increment_g);
-        base_max_[i]->setValue(ing->max_dispense_weight_g);
+        const auto ov = overrides_.find(name);
+        const Override edit = ov != overrides_.end() ? ov->second : Override{};
+        const auto pin = pins_.find(name);
+        base_start_[i]->setValue(edit.start_g     ? *edit.start_g
+                                 : pin != pins_.end() ? pin->second
+                                                      : split_base_start(*ing, split_->isChecked(),
+                                                                         two_bases));
+        base_step_[i]->setValue(edit.step_g.value_or(ing->step_increment_g));
+        base_max_[i]->setValue(edit.max_g.value_or(ing->max_dispense_weight_g));
     }
 
     split_note_->setText(
@@ -1872,7 +2025,9 @@ void MainWindow::recompute()
 
         BreakdownRow row;
         row.name = it.name;
-        row.kind = to_string(it.kind);
+        row.kind = QString("%1 · curve: %2")
+                       .arg(to_string(it.kind),
+                            describe(choose_curve(it.name, it.kind, curves_, method())));
         if (settings.compress && squeeze > 0.05)
             row.kind += QString(" · squeezed %1 by the load above it")
                             .arg(units::volume(squeeze, true));
@@ -1997,14 +2152,52 @@ void MainWindow::recompute()
     ramp_chart_->set_result(r);
     curve_chart_->set_curves(&curves_, method());
 
+    update_curve_note();
+}
+
+void MainWindow::update_curve_note()
+{
     QStringList bits;
     for (const QString &n : curves_.ingredients())
         bits << QString("%1 (%2)").arg(n).arg(curves_.count(n, Method::Pooled));
-    curve_note_->setText(QString("<b>%1</b> measurements across %2 ingredient%3: %4.")
-                             .arg(curves_.observations().size())
-                             .arg(curves_.ingredients().size())
-                             .arg(curves_.ingredients().size() == 1 ? "" : "s")
-                             .arg(bits.join(", ")));
+    const int files = static_cast<int>(measurements_.files.size());
+    QString text = QString("<b>%1</b> measurements from %2 file%3 in "
+                           "<code>data/measurements</code>")
+                       .arg(curves_.observations().size()).arg(files)
+                       .arg(files == 1 ? "" : "s");
+    text += bits.isEmpty() ? QString(".") : QString(": %1.").arg(bits.join(", "));
+    const Backfill &bf = measurements_.backfill;
+    if (bf.valid)
+        text += QString(" Backfilled from %1 (%2 readings): ×%3 at 10 ml, ×%4 at 50 ml, "
+                        "×%5 at 200 ml.")
+                    .arg(bf.reference).arg(bf.points)
+                    .arg(bf.factor_at_ml(10), 0, 'f', 2).arg(bf.factor_at_ml(50), 0, 'f', 2)
+                    .arg(bf.factor_at_ml(200), 0, 'f', 2);
+    else if (measurements_.backfill_requested)
+        text += QString(" <span style='color:%1'>Backfill is on but there is no usable "
+                        "\"test ...\" ladder (%2 readings; %3 needed).</span>")
+                    .arg(theme::palette().over.name()).arg(bf.points).arg(kMinReferencePoints);
+    if (const int n = measurements_.dropped_total()) {
+        QStringList parts;
+        for (const auto &[name, count] : measurements_.dropped)
+            parts << QString("%1 %2").arg(name).arg(count);
+        text += QString(" Ignored %1 impossible reading%2 (%3).")
+                    .arg(n).arg(n == 1 ? "" : "s").arg(parts.join(", "));
+    }
+    if (squash_.valid)
+        text += QString(" Squash fitted from %1 mixed bowl%2: load transfer %3.")
+                    .arg(squash_.bowls).arg(squash_.bowls == 1 ? "" : "s")
+                    .arg(squash_.load_transfer, 0, 'f', 2);
+    QStringList bad;
+    for (const MeasurementFile &f : measurements_.files)
+        if (f.failed) bad << f.name;
+    if (measurements_.folder_missing || bad.size())
+        text += QString(" <span style='color:%1'>%2</span>")
+                    .arg(theme::palette().over.name(),
+                         measurements_.folder_missing
+                             ? QString("The folder does not exist yet; upload a file to create it.")
+                             : QString("Not loaded: %1.").arg(bad.join(", ")));
+    curve_note_->setText(text);
 }
 
 //
@@ -2059,6 +2252,47 @@ void MainWindow::show_csv_help()
     box.exec();
 }
 
+QString MainWindow::measurements_dir() const
+{
+    return asset_dir_ + kMeasurementsDir;
+}
+
+QStringList MainWindow::reload_measurements()
+{
+    MeasurementOptions options;
+    options.empty_bowl_ml = empty_bowl_ml_->value();
+    options.backfill = backfill_->isChecked();
+    options.drop_impossible = drop_impossible_->isChecked();
+    measurements_ = load_measurements(measurements_dir(), curves_, options);
+    squash_ = fit_squash(measurements_.bowls, curves_, method());
+    if (squash_.valid) {
+        // The fitted squash is part of the data, so it is re-applied on every load.
+        compress_->setChecked(true);
+        load_transfer_->setValue(squash_.load_transfer);
+    }
+    QStringList problems;
+    if (measurements_.folder_missing)
+        problems << QString("data/measurements does not exist, so no curves are loaded. "
+                            "Upload a file to create it.");
+    for (const MeasurementFile &f : measurements_.files)
+        if (f.failed) problems << QString("data/measurements/%1: %2").arg(f.name, f.problem);
+    if (curve_note_) update_curve_note();
+    return problems;
+}
+
+/// Copies an accepted upload into the store and reloads it, reporting where it went.
+QString MainWindow::store_and_reload(const QString &path, QStringList *problems)
+{
+    QString err;
+    const QString stored = store_measurement_file(path, measurements_dir(), &err);
+    if (stored.isEmpty()) {
+        QMessageBox::warning(this, "Could not save the file", err);
+        return {};
+    }
+    *problems = reload_measurements();
+    return QFileInfo(stored).fileName();
+}
+
 void MainWindow::on_upload_csv()
 {
     const QString path = QFileDialog::getOpenFileName(
@@ -2066,34 +2300,140 @@ void MainWindow::on_upload_csv()
         "CSV files (*.csv);;All files (*)");
     if (path.isEmpty()) return;
 
+    // Read it on its own first, so a bad file is refused before it is stored.
+    CurveSet check;
     QString note;
     int added = 0;
-    QStringList fresh;
-    if (!curves_.load_csv(path, &note, &added, &fresh)) {
+    if (!check.load_csv(path, &note, &added)) {
         QMessageBox box(this);
         box.setWindowTitle("Could not read that CSV");
         box.setIcon(QMessageBox::Warning);
         box.setText(note);
-        box.setInformativeText("Click Show Details for the expected format.");
+        box.setInformativeText(is_curve_csv(path)
+                                   ? "Click Show Details for the expected format."
+                                   : "This looks like a bowl sheet (a column per "
+                                     "ingredient); use Upload bowl data instead.");
         box.setDetailedText(QString(CurveSet::format_help())
                                 .replace(QRegularExpression("<[^>]+>"), ""));
         box.exec();
         return;
     }
 
-    QString msg = QString("Added %1 row%2. ").arg(added).arg(added == 1 ? "" : "s");
+    const QStringList before = curves_.ingredients();
+    QStringList problems;
+    const QString stored = store_and_reload(path, &problems);
+    if (stored.isEmpty()) return;
+    QStringList fresh;
+    for (const QString &n : curves_.ingredients())
+        if (!before.contains(n)) fresh << n;
+
+    QString msg = QString("Saved as data/measurements/%1 and loaded: %2 row%3. ")
+                      .arg(stored).arg(added).arg(added == 1 ? "" : "s");
     if (!fresh.isEmpty())
         msg += QString("New curve%1 for %2. ")
                    .arg(fresh.size() == 1 ? "" : "s", fresh.join(", "));
     if (!note.isEmpty()) msg += note;
+    if (!problems.isEmpty()) msg += "\n\nOther files not loaded:\n" + problems.join("\n");
     QMessageBox::information(this, "Measurements added", msg);
 
     recompute();
 }
 
+void MainWindow::show_bowl_help()
+{
+    QMessageBox box(this);
+    box.setWindowTitle("Bowl data CSV format");
+    box.setTextFormat(Qt::RichText);
+    box.setText(bowl_data_format_help());
+    box.setIcon(QMessageBox::Information);
+    box.exec();
+}
+
+void MainWindow::on_upload_bowl_data()
+{
+    const QString path = QFileDialog::getOpenFileName(
+        this, "Add scanned bowls", asset_dir_ + "/data", "CSV files (*.csv);;All files (*)");
+    if (path.isEmpty()) return;
+
+    BowlSheet sheet;
+    QString err;
+    if (!load_bowl_csv(path, sheet, &err, empty_bowl_ml_->value())) {
+        QMessageBox box(this);
+        box.setWindowTitle("Could not read that CSV");
+        box.setIcon(QMessageBox::Warning);
+        box.setText(err);
+        box.setInformativeText("Click Show Details for the expected format.");
+        box.setDetailedText(bowl_data_format_help().replace(QRegularExpression("<[^>]+>"), ""));
+        box.exec();
+        return;
+    }
+
+    // Store it, then reload everything: the curves refit with this sheet's single-
+    // ingredient bowls, and the squash is fitted over every mixed bowl on file.
+    const QStringList before = curves_.ingredients();
+    const std::vector<Observation> points = single_ingredient_points(sheet);
+    QStringList problems;
+    const QString stored = store_and_reload(path, &problems);
+    if (stored.isEmpty()) return;
+    QStringList fresh;
+    for (const QString &n : curves_.ingredients())
+        if (!before.contains(n)) fresh << n;
+
+    QString msg = QString("Saved as <code>data/measurements/%1</code> and loaded.<br><br>"
+                          "Read %2 bowl%3: %4 single-ingredient, %5 mixed.")
+                      .arg(stored).arg(sheet.rows.size()).arg(sheet.rows.size() == 1 ? "" : "s")
+                      .arg(sheet.single_rows()).arg(sheet.mixed_rows());
+    if (sheet.skipped)
+        msg += QString(" %1 row%2 skipped (no volume or no weights).")
+                   .arg(sheet.skipped).arg(sheet.skipped == 1 ? "" : "s");
+    msg += QString("<br><br>%1 curve point%2 added")
+               .arg(points.size()).arg(points.size() == 1 ? "" : "s");
+    msg += fresh.isEmpty() ? "." : QString("; new curve%1 for %2.")
+                                       .arg(fresh.size() == 1 ? "" : "s", fresh.join(", "));
+
+    const SquashFit &fit = squash_;   // over every mixed bowl on file, already applied
+    if (fit.valid) {
+        const double ml = CurveSet::kMlPerFlOz;
+        msg += QString("<br><br><b>Base squash fitted from all %1 mixed bowl%2 on file: load "
+                       "transfer %3.</b><br>Typical error: %4 ml with no squash, %5 ml at 1.0, "
+                       "<b>%6 ml</b> fitted (bias %7 ml).")
+                   .arg(fit.bowls).arg(fit.bowls == 1 ? "" : "s")
+                   .arg(fit.load_transfer, 0, 'f', 2)
+                   .arg(std::round(fit.rmse_uncompressed_oz * ml))
+                   .arg(std::round(fit.rmse_default_oz * ml))
+                   .arg(std::round(fit.rmse_fitted_oz * ml))
+                   .arg(std::round(fit.mean_bias_oz * ml));
+        if (fit.at_bound)
+            msg += QString("<br><span style='color:%1'>The fit hit its limit of %2: even "
+                           "maximum squash on the bases does not shrink these bowls "
+                           "enough. Proteins and toppings are probably taking less room "
+                           "than their flat rates say; measure them.</span>")
+                       .arg(theme::palette().over.name()).arg(kMaxLoadTransfer);
+        if (!fit.flat_rate.isEmpty())
+            msg += QString("<br>No curve yet, carried at a flat rate: %1.")
+                       .arg(fit.flat_rate.join(", "));
+        msg += "<br><br>Compression is on and load transfer is set to the fitted value.";
+    } else {
+        msg += "<br><br>No mixed bowls on file, so the squash was left as it was.";
+    }
+    if (!problems.isEmpty())
+        msg += "<br><br>Other files not loaded:<br>" + problems.join("<br>");
+
+    QMessageBox box(this);
+    box.setWindowTitle("Bowl data added");
+    box.setTextFormat(Qt::RichText);
+    box.setText(msg);
+    box.setIcon(QMessageBox::Information);
+    box.exec();
+    recompute();
+}
+
 void MainWindow::on_reset_curves()
 {
-    curves_.reset_to_builtin(asset_dir_ + "/data/mass_to_volume.csv");
+    const QStringList problems = reload_measurements();
+    if (!problems.isEmpty())
+        QMessageBox::warning(this, "Some measurement files could not be loaded",
+                             problems.join("\n"));
     recompute();
 }
 
@@ -2109,16 +2449,20 @@ void MainWindow::on_reset_curves()
 void MainWindow::render_photos(const std::vector<BowlItem> &items)
 {
     const theme::Palette &pal = theme::palette();
-    static const std::map<QString, QString> kPhotoPrefix = {
-        {"Romaine Base", "Romaine"}, {"Massaged Kale", "Kale"},
-        {"Mexican Rice", "MexicanRice"}, {"White Rice", "MexicanRice"},
-        {"Brown Rice and Lentils", "MexicanRice"}};
+    // Photo series by family word, so renamed bases still find theirs: every rice
+    // (White Jasmine Rice, White Rice, Brown Rice and Lentils, ...) shows the Mexican
+    // rice series, the only rice photographed.
+    static const std::pair<QRegularExpression, QString> kPhotoSeries[] = {
+        {QRegularExpression(R"(\bromaine\b)", QRegularExpression::CaseInsensitiveOption), "Romaine"},
+        {QRegularExpression(R"(\bkale\b)", QRegularExpression::CaseInsensitiveOption), "Kale"},
+        {QRegularExpression(R"(\brice\b)", QRegularExpression::CaseInsensitiveOption), "MexicanRice"}};
     QDir photo_dir(asset_dir_ + "/photos");
     int slot = 0;
     for (const BowlItem &it : items) {
         if (it.kind != Kind::Base || slot > 1) continue;
-        auto pit = kPhotoPrefix.find(it.name);
-        if (pit == kPhotoPrefix.end()) continue;
+        const auto pit = std::find_if(std::begin(kPhotoSeries), std::end(kPhotoSeries),
+                                      [&](const auto &s) { return it.name.contains(s.first); });
+        if (pit == std::end(kPhotoSeries)) continue;
         // Photos exist at fixed masses; show the nearest one to the simulated weight.
         double best = -1, best_d = 1e18;
         for (const QString &f : photo_dir.entryList({pit->second + "_*g.jpg"}, QDir::Files)) {
@@ -2136,7 +2480,8 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
         photo_caption_[slot]->setText(
             QString("<b>%1</b><br>%2 g simulated · %3 g photo%4")
                 .arg(it.name).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
-                .arg(pit->second == "MexicanRice" && it.name != "Mexican Rice"
+                .arg(pit->second == "MexicanRice"
+                             && it.name.compare("Mexican Rice", Qt::CaseInsensitive) != 0
                          ? "<br><span style='color:" + pal.over.name()
                                + "'>proxy series</span>"
                          : ""));
@@ -2259,7 +2604,9 @@ void MainWindow::render_adaptive()
         row.name = it.name;
         if (it.clamped) row.name += "  (clamped)";
         if (!it.cost_known) row.name += "  (~cost)";
-        row.kind = to_string(it.kind);
+        row.kind = QString("%1 · curve: %2")
+                       .arg(to_string(it.kind),
+                            describe(choose_curve(it.name, it.kind, curves_, method())));
         row.swatch = i < band.size() ? band[i] : QColor();
         if (it.clamped) row.colour = pal.over;
         row.cells = {

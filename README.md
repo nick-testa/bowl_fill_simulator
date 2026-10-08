@@ -39,8 +39,10 @@ found has no Wayland plugin and `WAYLAND_DISPLAY` is set.
 
 ```
 menus/     bridge-service menu dumps, one per brand, read at startup
-data/      mass_to_volume.csv — the 36 measured bowls that seed the curves
+data/      measurements/ — every mass→volume measurement, loaded at startup
+           archive/ — measurements kept but not loaded (the original 36-bowl run)
            ingredient_costs.csv — placeholder prices for the COGS readout
+           ingredient_aliases.csv, ingredient_pieces.csv — the Ingredients dialog
 photos/    reference photographs of known masses in a bowl
 src/core/  simulation, the adaptive solver, curve fitting and menu parsing (no widgets)
 src/ui/    Qt widgets, charts drawn with QPainter
@@ -48,6 +50,18 @@ tests/     verify.cc, checked against the HTML simulator's output
 ```
 
 `src/core` links only `Qt6::Core`, so the model is usable from a headless tool.
+
+## Measurements
+
+Every measurement lives as a CSV file in `data/measurements/`, and nothing else
+feeds the curves. Each launch, and the **Reload** button in Advanced, reads every
+`.csv` there. Uploading through the app copies the file in, so it persists. To
+correct or drop data, edit or delete the file (or rows in it) and press Reload.
+To set data aside without deleting it, move the file to `data/archive/`.
+`data/measurements/README.md` describes the two file layouts.
+
+The tests do not read this folder: they use their own copy of the original run,
+`tests/data/mass_to_volume.csv`, so their expected numbers stay fixed.
 
 ## Editing the menus
 

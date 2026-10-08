@@ -127,12 +127,17 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
     // as load^(p-1). Anchoring so that zero surcharge reproduces K*g^p exactly gives
     // A = K*2^(p-1), hence V = g * K * 2^(p-1) * (g/2 + phi*M)^(p-1). Only bases
     // compress; proteins and toppings are chunky and have no measurements.
+    // A curve with p >= 1 shows no self-compaction, so there is nothing to scale with
+    // load; it keeps its measured volume. (Clamping the exponent to 0 instead would
+    // collapse it to K*g even with nothing on top -- most of the volume of a camera-
+    // fitted curve with p > 1.)
     auto loaded_oz = [&](size_t i, double g) {
         const BowlItem &it = items[i];
-        if (!settings.compress || !it.has_curve || g <= 0) return it.volume_oz(g);
+        if (!settings.compress || !it.has_curve || g <= 0 || it.p >= 1.0)
+            return it.volume_oz(g);
         double above = 0.0;
         for (size_t j = i + 1; j < items.size(); ++j) above += weight[j];
-        const double e = std::min(it.p - 1.0, 0.0);
+        const double e = it.p - 1.0;   // negative here: the bed compacts
         return g * it.K * std::pow(2.0, e)
                * std::pow(g / 2.0 + settings.load_transfer * above, e);
     };
@@ -202,6 +207,86 @@ double split_base_start(const Ingredient &ingredient, bool split_on, bool two_ba
     return std::max(std::round(full * 0.5), ingredient.per_portion_minimum_weight_g);
 }
 
+Fit composite_curve(Kind kind, const CurveSet &curves, Method method, QStringList *members)
+{
+    Fit out;
+    if (kind == Kind::Base) return out;
+    std::vector<const Fit *> fits;
+    QStringList names;
+    double lo = 0, hi = 0;
+    for (const QString &n : curves.ingredients()) {
+        if (n.startsWith("test", Qt::CaseInsensitive) || guess_kind(n) != kind) continue;
+        const Fit *f = curves.fit(n, method);
+        if (!f) continue;
+        lo = fits.empty() ? f->lo_g : std::min(lo, f->lo_g);
+        hi = fits.empty() ? f->hi_g : std::max(hi, f->hi_g);
+        fits.push_back(f);
+        names << n;
+    }
+    if (fits.empty() || hi <= lo) return out;
+
+    // Average the members' predictions across the span they cover between them, then
+    // fit one power law to that average, so the composite plugs in like any curve.
+    constexpr int kSamples = 25;
+    CurveSet avg;
+    for (int i = 0; i < kSamples; ++i) {
+        const double g = lo + (hi - lo) * i / (kSamples - 1);
+        double oz = 0;
+        for (const Fit *f : fits) oz += f->volume_oz(g);
+        avg.add({"composite", method == Method::Pooled ? Method::Robot : method, g,
+                 oz / fits.size()});
+    }
+    avg.refit();
+    if (const Fit *f = avg.fit("composite", method)) {
+        out = *f;
+        out.n = static_cast<int>(fits.size());   // members, not samples
+        out.lo_g = lo;
+        out.hi_g = hi;
+    }
+    if (members) *members = names;
+    return out;
+}
+
+CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves, Method method)
+{
+    CurveChoice c;
+    if (const Fit *f = curves.fit(name, method)) {
+        c.source = CurveSource::Own;
+        c.K = f->K;
+        c.p = f->p;
+        return c;
+    }
+    if (const QString proxy = proxy_curve_for(name, curves); !proxy.isEmpty())
+        if (const Fit *f = curves.fit(proxy, method)) {
+            c.source = CurveSource::Family;
+            c.K = f->K;
+            c.p = f->p;
+            c.from = {proxy};
+            return c;
+        }
+    QStringList members;
+    const Fit f = composite_curve(kind, curves, method, &members);
+    if (f.valid) {
+        c.source = CurveSource::Composite;
+        c.K = f.K;
+        c.p = f.p;
+        c.from = members;
+    }
+    return c;
+}
+
+QString describe(const CurveChoice &choice)
+{
+    switch (choice.source) {
+    case CurveSource::Own: return "own measurements";
+    case CurveSource::Family: return QString("borrows %1").arg(choice.from.join(", "));
+    case CurveSource::Composite:
+        return QString("composite of %1").arg(choice.from.join(", "));
+    case CurveSource::Flat: return "flat rate (nothing measured to lean on)";
+    }
+    return {};
+}
+
 BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method method,
                    double flat_protein_rate, double flat_topping_rate)
 {
@@ -215,13 +300,11 @@ BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method 
         ingredient.kind == Kind::Protein ? flat_protein_rate : flat_topping_rate;
     item.piece_height_mm = ingredient.piece_height_mm;
 
-    QString curve_name = ingredient.name;
-    if (const QString proxy = proxy_curve_for(ingredient.name, curves); !proxy.isEmpty())
-        curve_name = proxy;
-    if (const Fit *f = curves.fit(curve_name, method)) {
+    const CurveChoice c = choose_curve(ingredient.name, ingredient.kind, curves, method);
+    if (c.source != CurveSource::Flat) {
         item.has_curve = true;
-        item.K = f->K;
-        item.p = f->p;
+        item.K = c.K;
+        item.p = c.p;
     }
     return item;
 }

@@ -43,6 +43,8 @@ add_library(bowlfill_core STATIC
   src/core/adaptive.cc
   src/core/feasibility.cc
   src/core/sweep.cc
+  src/core/bowl_data.cc
+  src/core/measurements.cc
 )
 target_include_directories(bowlfill_core PUBLIC src)
 target_link_libraries(bowlfill_core PUBLIC Qt6::Core)

@@ -627,6 +627,12 @@ Menu build_menu(const QJsonObject &m, const QString &brand, const QStringList &c
 
 }  // namespace
 
+QString clean_ingredient_name(const QString &raw) { return clean_name(raw); }
+
+Kind guess_kind(const QString &name) { return kind_of(name); }
+
+bool is_sauce_name(const QString &name) { return is_sauce(name); }
+
 LoadResult load_menus(const QString &dir, const NameMappings *mappings,
                       const PieceHeights *pieces)
 {

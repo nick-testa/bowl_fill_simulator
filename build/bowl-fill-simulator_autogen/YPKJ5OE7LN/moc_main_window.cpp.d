@@ -1,7 +1,9 @@
 /home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/YPKJ5OE7LN/moc_main_window.cpp: /home/ntesta/Projects/bowl_fill_simulator/src/ui/main_window.hh \
   /home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/moc_predefs.h \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
+  /home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.hh \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh \
+  /home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.hh \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/menu_model.hh \
   /home/ntesta/Projects/bowl_fill_simulator/src/core/simulator.hh \
   /home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/__stdarg___gnuc_va_list.h \

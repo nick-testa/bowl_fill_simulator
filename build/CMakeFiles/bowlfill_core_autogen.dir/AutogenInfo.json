@@ -562,6 +562,12 @@
 			null
 		],
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.hh",
+			"MU",
+			"PRMOGMWJPH/moc_bowl_data.cpp",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.hh",
 			"MU",
 			"PRMOGMWJPH/moc_curves.cpp",
@@ -571,6 +577,12 @@
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.hh",
 			"MU",
 			"PRMOGMWJPH/moc_feasibility.cpp",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.hh",
+			"MU",
+			"PRMOGMWJPH/moc_measurements.cpp",
 			null
 		],
 		[
@@ -651,12 +663,22 @@
 			null
 		],
 		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.cc",
+			"MU",
+			null
+		],
+		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/curves.cc",
 			"MU",
 			null
 		],
 		[
 			"/home/ntesta/Projects/bowl_fill_simulator/src/core/feasibility.cc",
+			"MU",
+			null
+		],
+		[
+			"/home/ntesta/Projects/bowl_fill_simulator/src/core/measurements.cc",
 			"MU",
 			null
 		],

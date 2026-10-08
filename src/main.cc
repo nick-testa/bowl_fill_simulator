@@ -1,3 +1,4 @@
+#include "core/measurements.hh"
 #include "core/feasibility.hh"
 #include "core/sweep.hh"
 #include "ui/main_window.hh"
@@ -47,6 +48,31 @@ bowlfill::BowlGeometry configured_geometry(bool volume_only)
     return g;
 }
 
+/// The measurement store the window loads, data/measurements. Reports files that
+/// could not be read, and the squash fitted from the mixed bowls on file, which the
+/// window applies too. False when there is nothing to fit curves from.
+bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
+                     bowlfill::SquashFit *squash)
+{
+    using namespace bowlfill;
+    QTextStream err(stderr);
+    const QSettings prefs;
+    MeasurementOptions options;
+    options.empty_bowl_ml =
+        prefs.value("measurements/empty_bowl_ml", kDefaultEmptyBowlMl).toDouble();
+    options.backfill = prefs.value("measurements/backfill", false).toBool();
+    options.drop_impossible = prefs.value("measurements/drop_impossible", false).toBool();
+    const MeasurementSet ms = load_measurements(asset_dir + kMeasurementsDir, curves, options);
+    for (const MeasurementFile &f : ms.files)
+        if (f.failed) err << "data/measurements/" << f.name << ": " << f.problem << "\n";
+    if (curves.observations().empty()) {
+        err << "no usable measurements in " << asset_dir << kMeasurementsDir << "\n";
+        return false;
+    }
+    *squash = fit_squash(ms.bowls, curves, Method::Robot);
+    return true;
+}
+
 /// Headless feasibility audit, so the culinary team's report can be regenerated in a
 /// script without opening the window.
 int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
@@ -55,11 +81,8 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
     QTextStream out(stdout), err(stderr);
 
     CurveSet curves;
-    QString error;
-    if (!curves.load_csv(asset_dir + "/data/mass_to_volume.csv", &error)) {
-        err << "curves: " << error << "\n";
-        return 2;
-    }
+    SquashFit squash;
+    if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
     CostTable costs;
     costs.load_csv(asset_dir + "/data/ingredient_costs.csv");
 
@@ -78,6 +101,10 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         SimSettings legacy;
         AdaptiveSettings adaptive;
         legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
+        if (squash.valid) {
+            legacy.compress = true;
+            legacy.load_transfer = squash.load_transfer;
+        }
         const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs);
         const QString csv = audit.to_csv();
         out << (header_written ? csv.section('\n', 1) : csv);
@@ -99,11 +126,8 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     QTextStream err(stderr);
 
     CurveSet curves;
-    QString error;
-    if (!curves.load_csv(asset_dir + "/data/mass_to_volume.csv", &error)) {
-        err << "curves: " << error << "\n";
-        return 2;
-    }
+    SquashFit squash;
+    if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
     CostTable costs;
     costs.load_csv(asset_dir + "/data/ingredient_costs.csv");
 
@@ -138,6 +162,7 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     SimSettings legacy;
     AdaptiveSettings adaptive;
     legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
+    if (squash.valid) legacy.load_transfer = squash.load_transfer;   // the sweep forces compression on
     run_sweep(menus, curves, Method::Robot, legacy, adaptive, &costs,
               limits, out, [&](qint64 done, qint64 total) {
                   const qint64 pct = total > 0 ? done * 100 / total : 100;

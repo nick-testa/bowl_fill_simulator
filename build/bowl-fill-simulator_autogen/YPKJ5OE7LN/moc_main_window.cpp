@@ -47,6 +47,8 @@ template <> constexpr inline auto bowlfill::MainWindow::qt_create_metaobjectdata
         "on_selection_changed",
         "on_upload_csv",
         "on_reset_curves",
+        "on_upload_bowl_data",
+        "show_bowl_help",
         "show_csv_help",
         "show_report",
         "show_issues",
@@ -71,19 +73,23 @@ template <> constexpr inline auto bowlfill::MainWindow::qt_create_metaobjectdata
         QtMocHelpers::SlotData<void()>(7, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'on_reset_curves'
         QtMocHelpers::SlotData<void()>(8, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'show_csv_help'
+        // Slot 'on_upload_bowl_data'
         QtMocHelpers::SlotData<void()>(9, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'show_report'
+        // Slot 'show_bowl_help'
         QtMocHelpers::SlotData<void()>(10, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'show_issues'
+        // Slot 'show_csv_help'
         QtMocHelpers::SlotData<void()>(11, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'show_mappings'
+        // Slot 'show_report'
         QtMocHelpers::SlotData<void()>(12, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'toggle_theme'
+        // Slot 'show_issues'
         QtMocHelpers::SlotData<void()>(13, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'show_mappings'
+        QtMocHelpers::SlotData<void()>(14, 2, QMC::AccessPrivate, QMetaType::Void),
+        // Slot 'toggle_theme'
+        QtMocHelpers::SlotData<void()>(15, 2, QMC::AccessPrivate, QMetaType::Void),
         // Slot 'set_units'
-        QtMocHelpers::SlotData<void(bool)>(14, 2, QMC::AccessPrivate, QMetaType::Void, {{
-            { QMetaType::Bool, 15 },
+        QtMocHelpers::SlotData<void(bool)>(16, 2, QMC::AccessPrivate, QMetaType::Void, {{
+            { QMetaType::Bool, 17 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
@@ -114,12 +120,14 @@ void bowlfill::MainWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c,
         case 3: _t->on_selection_changed(); break;
         case 4: _t->on_upload_csv(); break;
         case 5: _t->on_reset_curves(); break;
-        case 6: _t->show_csv_help(); break;
-        case 7: _t->show_report(); break;
-        case 8: _t->show_issues(); break;
-        case 9: _t->show_mappings(); break;
-        case 10: _t->toggle_theme(); break;
-        case 11: _t->set_units((*reinterpret_cast<std::add_pointer_t<bool>>(_a[1]))); break;
+        case 6: _t->on_upload_bowl_data(); break;
+        case 7: _t->show_bowl_help(); break;
+        case 8: _t->show_csv_help(); break;
+        case 9: _t->show_report(); break;
+        case 10: _t->show_issues(); break;
+        case 11: _t->show_mappings(); break;
+        case 12: _t->toggle_theme(); break;
+        case 13: _t->set_units((*reinterpret_cast<std::add_pointer_t<bool>>(_a[1]))); break;
         default: ;
         }
     }
@@ -144,14 +152,14 @@ int bowlfill::MainWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 12)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 12;
+        _id -= 14;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 12)
+        if (_id < 14)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 12;
+        _id -= 14;
     }
     return _id;
 }
