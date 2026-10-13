@@ -1,8 +1,0 @@
-set(__QT_DEPLOY_TARGET_bowlfill_core_FILE /home/ntesta/Projects/bowl_fill_simulator/build/libbowlfill_core.a)
-set(__QT_DEPLOY_TARGET_bowlfill_core_TYPE STATIC_LIBRARY)
-set(__QT_DEPLOY_TARGET_bowl-fill-simulator_FILE /home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator)
-set(__QT_DEPLOY_TARGET_bowl-fill-simulator_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_bowlfill-verify_FILE /home/ntesta/Projects/bowl_fill_simulator/build/bowlfill-verify)
-set(__QT_DEPLOY_TARGET_bowlfill-verify_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_romaine-fill_FILE /home/ntesta/Projects/bowl_fill_simulator/build/romaine-fill)
-set(__QT_DEPLOY_TARGET_romaine-fill_TYPE EXECUTABLE)
