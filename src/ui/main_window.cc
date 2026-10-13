@@ -440,6 +440,7 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     if (!load_name_mappings(mappings_path(), name_maps_, &map_err))
         load_warnings_ << map_err;
     if (!load_piece_heights(pieces_path(), pieces_, &map_err)) load_warnings_ << map_err;
+    if (!load_mound_slopes(mounds_path(), mound_slopes_, &map_err)) load_warnings_ << map_err;
     LoadResult loaded = load_menus(asset_dir_ + "/menus", &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
     load_warnings_ << loaded.warnings;
@@ -463,11 +464,10 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
         capacity_->setDecimals(0);
         capacity_->setSingleStep(25);
         capacity_->setValue(units::from_oz(32));
-        if (capacity_label_) capacity_label_->setText("Bowl capacity (ml)");
+        if (capacity_label_) capacity_label_->setText("Functional fill (ml)");
     }
     reload_theme();
-    // After build_ui: the squash fitted from the stored bowls sets the compression
-    // controls, and this is what keeps it across restarts.
+    // After build_ui: the status line it updates lives there.
     load_warnings_ << reload_measurements();
     populate_brand();
 
@@ -661,10 +661,10 @@ QWidget *MainWindow::build_controls()
     topping_picks_->layout()->setContentsMargins(0, 0, 0, 0);
     v->addWidget(topping_picks_);
 
-    // Sauces go in cups, never into the bowl: each one picked is a 50 ml cup that
-    // takes room from the food.
+    // Sauces go in cups, never into the bowl: each one picked is a cup that takes
+    // room from the food.
     v->addSpacing(space::xs);
-    v->addWidget(section_label(QString("Sauces · up to %1 · one 50 ml cup each")
+    v->addWidget(section_label(QString("Sauces · up to %1 · one cup each")
                                    .arg(SauceCups::kMax)));
     sauce_picks_ = new QWidget;
     sauce_picks_->setObjectName("clear");
@@ -693,8 +693,11 @@ QWidget *MainWindow::build_controls()
 
     capacity_ = make_spin(1, 6000, 1, 0);
     capacity_->setValue(32);
+    capacity_->setToolTip("How full a bowl is meant to be: 32 oz, a fill line a little "
+                          "below the rim of the real bowl (1058 ml to the rim). Food is "
+                          "judged against this line; the rim is the hard limit.");
     connect(capacity_, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    auto *cap_field = field("Bowl capacity (fl oz)", capacity_);
+    auto *cap_field = field("Functional fill (fl oz)", capacity_);
     capacity_label_ = cap_field->findChild<QLabel *>();
     v->addLayout(field_row({cap_field}));
 
@@ -704,8 +707,9 @@ QWidget *MainWindow::build_controls()
     QSettings prefs;
     heights_ = new QCheckBox("Judge fit by height under the lid");
     heights_->setChecked(prefs.value("geometry/enabled", true).toBool());
-    heights_->setToolTip("Rigid sauce cups and chunky pieces need room below the lid, not "
-                         "just their volume. Off: cups count as their 50 ml contents.");
+    heights_->setToolTip(QString("Rigid sauce cups and chunky pieces need room below the "
+                                 "lid, not just their volume. Off: each cup counts as the "
+                                 "%1 ml it takes up.").arg(SauceCups{}.cup_ml, 0, 'f', 0));
     v->addWidget(heights_);
     cups_pressed_ = make_toggle("Cups pressed in");
     cups_resting_ = make_toggle("Cups resting on top");
@@ -718,6 +722,18 @@ QWidget *MainWindow::build_controls()
     cups_resting_->setChecked(!pressed);
     cups_segment_ = segment({cups_pressed_, cups_resting_});
     v->addWidget(cups_segment_);
+    mound_ = new QCheckBox("Show mounding (food piles at the centre)");
+    mound_->setChecked(prefs.value("mound/enabled", false).toBool());
+    mound_->setToolTip("Food dropped at the centre piles up instead of levelling out, so a "
+                       "bowl can stand over the rim while there is room to spare by "
+                       "volume. Changes the diagram and reports the peak; fit is still "
+                       "judged on volume, since the lidder presses the mound down. The "
+                       "slope is under Advanced → Bowl, lid and cups.");
+    connect(mound_, &QCheckBox::toggled, this, [this](bool on) {
+        QSettings().setValue("mound/enabled", on);
+        recompute();
+    });
+    v->addWidget(mound_);
     geometry_note_ = make_label("", "note");
     v->addWidget(geometry_note_);
     connect(heights_, &QCheckBox::toggled, this, [this](bool on) {
@@ -891,33 +907,103 @@ QWidget *MainWindow::build_controls()
     v->addWidget(section_label("Bowl, lid and cups"));
     {
         QSettings prefs;
-        auto dim = [&](const char *key, double def, double hi, int dp, const char *suffix) {
+        // Keys are full paths; the cup's live under cups/, so the measured cup replaced
+        // whatever placeholder an earlier version had saved.
+        auto dim = [&](const QString &key, double def, double hi, int dp, const char *suffix) {
             QDoubleSpinBox *sp = make_spin(0, hi, dp ? 0.5 : 1, dp);
             sp->setSuffix(suffix);
-            sp->setValue(prefs.value(QString("geometry/") + key, def).toDouble());
+            sp->setValue(prefs.value(key, def).toDouble());
             connect(sp, &QDoubleSpinBox::valueChanged, this, [this, key](double v) {
-                QSettings().setValue(QString("geometry/") + key, v);
+                QSettings().setValue(key, v);
                 recompute();
             });
             return sp;
         };
-        depth_ = dim("depth_mm", BowlGeometry{}.depth_mm, 200, 1, " mm");
-        depth_->setToolTip("Inside depth to the rim, where the bowl reaches its capacity.");
-        headroom_ = dim("lid_headroom_mm", BowlGeometry::kPlaceholderHeadroom, 50, 1, " mm");
-        headroom_->setToolTip("Extra clearance at the centre of a domed lid.");
-        cup_h_ = dim("cup_height_mm", BowlGeometry::kPlaceholderCupHeight, 100, 1, " mm");
-        cup_h_->setToolTip("Sauce cup height with its lid on.");
-        cup_d_ = dim("cup_diameter_mm", BowlGeometry::kPlaceholderCupDiameter, 150, 1, " mm");
-        cup_d_->setToolTip("Sauce cup diameter; only matters when cups are pressed in.");
-        chunk_proud_ = dim("chunk_proud_pct", BowlGeometry::kPlaceholderChunkProud * 100, 100,
+        // The bowl and lid live under bowl/ and lid/, so the measured values replaced
+        // the placeholders an earlier version saved under geometry/.
+        const BowlGeometry measured;
+        depth_ = dim("bowl/depth_mm", measured.depth_mm, 200, 1, " mm");
+        depth_->setToolTip("Inside depth, floor to rim (measured: 46 mm; 51 mm outside).");
+        bowl_top_d_ = dim("bowl/top_diameter_mm", measured.top_diameter_mm, 400, 1, " mm");
+        bowl_top_d_->setToolTip("Inside diameter at the rim (measured: 181 mm).");
+        bowl_bottom_d_ = dim("bowl/bottom_diameter_mm", measured.bottom_diameter_mm, 400, 1,
+                             " mm");
+        bowl_bottom_d_->setToolTip("Inside diameter at the floor (measured: 161 mm).");
+        headroom_ = dim("lid/headroom_mm", measured.lid_headroom_mm, 50, 1, " mm");
+        headroom_->setToolTip("How far the inside of the lid rises above the rim in its "
+                              "centre (measured: about 5 mm).");
+        lid_plateau_d_ = dim("lid/plateau_diameter_mm", measured.lid_plateau_diameter_mm, 400,
+                             1, " mm");
+        lid_plateau_d_->setToolTip("Across the lid's raised centre (measured: about 160 mm).");
+        const BowlGeometry &cup = measured;
+        cup_h_ = dim("cups/height_mm", cup.cup_height_mm, 100, 1, " mm");
+        cup_h_->setToolTip("Sauce cup height with its lid on (measured: 30 mm).");
+        cup_d_ = dim("cups/top_diameter_mm", cup.cup_diameter_mm, 150, 1, " mm");
+        cup_d_->setToolTip("Across the lid (measured: 65 mm). The cup tapers to its base, "
+                           "so a pressed-in cup displaces less than a straight column.");
+        cup_base_d_ = dim("cups/base_diameter_mm", cup.cup_base_diameter_mm, 150, 1, " mm");
+        cup_base_d_->setToolTip("Across the base (measured: 45 mm).");
+        chunk_proud_ = dim("geometry/chunk_proud_pct", BowlGeometry::kPlaceholderChunkProud * 100, 100,
                            0, " %");
         chunk_proud_->setToolTip("How much of a chunky piece's height stands above the "
                                  "smeared food around it.");
-        v->addLayout(field_row({field("Bowl depth", depth_), field("Lid dome headroom", headroom_)}));
-        v->addLayout(field_row({field("Cup height", cup_h_), field("Cup diameter", cup_d_)}));
-        v->addWidget(field("Chunks stand proud by", chunk_proud_));
+        v->addLayout(field_row({field("Bowl depth", depth_), field("Rim diameter", bowl_top_d_),
+                                field("Floor diameter", bowl_bottom_d_)}));
+        v->addLayout(field_row({field("Lid rises", headroom_),
+                                field("Over a centre of", lid_plateau_d_)}));
+        v->addLayout(field_row({field("Cup height", cup_h_), field("Lid diameter", cup_d_),
+                                field("Base diameter", cup_base_d_)}));
+        mound_slope_ = dim("mound/slope_deg", BowlGeometry::kPlaceholderMoundSlope, 80, 0,
+                           "°");
+        mound_slope_->setToolTip("With Show mounding on: how steep the pile's sides are, "
+                                 "the food's angle of repose. 0° is a level fill. Read "
+                                 "it off a side-on triage photo: the peak's rise over the "
+                                 "height at the wall, across the distance between them.");
+        v->addLayout(field_row({field("Chunks stand proud by", chunk_proud_),
+                                field("Mound slope", mound_slope_)}));
         v->addWidget(make_label("Piece heights for chunky ingredients are set per ingredient "
                                 "under <i>Ingredients</i> below.", "note"));
+    }
+
+    // How far the robot misses its target weights: one of the three inputs to the
+    // finished bowl's range and overfill probabilities.
+    v->addWidget(hline());
+    v->addWidget(section_label("Dispense variation"));
+    {
+        QSettings prefs;
+        const DispenseVariation def;
+        auto pct = [&](const char *key, double fallback, double lo = 0) {
+            QDoubleSpinBox *sp = make_spin(lo, 50, 0.5, 1);
+            sp->setSuffix(" %");
+            // Kept under dispense/, so the measured defaults replaced the placeholders
+            // an earlier version saved under uncertainty/.
+            sp->setValue(prefs.value(QString("dispense/") + key, fallback * 100).toDouble());
+            connect(sp, &QDoubleSpinBox::valueChanged, this, [this, key](double val) {
+                QSettings().setValue(QString("dispense/") + key, val);
+                recompute();
+            });
+            return sp;
+        };
+        disp_base_ = pct("base_pct", def.base);
+        disp_protein_ = pct("protein_pct", def.protein);
+        disp_topping_ = pct("topping_pct", def.topping);
+        v->addLayout(field_row({field("Base ±", disp_base_), field("Protein ±", disp_protein_),
+                                field("Topping ±", disp_topping_)}));
+        bias_base_ = pct("base_bias_pct", def.base_bias, -50);
+        bias_protein_ = pct("protein_bias_pct", def.protein_bias, -50);
+        bias_topping_ = pct("topping_bias_pct", def.topping_bias, -50);
+        for (QDoubleSpinBox *sp : {bias_base_, bias_protein_, bias_topping_})
+            sp->setToolTip("How far over (or, negative, under) its target the robot "
+                           "dispenses on average. Shifts the median bowl and its range; "
+                           "the ramp and the adaptive solver still plan on the targets.");
+        v->addLayout(field_row({field("Base bias", bias_base_),
+                                field("Protein bias", bias_protein_),
+                                field("Topping bias", bias_topping_)}));
+        v->addWidget(make_label("How far the robot misses its target weight: one standard "
+                                "deviation (±), and its average lean (bias), as shares of "
+                                "the target. Defaults from 90 days "
+                                "of production dispenses (to 2026-10-12), leaving out "
+                                "spinach and frozen peas, whose targets look wrong.", "note"));
     }
 
     v->addWidget(hline());
@@ -1115,8 +1201,12 @@ QWidget *MainWindow::build_results()
     // breakdown table, which is also the bowl's legend.
     QVBoxLayout *bv = nullptr;
     v->addWidget(titled_panel("The finished bowl", bv));
+    // The bowl as a distribution: what the median bowl does, the range 80% of real
+    // bowls land in, and the odds of going over.
+    fill_note_ = make_label("", "lead");
+    bv->addWidget(fill_note_);
 
-    constexpr int kBowlColumn = 300;
+    constexpr int kBowlColumn = 380;   // the bowl, plus its level labels either side
     diagram_ = new BowlDiagram;
     diagram_->setFixedWidth(kBowlColumn);
     diagram_->setFixedHeight(diagram_->heightForWidth(kBowlColumn));
@@ -1259,7 +1349,7 @@ void MainWindow::set_units(bool metric)
         capacity_->setValue(units::from_oz(cap_oz));
     }
     if (capacity_label_)
-        capacity_label_->setText(QString("Bowl capacity (%1)")
+        capacity_label_->setText(QString("Functional fill (%1)")
                                      .arg(metric ? "ml" : "fl oz"));
     about_->setToolTip(QString(kIntroText).arg(units::suffix()));
     rebuild_override_rows();   // the rate spin boxes are re-seeded in the new unit
@@ -1334,6 +1424,7 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
         it.start_g = base_start_[i]->value();
         it.step_g = base_step_[i]->value();
         it.max_g = base_max_[i]->value();
+        it.mound_slope_deg = mound_slope_for(it.name);
         items.push_back(it);
     }
     for (const QStringList *group : {&picked_proteins_, &picked_toppings_}) {
@@ -1345,7 +1436,13 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
             it.start_g = value_for(name, "start");
             it.step_g = value_for(name, "step");
             it.max_g = value_for(name, "max");
-            it.flat_oz_per_100g = value_for(name, "rate");
+            it.mound_slope_deg = mound_slope_for(it.name);
+            if (!it.has_curve) {
+                it.flat_oz_per_100g = value_for(name, "rate");
+            } else if (auto ov = overrides_.find(name);
+                       ov != overrides_.end() && ov->second.curve_scale) {
+                it.K *= *ov->second.curve_scale;   // same shape, more or less volume
+            }
             items.push_back(it);
         }
     }
@@ -1367,6 +1464,17 @@ QString MainWindow::pieces_path() const
     return asset_dir_ + "/data/ingredient_pieces.csv";
 }
 
+QString MainWindow::mounds_path() const
+{
+    return asset_dir_ + "/data/ingredient_mounds.csv";
+}
+
+double MainWindow::mound_slope_for(const QString &name) const
+{
+    const auto it = mound_slopes_.find(name);
+    return it != mound_slopes_.end() ? it->second : -1.0;
+}
+
 void MainWindow::update_mapping_note()
 {
     if (!mapping_note_) return;
@@ -1383,18 +1491,21 @@ void MainWindow::update_mapping_note()
 
 void MainWindow::show_mappings()
 {
-    MappingDialog dialog(menus_, name_maps_, pieces_, this);
+    MappingDialog dialog(menus_, name_maps_, pieces_, mound_slopes_, this);
     if (dialog.exec() != QDialog::Accepted) return;
     const NameMappings next = dialog.mappings();
     const PieceHeights next_pieces = dialog.pieces();
+    const MoundSlopes next_slopes = dialog.slopes();
     QString err;
     if (!save_name_mappings(mappings_path(), next, &err)
-        || !save_piece_heights(pieces_path(), next_pieces, &err)) {
+        || !save_piece_heights(pieces_path(), next_pieces, &err)
+        || !save_mound_slopes(mounds_path(), next_slopes, &err)) {
         QMessageBox::warning(this, "Could not save ingredients", err);
         return;
     }
     name_maps_ = next;
     pieces_ = next_pieces;
+    mound_slopes_ = next_slopes;
     reload_menus();
 }
 
@@ -1631,6 +1742,7 @@ void MainWindow::rebuild_override_rows()
         delete item->widget();
         delete item;
     }
+    rate_fields_.clear();
     override_table_->setVisible(!rows.isEmpty());
     if (rows.isEmpty()) return;
 
@@ -1659,23 +1771,102 @@ void MainWindow::rebuild_override_rows()
             const bool is_rate = (c == 3);
             auto *spin = make_spin(0, is_rate ? 6000 : 2000, c == 1 ? 0.1 : 1,
                                    c == 1 ? 2 : is_rate ? (units::metric() ? 1 : 2) : 0);
-            // Rates are held canonically in oz/100 g; the box shows the chosen unit.
-            spin->setValue(is_rate ? units::from_oz(value_for(name, "rate"))
-                                   : value_for(name, fields[c]));
+            if (!is_rate) spin->setValue(value_for(name, fields[c]));
             const QString f = fields[c];
             connect(spin, &QDoubleSpinBox::valueChanged, this, [this, name, f](double v) {
                 Override &o = overrides_[name];
                 if (f == "start") o.start_g = v;
                 else if (f == "step") o.step_g = v;
                 else if (f == "max") o.max_g = v;
-                else o.rate = units::to_oz(v);
+                if (f == "rate") set_rate(name, units::to_oz(v));
+                else if (f == "start") refresh_rate_field(name);   // the curve's rate moves
                 recompute();
             });
             grid->addWidget(spin, line, c);
+            if (is_rate) rate_fields_[name].spin = spin;
         }
+        auto *reset = new QToolButton;
+        reset->setText(QString::fromUtf8("\u21BA"));
+        reset->setAutoRaise(true);
+        connect(reset, &QToolButton::clicked, this, [this, name] {
+            if (auto it = overrides_.find(name); it != overrides_.end()) {
+                it->second.rate.reset();
+                it->second.curve_scale.reset();
+            }
+            refresh_rate_field(name);
+            recompute();
+        });
+        grid->addWidget(reset, line, 4);
+        rate_fields_[name].reset = reset;
+        refresh_rate_field(name);
         ++line;
         grid->setRowMinimumHeight(line++, space::xs);
     }
+}
+
+void MainWindow::refresh_rate_field(const QString &name)
+{
+    const auto field = rate_fields_.find(name);
+    const Menu *m = menu();
+    const Ingredient *ing = m ? m->find(name) : nullptr;
+    if (field == rate_fields_.end() || !ing) return;
+
+    const BowlItem item = make_item(*ing, curves_, method());
+    const auto ov = overrides_.find(name);
+    const Override edit = ov != overrides_.end() ? ov->second : Override{};
+    const QString unit = QString("%1/100 g").arg(units::suffix());
+    auto shown = [&](double oz) { return QString("%1 %2").arg(units::from_oz(oz), 0, 'f', 1)
+                                             .arg(unit); };
+    double rate = 0;
+    bool edited = false;
+    QString tip;
+    if (item.has_curve) {
+        // The average over the portion, which is what the portion costs the bowl.
+        const double g = value_for(name, "start") > 0 ? value_for(name, "start") : 100.0;
+        const double curve = item.volume_oz(g) / g * 100.0;
+        const double scale = edit.curve_scale.value_or(1.0);
+        rate = curve * scale;
+        edited = edit.curve_scale.has_value();
+        tip = QString("Volume per 100 g at %1 g, from the %2.\n").arg(g, 0, 'f', 0)
+                  .arg(describe(choose_curve(name, ing->kind, curves_, method())));
+        tip += edited ? QString("Your edit scales the curve by \u00D7%1 (it gives %2 alone). "
+                                "\u21BA goes back to the curve.")
+                            .arg(scale, 0, 'f', 2).arg(shown(curve))
+                      : QString("Edit it to scale the whole curve up or down; its shape "
+                                "(how it packs as the portion grows) is kept.");
+    } else {
+        rate = value_for(name, "rate");
+        edited = edit.rate.has_value();
+        tip = QString("Nothing measured to lean on, so a flat rate is used.");
+        if (edited) tip += QString(" \u21BA goes back to the default.");
+    }
+    const QSignalBlocker block(field->second.spin);
+    field->second.spin->setValue(units::from_oz(rate));
+    field->second.spin->setToolTip(tip);
+    field->second.spin->setStyleSheet(
+        edited ? QString("color:%1;").arg(theme::palette().accent.name()) : QString());
+    if (field->second.reset) {
+        field->second.reset->setVisible(edited);
+        field->second.reset->setToolTip(item.has_curve ? "Back to the measured curve"
+                                                       : "Back to the default rate");
+    }
+}
+
+void MainWindow::set_rate(const QString &name, double oz_per_100g)
+{
+    const Menu *m = menu();
+    const Ingredient *ing = m ? m->find(name) : nullptr;
+    if (!ing) return;
+    Override &o = overrides_[name];
+    const BowlItem item = make_item(*ing, curves_, method());
+    if (item.has_curve) {
+        const double g = value_for(name, "start") > 0 ? value_for(name, "start") : 100.0;
+        const double curve = item.volume_oz(g) / g * 100.0;
+        if (curve > 0) o.curve_scale = oz_per_100g / curve;
+    } else {
+        o.rate = oz_per_100g;
+    }
+    refresh_rate_field(name);
 }
 
 void MainWindow::apply_floor()
@@ -1817,7 +2008,92 @@ SimSettings MainWindow::legacy_settings() const
     s.geometry = geometry();
     s.compress = compress_->isChecked();
     s.load_transfer = load_transfer_->value();
+    s.dispense = dispense();
     return s;
+}
+
+void MainWindow::update_fill_note(const SimResult &r)
+{
+    const FillUncertainty &u = r.fill;
+    if (!u.valid) {
+        fill_note_->setText("");
+        return;
+    }
+    const theme::Palette &pal = theme::palette();
+    // Volumes relative to the food room: positive is over.
+    auto rel = [&](double oz) {
+        const double d = oz - u.room_oz;
+        return QString("%1%2").arg(d >= 0 ? "+" : "−").arg(units::volume(std::fabs(d), true));
+    };
+    const double over = u.median_oz - u.room_oz;
+    const QString median = over >= 0
+        ? QString("<b>Median bowl: %1 over the food room</b>").arg(units::volume(over, true))
+        : QString("<b>Median bowl: %1 under the food room</b>").arg(units::volume(-over, true));
+    auto pct = [](double p) {
+        const double v = p * 100;
+        return v < 1 && v > 0 ? QString("&lt;1%") : v > 99 && v < 100 ? QString("&gt;99%")
+                                                                    : QString("%1%").arg(std::round(v));
+    };
+    const QColor tone = u.p_over_room >= 0.5 ? pal.over : u.p_over_room >= 0.2 ? pal.mass : pal.accent;
+    fill_note_->setText(
+        QString("%1 (80% of bowls: %2 to %3)<br>"
+                "<span style='color:%4'><b>%5</b> chance of overfilling the food room</span> · "
+                "<b>%6</b> of going over the rim")
+            .arg(median, rel(u.p10_oz), rel(u.p90_oz), tone.name(), pct(u.p_over_room),
+                 pct(u.p_over_rim))
+        + mound_line(r));
+    fill_note_->setToolTip(
+        QString("Food room %1 (the bowl less cups and chunk clearance); rim %2.\n"
+                "Spread: each ingredient's bowl-to-bowl scatter, the uncertainty of its curve, "
+                "and the dispense variation in Advanced, added as independent.")
+            .arg(units::volume(u.room_oz, true), units::volume(u.rim_oz, true)));
+}
+
+QString MainWindow::mound_line(const SimResult &r) const
+{
+    const BowlGeometry &g = r.settings.geometry;
+    const FillUncertainty &u = r.fill;
+    if (!g.mound || r.frames.empty() || u.median_oz <= 0) return {};
+    const std::vector<double> &oz = r.last().per_item_oz;
+    // The 80% range moves every layer together, so each is scaled by the same share.
+    auto above_lid = [&](double total_oz) {
+        const double scale = std::max(0.0, total_oz) / u.median_oz;
+        return mound_peak_mm(g, mound_layers(r.items, oz, g, scale)) - g.lid_mm();
+    };
+    auto signed_mm = [](double d) {
+        return QString("%1%2 mm").arg(d >= 0 ? "+" : "\u2212").arg(std::fabs(d), 0, 'f', 0);
+    };
+    bool own = false, defaulted = false;
+    for (size_t i = 0; i < r.items.size() && i < oz.size(); ++i) {
+        if (oz[i] <= 0.005) continue;
+        (r.items[i].mound_slope_deg >= 0 ? own : defaulted) = true;
+    }
+    const QString how = own ? QString("Mounded at each ingredient's slope")
+                            : QString("Mounded at %1\u00B0").arg(g.mound_slope_deg, 0, 'f', 0);
+    const double mid = above_lid(u.median_oz);
+    QString text = QString("<br>%1, the median bowl peaks <b>%2 mm %3 the lid</b>")
+                       .arg(how).arg(std::fabs(mid), 0, 'f', 0)
+                       .arg(mid > 0 ? "above" : "under");
+    text += QString(" (80%: %1 to %2)").arg(signed_mm(above_lid(u.p10_oz)),
+                                             signed_mm(above_lid(u.p90_oz)));
+    text += mid > 0 ? QString(", which the lidder must press down.") : QString(".");
+    if (defaulted && g.mound_slope_deg == BowlGeometry::kPlaceholderMoundSlope)
+        text += QString(" <span style='color:%1'>%2 is a placeholder.</span>")
+                    .arg(theme::palette().over.name(),
+                         own ? "The default slope" : "Slope");
+    return text;
+}
+
+DispenseVariation MainWindow::dispense() const
+{
+    DispenseVariation d;
+    d.base = disp_base_->value() / 100.0;
+    d.protein = disp_protein_->value() / 100.0;
+    d.topping = disp_topping_->value() / 100.0;
+    d.base_bias = bias_base_->value() / 100.0;
+    d.protein_bias = bias_protein_->value() / 100.0;
+    d.topping_bias = bias_topping_->value() / 100.0;
+    return d;
 }
 
 BowlGeometry MainWindow::geometry() const
@@ -1825,11 +2101,17 @@ BowlGeometry MainWindow::geometry() const
     BowlGeometry g;
     g.enabled = heights_->isChecked();
     g.depth_mm = depth_->value();
+    g.top_diameter_mm = bowl_top_d_->value();
+    g.bottom_diameter_mm = bowl_bottom_d_->value();
     g.lid_headroom_mm = headroom_->value();
+    g.lid_plateau_diameter_mm = lid_plateau_d_->value();
     g.cups_pressed = cups_pressed_->isChecked();
     g.cup_height_mm = cup_h_->value();
     g.cup_diameter_mm = cup_d_->value();
+    g.cup_base_diameter_mm = cup_base_d_->value();
     g.chunk_proud = chunk_proud_->value() / 100.0;
+    g.mound = mound_->isChecked();
+    g.mound_slope_deg = mound_slope_->value();
     return g;
 }
 
@@ -1837,8 +2119,9 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
                                       const BowlGeometry &g, double chunk_mm)
 {
     if (!g.enabled) {
-        geometry_note_->setText("Fit is judged by volume alone; each sauce cup counts as its "
-                                "50 ml of contents.");
+        geometry_note_->setText(QString("Fit is judged by volume alone; each sauce cup "
+                                        "counts as the %1 ml it takes up.")
+                                    .arg(sauce.cup_ml, 0, 'f', 0));
         return;
     }
     SauceCups none = sauce;
@@ -1847,13 +2130,22 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
     const double after_chunks = food_capacity_oz(capacity_oz, none, g, chunk_mm);
     const double after_cups = food_capacity_oz(capacity_oz, sauce, g, chunk_mm);
 
-    QString text = QString("Lid at %1 mm. ").arg(g.depth_mm + g.lid_headroom_mm, 0, 'f', 1);
+    constexpr double kMlPerOz = 29.5735295625;
+    const double fill_mm = g.height_of_mm3(capacity_oz * kMlPerOz * 1000.0);
+    QString text = QString("Fill line %1 mm up a %2 mm bowl (%3 to the rim); lid at %4 mm. ")
+                       .arg(fill_mm, 0, 'f', 1).arg(g.depth_mm, 0, 'f', 1)
+                       .arg(units::volume(g.rim_ml() / kMlPerOz, true))
+                       .arg(g.lid_mm(), 0, 'f', 1);
     if (sauce.cups > 0)
-        text += QString("%1 cup%2 %3 take <b>%4</b>. ")
-                    .arg(sauce.cups).arg(sauce.cups == 1 ? "" : "s")
+        text += QString("%1 %2 %3 take%4 <b>%5</b>. ")
+                    .arg(sauce.cups).arg(sauce.cups == 1 ? "cup" : "cups")
                     .arg(g.cups_pressed ? "pressed in" : "resting on top")
+                    .arg(sauce.cups == 1 ? "s" : "")
                     .arg(units::volume(after_chunks - after_cups, true));
-    if (chunk_mm > 0)
+    if (chunk_mm > 0 && room - after_chunks < 0.01)
+        text += QString("The tallest chunk (%1 mm) clears the lid from the fill line. ")
+                    .arg(chunk_mm, 0, 'f', 0);
+    else if (chunk_mm > 0)
         text += QString("The tallest chunk (%1 mm) needs <b>%2</b> of clearance. ")
                     .arg(chunk_mm, 0, 'f', 0)
                     .arg(units::volume(room - after_chunks, true));
@@ -1861,12 +2153,6 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
 
     // Say plainly which of these numbers are guesses.
     QStringList guesses;
-    if (sauce.cups > 0 && g.cup_height_mm == BowlGeometry::kPlaceholderCupHeight)
-        guesses << "cup height";
-    if (sauce.cups > 0 && g.cups_pressed
-        && g.cup_diameter_mm == BowlGeometry::kPlaceholderCupDiameter)
-        guesses << "cup diameter";
-    if (g.lid_headroom_mm == BowlGeometry::kPlaceholderHeadroom) guesses << "lid dome";
     if (chunk_mm > 0 && g.chunk_proud == BowlGeometry::kPlaceholderChunkProud)
         guesses << "how proud chunks stand";
     if (const Menu *m = menu())
@@ -1896,6 +2182,7 @@ AdaptiveSettings MainWindow::adaptive_settings() const
     a.tolerances.topping = tol_topping_->value() / 100.0;
     a.sauce.cups = sauce_cup_count();
     a.geometry = geometry();
+    a.dispense = dispense();
     a.menu_price = menu_price_->value();
     a.cogs_target = cogs_target_->value() / 100.0;
     return a;
@@ -1915,6 +2202,7 @@ void MainWindow::recompute()
 
     last_ = simulate(assemble_bowl(), legacy_settings());
     const SimResult &r = last_;
+    update_fill_note(r);
     const SimSettings &settings = r.settings;   // carries the bowl's tallest chunk
     update_geometry_note(settings.bowl_capacity_oz, settings.sauce, settings.geometry,
                          settings.chunk_height_mm);
@@ -2184,10 +2472,26 @@ void MainWindow::update_curve_note()
         text += QString(" Ignored %1 impossible reading%2 (%3).")
                     .arg(n).arg(n == 1 ? "" : "s").arg(parts.join(", "));
     }
+    // Can the 80% ranges be trusted? Predict each scanned mixed bowl from the single-
+    // ingredient curves and see how often the scan lands inside its range.
+    const RangeCheck rc = check_ranges(measurements_.bowls, curves_, method(),
+                                       compress_->isChecked() ? load_transfer_->value() : 0.0);
+    if (rc.bowls) {
+        const double share = rc.inside_share();
+        const bool off = share < 0.65 || share > 0.95 || rc.above > 2 * rc.below + 3
+                         || rc.below > 2 * rc.above + 3;
+        text += QString(" <span style='color:%1'>Range check: %2 of %3 mixed bowls (%4%) "
+                        "landed inside their predicted 80% range (%5 above, %6 below)%7.</span>")
+                    .arg((off ? theme::palette().over : theme::palette().ink_soft).name())
+                    .arg(rc.inside).arg(rc.bowls).arg(std::round(share * 100))
+                    .arg(rc.above).arg(rc.below)
+                    .arg(off ? "; the overfill odds are not yet trustworthy" : "");
+    }
     if (squash_.valid)
-        text += QString(" Squash fitted from %1 mixed bowl%2: load transfer %3.")
+        text += QString(" Squash fit from %1 mixed bowl%2 (not applied): load transfer %3%4.")
                     .arg(squash_.bowls).arg(squash_.bowls == 1 ? "" : "s")
-                    .arg(squash_.load_transfer, 0, 'f', 2);
+                    .arg(squash_.load_transfer, 0, 'f', 2)
+                    .arg(squash_.at_bound ? ", at its limit" : "");
     QStringList bad;
     for (const MeasurementFile &f : measurements_.files)
         if (f.failed) bad << f.name;
@@ -2264,12 +2568,10 @@ QStringList MainWindow::reload_measurements()
     options.backfill = backfill_->isChecked();
     options.drop_impossible = drop_impossible_->isChecked();
     measurements_ = load_measurements(measurements_dir(), curves_, options);
+    // Fitted for information only, never applied: the model can only squash bases
+    // whose own curve compacts (p < 1), so with camera-fitted curves the fit often
+    // rests on one or two bowls. Compression and load transfer stay as set.
     squash_ = fit_squash(measurements_.bowls, curves_, method());
-    if (squash_.valid) {
-        // The fitted squash is part of the data, so it is re-applied on every load.
-        compress_->setChecked(true);
-        load_transfer_->setValue(squash_.load_transfer);
-    }
     QStringList problems;
     if (measurements_.folder_missing)
         problems << QString("data/measurements does not exist, so no curves are loaded. "
@@ -2277,6 +2579,8 @@ QStringList MainWindow::reload_measurements()
     for (const MeasurementFile &f : measurements_.files)
         if (f.failed) problems << QString("data/measurements/%1: %2").arg(f.name, f.problem);
     if (curve_note_) update_curve_note();
+    // A scaled curve keeps its scale; the rate it shows follows the new fit.
+    for (const auto &[name, field] : rate_fields_) refresh_rate_field(name);
     return problems;
 }
 
@@ -2391,11 +2695,11 @@ void MainWindow::on_upload_bowl_data()
     msg += fresh.isEmpty() ? "." : QString("; new curve%1 for %2.")
                                        .arg(fresh.size() == 1 ? "" : "s", fresh.join(", "));
 
-    const SquashFit &fit = squash_;   // over every mixed bowl on file, already applied
+    const SquashFit &fit = squash_;   // over every mixed bowl on file; reported, not applied
     if (fit.valid) {
         const double ml = CurveSet::kMlPerFlOz;
-        msg += QString("<br><br><b>Base squash fitted from all %1 mixed bowl%2 on file: load "
-                       "transfer %3.</b><br>Typical error: %4 ml with no squash, %5 ml at 1.0, "
+        msg += QString("<br><br><b>Squash fit from all %1 mixed bowl%2 on file (not applied): "
+                       "load transfer %3.</b><br>Typical error: %4 ml with no squash, %5 ml at 1.0, "
                        "<b>%6 ml</b> fitted (bias %7 ml).")
                    .arg(fit.bowls).arg(fit.bowls == 1 ? "" : "s")
                    .arg(fit.load_transfer, 0, 'f', 2)
@@ -2404,17 +2708,14 @@ void MainWindow::on_upload_bowl_data()
                    .arg(std::round(fit.rmse_fitted_oz * ml))
                    .arg(std::round(fit.mean_bias_oz * ml));
         if (fit.at_bound)
-            msg += QString("<br><span style='color:%1'>The fit hit its limit of %2: even "
-                           "maximum squash on the bases does not shrink these bowls "
-                           "enough. Proteins and toppings are probably taking less room "
-                           "than their flat rates say; measure them.</span>")
+            msg += QString("<br><span style='color:%1'>The fit hit its limit of %2, so its "
+                           "value means nothing: the model can only squash bases whose own "
+                           "curve compacts, and most of these bowls have none.</span>")
                        .arg(theme::palette().over.name()).arg(kMaxLoadTransfer);
         if (!fit.flat_rate.isEmpty())
             msg += QString("<br>No curve yet, carried at a flat rate: %1.")
                        .arg(fit.flat_rate.join(", "));
-        msg += "<br><br>Compression is on and load transfer is set to the fitted value.";
-    } else {
-        msg += "<br><br>No mixed bowls on file, so the squash was left as it was.";
+        msg += "<br><br>Compression and load transfer are unchanged; set them in Advanced.";
     }
     if (!problems.isEmpty())
         msg += "<br><br>Other files not loaded:<br>" + problems.join("<br>");
@@ -2502,14 +2803,14 @@ void MainWindow::render_adaptive()
     const AdaptiveResult &r = last_adaptive_;
     const AdaptiveSettings &a = r.settings;
     const theme::Palette &pal = theme::palette();
-    const double cap = a.bowl_capacity_oz;
+    const double cap = a.food_capacity_oz();   // the target is a share of this
 
     QString head, sub;
     QColor border = pal.rule_strong, fill = pal.panel_sunk, head_colour = pal.ink;
     switch (r.status) {
     case AdaptiveStatus::NoAdjustment:
         head = "No adjustment required";
-        sub = QString("The recipe as written lands at %1 — %2% of the bowl, inside the "
+        sub = QString("The recipe as written lands at %1 — %2% of the food room, inside the "
                       "%3–%4% band — so nominal quantities are dispensed unchanged.")
                   .arg(units::volume(r.food_volume_oz, true))
                   .arg(std::round(r.food_fill() * 100))
@@ -2520,7 +2821,7 @@ void MainWindow::render_adaptive()
     case AdaptiveStatus::Adjusted:
         head = QString("Adjusted to target — every ingredient moved %1% of its band")
                    .arg(std::fabs(r.alpha) * 100, 0, 'f', 0);
-        sub = QString("Solved to %1, %2% of the bowl. %3 %4 of its allowance; "
+        sub = QString("Solved to %1, %2% of the food room. %3 %4 of its allowance; "
                       "protein moved least by design.")
                   .arg(units::volume(r.food_volume_oz, true))
                   .arg(std::round(r.food_fill() * 100))
@@ -2591,6 +2892,8 @@ void MainWindow::render_adaptive()
     }
     f.ounces_uncompressed = f.ounces;
     shim.frames.push_back(f);
+    shim.fill = r.fill;
+    update_fill_note(shim);
     diagram_->set_result(shim);
     render_photos(shim.items);
     const std::vector<QColor> band = diagram_->item_colours();

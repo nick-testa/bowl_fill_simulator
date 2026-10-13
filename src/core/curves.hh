@@ -41,6 +41,10 @@ struct Fit {
     double hi_g = 0.0;
     int n = 0;
     bool valid = false;
+    /// How far single bowls land from the curve, as a share of its prediction (the
+    /// standard deviation of reading / curve - 1). Romaine's is large: leaves land
+    /// differently each time. -1 when there are too few points to say (n <= 2).
+    double rel_sd = -1.0;
 
     double volume_oz(double grams) const;
     /// d(oz)/dg expressed per 100 g: what a ramp step actually costs the bowl.

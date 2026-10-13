@@ -46,7 +46,7 @@ struct SweepPlan {
 
     qint64 rows() const { return combinations * recipes; }
     /// Rough CSV size, for warning the user before they commit to a 20 GB file.
-    qint64 bytes() const { return rows() * 185; }
+    qint64 bytes() const { return rows() * 225; }
 };
 
 SweepPlan plan_sweep(const Menu &menu, const SweepLimits &limits);

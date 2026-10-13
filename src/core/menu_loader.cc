@@ -767,7 +767,12 @@ bool load_name_mappings(const QString &path, NameMappings &out, QString *error)
     return true;
 }
 
-bool load_piece_heights(const QString &path, PieceHeights &out, QString *error)
+namespace {
+
+/// Reads `ingredient,<column>` rows of non-negative numbers; a missing file is an
+/// empty table. `what` names a value in error messages ("a height in mm").
+bool load_named_numbers(const QString &path, const QString &column, const QString &what,
+                        std::map<QString, double> &out, QString *error)
 {
     QFile file(path);
     if (!file.exists()) return true;
@@ -775,8 +780,8 @@ bool load_piece_heights(const QString &path, PieceHeights &out, QString *error)
         if (error) *error = QString("could not open %1").arg(path);
         return false;
     }
-    PieceHeights read;
-    int col_name = -1, col_mm = -1, line_no = 0;
+    std::map<QString, double> read;
+    int col_name = -1, col_value = -1, line_no = 0;
     while (!file.atEnd()) {
         QString line = QString::fromUtf8(file.readLine());
         ++line_no;
@@ -788,33 +793,34 @@ bool load_piece_heights(const QString &path, PieceHeights &out, QString *error)
             for (int i = 0; i < f.size(); ++i) {
                 const QString h = f[i].trimmed().toLower();
                 if (h == "ingredient") col_name = i;
-                else if (h == "piece_height_mm") col_mm = i;
+                else if (h == column) col_value = i;
             }
-            if (col_name < 0 || col_mm < 0) {
+            if (col_name < 0 || col_value < 0) {
                 if (error)
-                    *error = QString("%1: the header must name ingredient and "
-                                     "piece_height_mm").arg(path);
+                    *error = QString("%1: the header must name ingredient and %2")
+                                 .arg(path, column);
                 return false;
             }
             continue;
         }
         const QString name = f.value(col_name).trimmed();
-        if (name.isEmpty() || f.value(col_mm).trimmed().isEmpty()) continue;
+        if (name.isEmpty() || f.value(col_value).trimmed().isEmpty()) continue;
         bool ok = false;
-        const double mm = f.value(col_mm).trimmed().toDouble(&ok);
-        if (!ok || mm < 0) {
+        const double v = f.value(col_value).trimmed().toDouble(&ok);
+        if (!ok || v < 0) {
             if (error)
-                *error = QString("%1, line %2: \"%3\" is not a height in mm")
-                             .arg(path).arg(line_no).arg(f.value(col_mm));
+                *error = QString("%1, line %2: \"%3\" is not %4")
+                             .arg(path).arg(line_no).arg(f.value(col_value), what);
             return false;
         }
-        read[name] = mm;
+        read[name] = v;
     }
     out = std::move(read);
     return true;
 }
 
-bool save_piece_heights(const QString &path, const PieceHeights &pieces, QString *error)
+bool save_named_numbers(const QString &path, const QString &column,
+                        const std::map<QString, double> &values, QString *error)
 {
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
@@ -822,10 +828,32 @@ bool save_piece_heights(const QString &path, const PieceHeights &pieces, QString
         return false;
     }
     QTextStream out(&file);
-    out << "ingredient,piece_height_mm\n";
-    for (const auto &[name, mm] : pieces)
-        out << csv_field(name) << ',' << QString::number(mm, 'f', 1) << '\n';
+    out << "ingredient," << column << "\n";
+    for (const auto &[name, v] : values)
+        out << csv_field(name) << ',' << QString::number(v, 'f', 1) << '\n';
     return true;
+}
+
+}  // namespace
+
+bool load_piece_heights(const QString &path, PieceHeights &out, QString *error)
+{
+    return load_named_numbers(path, "piece_height_mm", "a height in mm", out, error);
+}
+
+bool save_piece_heights(const QString &path, const PieceHeights &pieces, QString *error)
+{
+    return save_named_numbers(path, "piece_height_mm", pieces, error);
+}
+
+bool load_mound_slopes(const QString &path, MoundSlopes &out, QString *error)
+{
+    return load_named_numbers(path, "mound_slope_deg", "a slope in degrees", out, error);
+}
+
+bool save_mound_slopes(const QString &path, const MoundSlopes &slopes, QString *error)
+{
+    return save_named_numbers(path, "mound_slope_deg", slopes, error);
 }
 
 bool save_name_mappings(const QString &path, const NameMappings &mappings, QString *error)

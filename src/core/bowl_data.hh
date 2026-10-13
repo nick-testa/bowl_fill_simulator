@@ -36,6 +36,8 @@ struct BowlSheet {
     QStringList ingredients;   ///< cleaned column names, in dispense order
     std::vector<BowlRow> rows;
     int skipped = 0;           ///< rows with no usable volume or no ingredient
+    int rescaled = 0;          ///< rows whose weights were scaled to a scale_g total
+    double largest_rescale_g = 0.0;   ///< the biggest such correction
 
     int single_rows() const;
     int mixed_rows() const;
@@ -74,6 +76,26 @@ struct SquashFit {
 };
 
 constexpr double kMaxLoadTransfer = 20.0;
+
+///
+/// Whether the predicted 80% ranges can be trusted: each mixed bowl on file is
+/// predicted from the single-ingredient curves (which never saw it) and its scan is
+/// checked against its 80% range. About 8 in 10 should land inside; far fewer means
+/// the ranges are too narrow, far more that they are too cautious. Mostly above or
+/// mostly below means the predictions themselves are off, not just their spread.
+///
+struct RangeCheck {
+    int bowls = 0, inside = 0, below = 0, above = 0;
+    double inside_share() const { return bowls ? double(inside) / bowls : 0.0; }
+};
+
+/// A weighed bowl's predicted scan as a distribution (no dispense variation: the
+/// masses are known). `load_transfer` 0 means no squash.
+FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, Method method,
+                               double load_transfer);
+
+RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method method,
+                        double load_transfer);
 
 /// Predicted scan volume of one row: food, compressed at `load_transfer`, plus the
 /// cups' contents when cups were in for the scan.

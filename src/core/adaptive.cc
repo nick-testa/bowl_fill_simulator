@@ -65,7 +65,8 @@ double AdaptiveItem::band_used(const Tolerances &t) const
 
 double AdaptiveResult::food_fill() const
 {
-    return settings.bowl_capacity_oz > 0 ? food_volume_oz / settings.bowl_capacity_oz : 0.0;
+    const double room = settings.food_capacity_oz();
+    return room > 0 ? food_volume_oz / room : 0.0;
 }
 
 double AdaptiveResult::occupancy() const
@@ -186,7 +187,9 @@ AdaptiveResult solve_adaptive(const std::vector<BowlItem> &items,
     };
 
     r.nominal_volume_oz = volume_at_alpha(0.0);
-    const double cap = settings.bowl_capacity_oz;
+    // The target is a share of the food room: the fill line less what the cups and
+    // any tall chunks take, so cups in the bowl leave less for food to aim at.
+    const double cap = r.settings.food_capacity_oz();
     const double food_target = settings.target_fill * cap;
 
     double alpha = 0.0;
@@ -236,6 +239,10 @@ AdaptiveResult solve_adaptive(const std::vector<BowlItem> &items,
         r.total_cost += it.cost;
     }
     r.total_volume_oz = r.food_volume_oz + r.settings.sauce_volume_oz();
+    std::vector<double> volumes;
+    for (const AdaptiveItem &it : r.items) volumes.push_back(it.volume_oz);
+    r.fill = fill_uncertainty(items, volumes, r.settings.food_capacity_oz(),
+                              r.settings.rim_oz(), &r.settings.dispense);
     return r;
 }
 

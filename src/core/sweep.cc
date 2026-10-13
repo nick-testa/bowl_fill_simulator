@@ -103,7 +103,9 @@ QString sweep_csv_header()
 {
     return "brand,recipe,recipe_kind,bases,proteins,toppings,sauce_cups,ingredients,"
            "nominal_g,nominal_oz,floor_g,legacy_verdict,legacy_final_g,legacy_final_oz,"
-           "legacy_fill_pct,adaptive_status,adaptive_fill_pct,adaptive_alpha,cost\n";
+           "legacy_fill_pct,adaptive_status,adaptive_fill_pct,adaptive_alpha,cost,"
+           "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,"
+           "legacy_p90_ml,adaptive_p_over_room,adaptive_p_over_rim\n";
 }
 
 bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
@@ -113,6 +115,7 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                const std::function<bool(qint64, qint64)> &progress,
                std::vector<SweepTotals> *per_brand)
 {
+    const double kMl = CurveSet::kMlPerFlOz;
     qint64 total = 0;
     for (const Menu *m : menus) total += plan_sweep(*m, limits).rows();
 
@@ -232,7 +235,15 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                             << ',' << to_string(ad.status) << ','
                             << QString::number(ad.food_fill() * 100, 'f', 0) << ','
                             << QString::number(ad.alpha, 'f', 3) << ','
-                            << QString::number(ad.total_cost, 'f', 2) << '\n';
+                            << QString::number(ad.total_cost, 'f', 2) << ','
+                            // The bowl as a distribution (see FillUncertainty).
+                            << QString::number(sim.fill.p_over_room, 'f', 3) << ','
+                            << QString::number(sim.fill.p_over_rim, 'f', 3) << ','
+                            << QString::number(sim.fill.p10_oz * kMl, 'f', 0) << ','
+                            << QString::number(sim.fill.median_oz * kMl, 'f', 0) << ','
+                            << QString::number(sim.fill.p90_oz * kMl, 'f', 0) << ','
+                            << QString::number(ad.fill.p_over_room, 'f', 3) << ','
+                            << QString::number(ad.fill.p_over_rim, 'f', 3) << '\n';
                         out << line;
 
                         ++totals.rows;

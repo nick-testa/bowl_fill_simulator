@@ -24,7 +24,8 @@ class MappingDialog : public QDialog {
 
 public:
     MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
-                  const PieceHeights &pieces, QWidget *parent = nullptr);
+                  const PieceHeights &pieces, const MoundSlopes &slopes,
+                  QWidget *parent = nullptr);
 
     /// What to save: only rows that differ from the automatic name or set a kind,
     /// plus any saved rows whose menu spelling no longer appears (kept, not dropped).
@@ -32,15 +33,19 @@ public:
     /// Piece heights by name in use: every row given an explicit height, plus saved
     /// heights for names no row maps to any more.
     PieceHeights pieces() const;
+    /// Mound slopes by name in use, kept the same way as piece heights.
+    MoundSlopes slopes() const;
 
 private:
     struct Row {
         QString brand, raw, automatic, guessed_kind, kind;
     };
 
-    void populate(const NameMappings &current, const PieceHeights &pieces);
+    void populate(const NameMappings &current, const PieceHeights &pieces,
+                  const MoundSlopes &slopes);
     double piece_at(int row) const;   ///< -1 for "default"
     void sync_piece(int row);
+    void sync_shared(int row, int column);
     void apply_filter();
     void refresh_state();
     void import_csv();
@@ -54,6 +59,7 @@ private:
     std::vector<Row> rows_;
     NameMappings stale_;   ///< saved rows for spellings no menu uses any more
     PieceHeights stale_pieces_;
+    MoundSlopes stale_slopes_;
     QStringList names_;    ///< every name in use, offered by the "Maps to" boxes
 
     QComboBox *show_ = nullptr;

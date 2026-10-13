@@ -114,7 +114,7 @@ QString RecipeAudit::adaptive_summary() const
             .arg(std::round(adaptive.food_fill() * 100))
             .arg(std::fabs(adaptive.alpha) * 100, 0, 'f', 0);
     case AdaptiveStatus::StillOver:
-        return QString("Still over at full reduction: %1% of the bowl. Tolerances "
+        return QString("Still over at full reduction: %1% of the food room. Tolerances "
                        "cannot rescue it; the spec has to change.")
             .arg(std::round(adaptive.food_fill() * 100));
     case AdaptiveStatus::Underfilled:
@@ -187,12 +187,27 @@ QString BrandAudit::headline() const
     return head.trimmed();
 }
 
+/// p_over_room,p_over_rim,p10_ml,median_ml,p90_ml, or n/a when there is no bowl.
+static QString fill_csv(const FillUncertainty &u)
+{
+    if (!u.valid) return "n/a,n/a,n/a,n/a,n/a";
+    const double ml = CurveSet::kMlPerFlOz;
+    return QString("%1,%2,%3,%4,%5")
+        .arg(u.p_over_room, 0, 'f', 3).arg(u.p_over_rim, 0, 'f', 3)
+        .arg(u.p10_oz * ml, 0, 'f', 0).arg(u.median_oz * ml, 0, 'f', 0)
+        .arg(u.p90_oz * ml, 0, 'f', 0);
+}
+
 QString BrandAudit::to_csv() const
 {
     QString out =
         "brand,recipe,kind,pinned_ingredients,nominal_g,nominal_oz,floor_g,"
         "legacy_verdict,legacy_final_oz,legacy_fill_pct,legacy_detail,"
-        "adaptive_status,adaptive_fill_pct,adaptive_detail\n";
+        "adaptive_status,adaptive_fill_pct,adaptive_detail,"
+        // The bowl as a distribution: appended so existing columns keep their places.
+        "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,legacy_p90_ml,"
+        "adaptive_p_over_room,adaptive_p_over_rim,adaptive_p10_ml,adaptive_median_ml,"
+        "adaptive_p90_ml\n";
     for (const RecipeAudit &r : rows) {
         const double cap = r.legacy.settings.bowl_capacity_oz;
         const double sauce = r.legacy.settings.overhead_oz();
@@ -217,6 +232,9 @@ QString BrandAudit::to_csv() const
                                          : csv_escape(to_string(r.adaptive.status)))
                    .arg(r.customer_built ? 0.0 : r.adaptive.food_fill() * 100, 0, 'f', 0)
                    .arg(csv_escape(r.adaptive_summary()));
+        out.chop(1);   // the newline; the distribution columns follow
+        out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill) + ','
+               + fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill) + '\n';
     }
     return out;
 }

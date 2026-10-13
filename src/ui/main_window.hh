@@ -18,6 +18,7 @@ class QGridLayout;
 class QLabel;
 class QPushButton;
 class QTableWidget;
+class QToolButton;
 class QVBoxLayout;
 
 namespace bowlfill {
@@ -32,7 +33,9 @@ class PhotoLabel;
 /// fall back to the recipe's pinned weight, then the menu's configuration. Kept
 /// across changes to the bowl and the recipe; cleared only when the brand changes.
 struct Override {
-    std::optional<double> start_g, step_g, max_g, rate;
+    std::optional<double> start_g, step_g, max_g;
+    std::optional<double> rate;          ///< oz/100 g, for an ingredient with no curve
+    std::optional<double> curve_scale;   ///< multiplier on the curve, for one with a curve
 };
 
 class MainWindow : public QMainWindow {
@@ -81,11 +84,23 @@ private:
     QString store_and_reload(const QString &path, QStringList *problems);
     void update_curve_note();
     QString pieces_path() const;
+    QString mounds_path() const;
+    /// An ingredient's own mound slope, or -1 to take the default.
+    double mound_slope_for(const QString &name) const;
     BowlGeometry geometry() const;
+    DispenseVariation dispense() const;
+    void update_fill_note(const SimResult &r);
     void update_geometry_note(double capacity_oz, const SauceCups &sauce,
                               const BowlGeometry &g, double chunk_mm);
     void rebuild_ingredient_pickers();
     void rebuild_override_rows();
+    /// Shows the volume per 100 g an ingredient is using now (its curve, scaled by any
+    /// edit, at its start weight; or its flat rate) and whether it has been edited.
+    void refresh_rate_field(const QString &name);
+    /// The finished-bowl note's mounding line, empty with mounding off.
+    QString mound_line(const SimResult &r) const;
+    /// Takes an edited rate: scales the curve to match it, or sets the flat rate.
+    void set_rate(const QString &name, double oz_per_100g);
     void apply_floor();
     void recompute();
     void render_adaptive();
@@ -110,6 +125,11 @@ private:
     QStringList load_warnings_;
 
     std::map<QString, Override> overrides_;
+    struct RateField {
+        QDoubleSpinBox *spin = nullptr;
+        QToolButton *reset = nullptr;
+    };
+    std::map<QString, RateField> rate_fields_;   ///< the rows of the ramp grid
     /// Start weights the selected recipe pins, by ingredient. Replaced on every
     /// recipe change, unlike overrides_, which only a brand change clears.
     std::map<QString, double> pins_;
@@ -160,15 +180,29 @@ private:
     QStringList menu_issues_;
     NameMappings name_maps_;           ///< data/ingredient_aliases.csv
     PieceHeights pieces_;              ///< data/ingredient_pieces.csv
+    MoundSlopes mound_slopes_;         ///< data/ingredient_mounds.csv
     QCheckBox *heights_ = nullptr;     ///< judge fit by height under the lid
     QPushButton *cups_pressed_ = nullptr;
     QPushButton *cups_resting_ = nullptr;
     QWidget *cups_segment_ = nullptr;
     QDoubleSpinBox *depth_ = nullptr;
     QDoubleSpinBox *headroom_ = nullptr;
+    QDoubleSpinBox *bowl_top_d_ = nullptr;
+    QDoubleSpinBox *bowl_bottom_d_ = nullptr;
+    QDoubleSpinBox *lid_plateau_d_ = nullptr;
     QDoubleSpinBox *cup_h_ = nullptr;
     QDoubleSpinBox *cup_d_ = nullptr;
+    QDoubleSpinBox *cup_base_d_ = nullptr;
     QDoubleSpinBox *chunk_proud_ = nullptr;
+    QDoubleSpinBox *mound_slope_ = nullptr;
+    QCheckBox *mound_ = nullptr;
+    QLabel *fill_note_ = nullptr;             ///< median, 80% range and overfill odds
+    QDoubleSpinBox *disp_base_ = nullptr;      ///< dispense variation, % of target, 1 sd
+    QDoubleSpinBox *disp_protein_ = nullptr;
+    QDoubleSpinBox *disp_topping_ = nullptr;
+    QDoubleSpinBox *bias_base_ = nullptr;
+    QDoubleSpinBox *bias_protein_ = nullptr;
+    QDoubleSpinBox *bias_topping_ = nullptr;
     QLabel *geometry_note_ = nullptr;
     QLabel *mapping_note_ = nullptr;
 

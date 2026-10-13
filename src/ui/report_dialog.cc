@@ -86,10 +86,17 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     v->addWidget(note);
 
     table_ = new QTableWidget(this);
-    table_->setColumnCount(7);
+    table_->setColumnCount(9);
     table_->setHorizontalHeaderLabels(
         {"Recipe", "Kind", "Pins", "As written (g)",
-         QString("As written (%1)").arg(units::suffix()), "Legacy ramp", "Adaptive"});
+         QString("As written (%1)").arg(units::suffix()), "Legacy ramp", "Legacy P(over)",
+         "Adaptive", "Adaptive P(over)"});
+    if (QTableWidgetItem *h = table_->horizontalHeaderItem(6))
+        h->setToolTip("Chance a real bowl overfills the food room (the bowl less cups and "
+                      "chunk clearance), from ingredient scatter, curve uncertainty and "
+                      "dispense variation.");
+    if (QTableWidgetItem *h = table_->horizontalHeaderItem(8))
+        h->setToolTip(table_->horizontalHeaderItem(6)->toolTip());
     table_->verticalHeader()->setVisible(false);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -169,8 +176,25 @@ void ReportDialog::populate()
                                    fg, Qt::AlignRight));
         table_->setItem(i, 4, cell(r.customer_built ? "—" : units::volume(r.nominal_oz), fg,
                                    Qt::AlignRight));
+        auto odds = [&](const FillUncertainty &u) {
+            if (r.customer_built || !u.valid) return cell("—", fg, Qt::AlignRight);
+            const double p = u.p_over_room * 100;
+            QTableWidgetItem *c = cell(p < 1 && p > 0 ? QString("<1%")
+                                       : p > 99 && p < 100 ? QString(">99%")
+                                                           : QString("%1%").arg(std::round(p)),
+                                       fg, Qt::AlignRight);
+            const double ml = CurveSet::kMlPerFlOz;
+            c->setToolTip(QString("80% of bowls: %1 to %2 ml (median %3 ml) against %4 ml of "
+                                  "food room; %5% over the rim")
+                              .arg(u.p10_oz * ml, 0, 'f', 0).arg(u.p90_oz * ml, 0, 'f', 0)
+                              .arg(u.median_oz * ml, 0, 'f', 0).arg(u.room_oz * ml, 0, 'f', 0)
+                              .arg(std::round(u.p_over_rim * 100)));
+            return c;
+        };
         table_->setItem(i, 5, cell(legacy_tag(r), fg));
-        table_->setItem(i, 6, cell(adaptive_tag(r), fg));
+        table_->setItem(i, 6, odds(r.legacy.fill));
+        table_->setItem(i, 7, cell(adaptive_tag(r), fg));
+        table_->setItem(i, 8, odds(r.adaptive.fill));
         for (int c = 0; c < table_->columnCount(); ++c) table_->item(i, c)->setFont(row_font);
     }
     table_->resizeColumnsToContents();

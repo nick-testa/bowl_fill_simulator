@@ -42,7 +42,7 @@ struct Tolerances {
 struct AdaptiveSettings {
     double bowl_capacity_oz = 32.0;
 
-    /// Target for the FOOD, as a share of total bowl capacity.
+    /// Target for the FOOD, as a share of the food room (food_capacity_oz()).
     double target_fill = 0.85;
     /// US-1's acceptable visual range. Inside it, nothing is adjusted at all --
     /// scenario 1 of the Day in the Life is "no adjustment required".
@@ -51,6 +51,7 @@ struct AdaptiveSettings {
 
     SauceCups sauce;
     BowlGeometry geometry;
+    DispenseVariation dispense;
     /// Tallest chunk in the bowl; solve_adaptive() fills this from its items.
     double chunk_height_mm = 0.0;
 
@@ -66,6 +67,8 @@ struct AdaptiveSettings {
     double sauce_volume_oz() const;
     /// Capacity actually available to food, once the cups are in.
     double food_capacity_oz() const;
+    /// Food that reaches the rim, for the chance of going over it.
+    double rim_oz() const { return rim_food_oz(sauce, geometry); }
 };
 
 enum class AdaptiveStatus {
@@ -105,8 +108,9 @@ struct AdaptiveResult {
     double total_volume_oz = 0.0;   ///< food plus sauce cups
     double total_cost = 0.0;
     bool cost_complete = false;     ///< false if any ingredient had no price
+    FillUncertainty fill;           ///< the dispensed bowl as a distribution
 
-    double food_fill() const;       ///< food as a share of bowl capacity
+    double food_fill() const;       ///< food as a share of the food room
     double occupancy() const;       ///< food plus cups, as a share of capacity
     double cogs_ratio() const;      ///< 0 when no price is set
     bool cogs_within_guardrail() const;

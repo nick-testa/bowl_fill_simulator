@@ -159,6 +159,9 @@ monotonicity, and that solving for volume ignores price.
 The **Legacy ramp / Adaptive** switch at the top of the settings panel chooses which
 algorithm runs. They are different shapes of thing, not two tunings of one.
 
+For a plain-language explanation aimed at non-experts, with a worked example, see
+[docs/HOW_FILLING_WORKS.md](docs/HOW_FILLING_WORKS.md).
+
 **Legacy ramp** is what `dynamic_portion_algorithm.cc` does today: add a flat
 `step_increment_g` to every ingredient, pass after pass, until a *mass* floor is
 cleared. It has no volume term at all.
@@ -177,6 +180,10 @@ the document's tolerance table and its "4:1:2 ratio steps for base/protein/toppi
 stated twice — 20:5:10 reduces to 4:1:2, so a base moves four times as far as a
 protein by construction.
 
+The target (85%) and the leave-alone band (75–85%) are shares of the **food room**:
+the functional fill less what the sauce cups and any tall chunks take. Two cups
+therefore lower the target, rather than eating into the bowl's headroom.
+
 Three outcomes, matching the Day in the Life scenarios:
 
 | status | meaning |
@@ -186,8 +193,23 @@ Three outcomes, matching the Day in the Life scenarios:
 | **underfilled** | cannot reach the target even at full positive tolerance; dispensed short and flagged |
 | **still over at max reduction** | will not fit even at full negative tolerance; the nominal spec itself has to change |
 
-**Sauce cups** occupy real space in the bowl — up to two at 50 ml each — so the tiles
+**Sauce cups** occupy real space in the bowl — up to two at 70 ml each (measured) — so the tiles
 report both *food fill* and *with sauce cups*.
+
+**The bowl, lid and cups were measured on 2026-10-12** and are the defaults under
+*Advanced → Bowl, lid and cups*:
+
+| | measured | works out to |
+| --- | --- | --- |
+| bowl | 46 mm deep inside (51 mm outside), 161 mm across the floor, 181 mm at the rim | 1058 ml to the rim |
+| lid | inside rises ~5 mm over a ~160 mm centre | ~100 ml above the rim |
+| sauce cup | 30 mm tall lidded, 65 mm across the lid, 45 mm at the base | 72 ml (camera read ~70) |
+
+The 32 oz *functional fill* is a fill line, not the rim: 946 ml reaches 41.6 mm,
+4.4 mm below it. With *Judge fit by height* on, food may rise to that line unless a
+chunk standing proud or a resting cup would then touch the lid; pressed-in cups
+(tops at the lid) take away what they displace below the surface. The overfill odds
+are judged against both the food room and the real rim.
 
 **COGS is reported, never solved for.** The document is explicit: "understand the
 impact on COGS, not optimize up front on COGS." Prices come from

@@ -21,6 +21,10 @@ about -5 ml. Every scanned volume is corrected by the **Empty-bowl reading** set
 The files themselves keep the raw readings. Curve-row files (`ingredient, g, ml`)
 are taken as given, since they may come from other methods.
 
+**Trusted totals.** A bowl sheet may carry a `scale_g` column: the bowl's total
+weight from a trusted bench scale. When a row has one, its ingredient weights (from
+the robot's puck, which drifts) are scaled in proportion so they add up to it.
+
 **Curve fitting.** Each ingredient's curve, ml = K·g^p, is fitted by least squares
 on the volume itself, so a few ml of camera error weighs the same at 20 g as at
 400 g instead of dominating the small portions.

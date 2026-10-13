@@ -33,7 +33,7 @@ QStringList split_csv(const QString &line)
     return out;
 }
 
-enum class Column { Ingredient, Ml, Oz, Cups, Lid, Ignored };
+enum class Column { Ingredient, Ml, Oz, Cups, Lid, ScaleTotal, Ignored };
 
 Column column_kind(const QString &header)
 {
@@ -44,6 +44,7 @@ Column column_kind(const QString &header)
         return Column::Oz;
     if (h == "cups" || h == "sauce_cups") return Column::Cups;
     if (h == "lid") return Column::Lid;
+    if (h == "scale_g" || h == "total_g" || h == "scale_total_g") return Column::ScaleTotal;
     if (h.isEmpty() || h == "notes" || h == "note" || h == "comment" || h == "comments")
         return Column::Ignored;
     return Column::Ingredient;
@@ -81,6 +82,8 @@ QString bowl_data_format_help()
         "&nbsp;&nbsp;<code>cups</code> &mdash; <i>optional</i>: sauce cups pressed in "
         "before the scan<br>"
         "&nbsp;&nbsp;<code>lid</code> &mdash; <i>optional</i>: closed, forced or failed<br>"
+        "&nbsp;&nbsp;<code>scale_g</code> &mdash; <i>optional</i>: the bowl's total weight "
+        "from a trusted scale; the ingredient weights are scaled to add up to it<br>"
         "&nbsp;&nbsp;<code>notes</code> &mdash; <i>optional</i>, ignored<br><br>"
         "<b>Put the ingredient columns in dispense order, left to right</b> &mdash; on the "
         "robot, station order. The first column is the bottom layer, which carries "
@@ -114,7 +117,7 @@ bool load_bowl_csv(const QString &path, BowlSheet &out, QString *error, double e
     const QStringList heads = split_csv(header);
     std::vector<Column> kinds;
     std::vector<QString> names;
-    int ml_col = -1, oz_col = -1, cups_col = -1, lid_col = -1;
+    int ml_col = -1, oz_col = -1, cups_col = -1, lid_col = -1, scale_col = -1;
     for (int i = 0; i < heads.size(); ++i) {
         const Column k = column_kind(heads[i]);
         kinds.push_back(k);
@@ -124,6 +127,7 @@ bool load_bowl_csv(const QString &path, BowlSheet &out, QString *error, double e
         if (k == Column::Oz) oz_col = i;
         if (k == Column::Cups) cups_col = i;
         if (k == Column::Lid) lid_col = i;
+        if (k == Column::ScaleTotal) scale_col = i;
         if (k == Column::Ingredient) out.ingredients << names.back();
     }
     const int vol_col = ml_col >= 0 ? ml_col : oz_col;
@@ -161,6 +165,16 @@ bool load_bowl_csv(const QString &path, BowlSheet &out, QString *error, double e
             const double g = cell(static_cast<int>(i)).toDouble(&ok);
             if (ok && g > 0) row.items.push_back({names[i], g});
         }
+        // A trusted total from a bench scale beats the per-ingredient weights (the
+        // robot's puck drifts): keep the robot's split, take the total from the scale.
+        const double scale_g = cell(scale_col).toDouble(&ok);
+        if (ok && scale_g > 0 && !row.items.empty()) {
+            double sum = 0;
+            for (const auto &[n, g] : row.items) sum += g;
+            for (auto &[n, g] : row.items) g *= scale_g / sum;
+            ++out.rescaled;
+            out.largest_rescale_g = std::max(out.largest_rescale_g, std::fabs(scale_g - sum));
+        }
         if (row.ounces <= 0 || row.items.empty()) {
             ++out.skipped;
             continue;
@@ -190,9 +204,12 @@ std::vector<Observation> single_ingredient_points(const BowlSheet &sheet)
     return out;
 }
 
-double predicted_scan_oz(const BowlRow &row, const CurveSet &curves, Method method,
-                         double load_transfer, double flat_protein_rate,
-                         double flat_topping_rate, QStringList *flat_rate)
+namespace {
+
+/// The row's ingredients as bowl items, on their chosen curves.
+std::vector<BowlItem> row_items(const BowlRow &row, const CurveSet &curves, Method method,
+                                double flat_protein_rate, double flat_topping_rate,
+                                QStringList *flat_rate)
 {
     std::vector<BowlItem> items;
     for (const auto &[name, grams] : row.items) {
@@ -209,15 +226,70 @@ double predicted_scan_oz(const BowlRow &row, const CurveSet &curves, Method meth
         } else if (flat_rate && !flat_rate->contains(name)) {
             *flat_rate << name;
         }
+        it.rel_sd = c.rel_sd;
+        it.curve_rel_se = c.rel_se;
         items.push_back(it);
     }
+    return items;
+}
+
+Frame scan_frame(const BowlRow &row, const CurveSet &curves, Method method, double load_transfer,
+                 double flat_protein_rate, double flat_topping_rate, QStringList *flat_rate,
+                 std::vector<BowlItem> *items_out)
+{
+    const std::vector<BowlItem> items =
+        row_items(row, curves, method, flat_protein_rate, flat_topping_rate, flat_rate);
     SimSettings s;
     s.floor_g = 0.0;
-    s.compress = true;
+    s.compress = load_transfer > 0;
     s.load_transfer = load_transfer;
+    if (items_out) *items_out = items;
+    return simulate(items, s).first();
+}
+
+}  // namespace
+
+double predicted_scan_oz(const BowlRow &row, const CurveSet &curves, Method method,
+                         double load_transfer, double flat_protein_rate,
+                         double flat_topping_rate, QStringList *flat_rate)
+{
     SauceCups cups;
     cups.cups = row.cups;
-    return simulate(items, s).first().ounces + cups.volume_oz();
+    return scan_frame(row, curves, method, load_transfer, flat_protein_rate, flat_topping_rate,
+                      flat_rate, nullptr).ounces
+           + cups.volume_oz();
+}
+
+FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, Method method,
+                               double load_transfer)
+{
+    std::vector<BowlItem> items;
+    const Frame f = scan_frame(row, curves, method, load_transfer, kFlatProteinRate,
+                               kFlatToppingRate, nullptr, &items);
+    // The masses were weighed, so the robot's dispense variation does not apply.
+    FillUncertainty u = fill_uncertainty(items, f.per_item_oz, 0, 0, nullptr);
+    SauceCups cups;
+    cups.cups = row.cups;
+    u.median_oz += cups.volume_oz();
+    u.p10_oz += cups.volume_oz();
+    u.p90_oz += cups.volume_oz();
+    return u;
+}
+
+RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method method,
+                        double load_transfer)
+{
+    RangeCheck c;
+    for (const BowlRow &r : sheet.rows) {
+        if (r.items.size() < 2) continue;   // single bowls were used to fit the curves
+        const FillUncertainty u = predicted_scan(r, curves, method, load_transfer);
+        if (!u.valid) continue;
+        ++c.bowls;
+        if (r.ounces < u.p10_oz) ++c.below;
+        else if (r.ounces > u.p90_oz) ++c.above;
+        else ++c.inside;
+    }
+    return c;
 }
 
 SquashFit fit_squash(const BowlSheet &sheet, const CurveSet &curves, Method method,

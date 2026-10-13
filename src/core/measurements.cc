@@ -132,6 +132,12 @@ MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
                 if (sheet.skipped)
                     mf.problem = QString("%1 row%2 skipped (no volume or no weights)")
                                      .arg(sheet.skipped).arg(sheet.skipped == 1 ? "" : "s");
+                if (sheet.rescaled) {
+                    const QString note = QString("%1 row%2 scaled to scale_g (up to %3 g)")
+                                             .arg(sheet.rescaled).arg(sheet.rescaled == 1 ? "" : "s")
+                                             .arg(sheet.largest_rescale_g, 0, 'f', 1);
+                    mf.problem = mf.problem.isEmpty() ? note : mf.problem + "; " + note;
+                }
                 sheets.push_back({set.files.size(), std::move(sheet)});
             }
         }

@@ -23,42 +23,172 @@ double SauceCups::volume_oz() const
     return std::clamp(cups, 0, kMax) * cup_ml * kOzPerMl;
 }
 
+namespace {
+constexpr double kMlPerOz = 29.5735295625;
+}
+
+double BowlGeometry::volume_below_mm3(double height_mm) const
+{
+    const double h = std::clamp(height_mm, 0.0, lid_mm());
+    const double r0 = bottom_diameter_mm / 2.0, rt = top_diameter_mm / 2.0;
+    auto frustum = [&](double a) {   // the bowl's bottom `a` mm
+        const double r1 = depth_mm > 0 ? r0 + (rt - r0) * a / depth_mm : r0;
+        return M_PI * a / 3.0 * (r0 * r0 + r0 * r1 + r1 * r1);
+    };
+    if (h <= depth_mm) return frustum(h);
+    // Over the rim, only the lid's raised centre has room.
+    const double plateau = M_PI * std::pow(std::min(lid_plateau_diameter_mm, top_diameter_mm) / 2.0, 2);
+    return frustum(depth_mm) + plateau * (h - depth_mm);
+}
+
+double BowlGeometry::height_of_mm3(double volume_mm3) const
+{
+    double lo = 0.0, hi = lid_mm();
+    if (volume_mm3 >= volume_below_mm3(hi)) return hi;
+    for (int i = 0; i < 60; ++i) {
+        const double mid = (lo + hi) / 2.0;
+        (volume_below_mm3(mid) < volume_mm3 ? lo : hi) = mid;
+    }
+    return (lo + hi) / 2.0;
+}
+
+namespace {
+
+/// Food, in mm³, that brings the surface to `surface_mm` with pressed-in cups whose
+/// tops sit at the lid: each displaces whatever of it is below the surface.
+double food_to_surface_mm3(const BowlGeometry &g, int cups, double surface_mm)
+{
+    const double cup_floor = g.lid_mm() - g.cup_height_mm;
+    return g.volume_below_mm3(surface_mm)
+           - cups * g.cup_volume_below_mm3(surface_mm - cup_floor);
+}
+
+}  // namespace
+
 double food_capacity_oz(double bowl_capacity_oz, const SauceCups &sauce,
                         const BowlGeometry &g, double chunk_height_mm)
 {
     if (!g.enabled || g.depth_mm <= 0)
         return std::max(0.0, bowl_capacity_oz - sauce.volume_oz());
 
-    constexpr double kMlPerOz = 29.5735295625;
-    const double cap_mm3 = bowl_capacity_oz * kMlPerOz * 1000.0;
-    const double area = cap_mm3 / g.depth_mm;   // footprint of the equivalent cylinder
-    const double dome = std::max(0.0, g.lid_headroom_mm);
-    const double limit = g.depth_mm + dome;     // clearance at the centre of the lid
-
-    // Volume below a level surface at height s. Above the rim the lid is a shallow
-    // paraboloid, whose cross-section shrinks linearly to nothing at its crown.
-    auto volume_below = [&](double s) {
-        s = std::clamp(s, 0.0, limit);
-        if (s <= g.depth_mm) return area * s;
-        const double t = s - g.depth_mm;
-        return area * (g.depth_mm + t - t * t / (2.0 * dome));
-    };
-
     const int cups = std::clamp(sauce.cups, 0, SauceCups::kMax);
     const double chunk = std::max(0.0, chunk_height_mm) * std::clamp(g.chunk_proud, 0.0, 1.0);
-    double food = 0.0;
-    if (g.cups_pressed || cups == 0) {
-        // The surface may rise to the lid less the chunks' proud height, except under
-        // each cup, where it stops a cup height below the lid. The cup column is the
-        // shortfall under the footprint.
-        const double footprint = M_PI * std::pow(g.cup_diameter_mm / 2.0, 2);
-        const double column = std::max(0.0, g.cup_height_mm - chunk);
-        food = volume_below(limit - chunk) - cups * footprint * column;
-    } else {
-        // Cups on a level surface: everything stays a cup height below the lid.
-        food = volume_below(limit - std::max(chunk, g.cup_height_mm));
-    }
+    const double fill_line = g.height_of_mm3(bowl_capacity_oz * kMlPerOz * 1000.0);
+    // The surface may rise to the fill line, unless what stands on it would then
+    // touch the lid: a chunk's proud part always, and resting cups their whole height.
+    double clear = chunk;
+    if (!g.cups_pressed && cups > 0) clear = std::max(clear, g.cup_height_mm);
+    const double surface = std::min(fill_line, g.lid_mm() - clear);
+    const double food = g.cups_pressed ? food_to_surface_mm3(g, cups, surface)
+                                       : g.volume_below_mm3(surface);
     return std::max(0.0, food) / 1000.0 / kMlPerOz;
+}
+
+double rim_food_oz(const SauceCups &sauce, const BowlGeometry &g)
+{
+    const double rim = g.rim_ml() / kMlPerOz;
+    if (!g.enabled) return std::max(0.0, rim - sauce.volume_oz());
+    const int cups = std::clamp(sauce.cups, 0, SauceCups::kMax);
+    // Resting cups ride on the food and take nothing below the rim.
+    const double food = g.cups_pressed ? food_to_surface_mm3(g, cups, g.depth_mm)
+                                       : g.volume_below_mm3(g.depth_mm);
+    return std::max(0.0, food) / 1000.0 / kMlPerOz;
+}
+
+double food_surface_mm(const SauceCups &sauce, const BowlGeometry &g, double food_oz)
+{
+    const double v = std::max(0.0, food_oz) * kMlPerOz * 1000.0;
+    const int cups = g.enabled && g.cups_pressed ? std::clamp(sauce.cups, 0, SauceCups::kMax) : 0;
+    const double lid = g.lid_mm();
+    const double at_lid = food_to_surface_mm3(g, cups, lid);
+    if (v >= at_lid) {
+        const double rim_area = M_PI * std::pow(g.top_diameter_mm / 2.0, 2);
+        return rim_area > 0 ? lid + (v - at_lid) / rim_area : lid;
+    }
+    double lo = 0.0, hi = lid;
+    for (int i = 0; i < 60; ++i) {
+        const double mid = (lo + hi) / 2.0;
+        (food_to_surface_mm3(g, cups, mid) < v ? lo : hi) = mid;
+    }
+    return (lo + hi) / 2.0;
+}
+
+namespace {
+constexpr int kMoundRings = 300;
+}
+
+std::vector<double> mound_radii(const BowlGeometry &g)
+{
+    std::vector<double> r(kMoundRings);
+    const double dr = g.top_diameter_mm / 2.0 / kMoundRings;
+    for (int i = 0; i < kMoundRings; ++i) r[i] = (i + 0.5) * dr;
+    return r;
+}
+
+std::vector<std::vector<double>> mound_surfaces(const BowlGeometry &g,
+                                                const std::vector<MoundLayer> &layers)
+{
+    const std::vector<double> r = mound_radii(g);
+    const double r0 = g.bottom_diameter_mm / 2.0, rt = g.top_diameter_mm / 2.0;
+    const double dr = rt / kMoundRings;
+    // The empty bowl: flat floor, then the wall rising to the rim.
+    std::vector<double> floor(r.size());
+    for (size_t i = 0; i < r.size(); ++i)
+        floor[i] = r[i] <= r0 || rt <= r0 ? 0.0 : g.depth_mm * (r[i] - r0) / (rt - r0);
+    std::vector<std::vector<double>> out{floor};
+
+    for (const MoundLayer &layer : layers) {
+        const std::vector<double> &below = out.back();
+        const double slope =
+            std::tan(std::clamp(layer.slope_deg, 0.0, 80.0) * M_PI / 180.0);
+        // Volume this layer adds with its cone's peak at h: each ring of the bowl
+        // rises to the cone where the cone is higher than what is already there.
+        auto added = [&](double h) {
+            double v = 0.0;
+            for (size_t i = 0; i < r.size(); ++i)
+                v += 2.0 * M_PI * r[i] * dr * std::max(0.0, h - slope * r[i] - below[i]);
+            return v;
+        };
+        double lo = 0.0, hi = std::max(1.0, below.front() + g.depth_mm);
+        while (added(hi) < layer.volume_mm3 && hi < 1e5) hi *= 2;
+        for (int i = 0; i < 60; ++i) {
+            const double mid = (lo + hi) / 2.0;
+            (added(mid) < layer.volume_mm3 ? lo : hi) = mid;
+        }
+        const double h = (lo + hi) / 2.0;
+        std::vector<double> next(r.size());
+        for (size_t i = 0; i < r.size(); ++i) next[i] = std::max(below[i], h - slope * r[i]);
+        out.push_back(std::move(next));
+    }
+    return out;
+}
+
+std::vector<MoundLayer> mound_layers(const std::vector<BowlItem> &items,
+                                     const std::vector<double> &item_oz,
+                                     const BowlGeometry &g, double scale)
+{
+    std::vector<MoundLayer> out;
+    for (size_t i = 0; i < items.size() && i < item_oz.size(); ++i) {
+        if (item_oz[i] <= 0.005) continue;
+        const double slope =
+            items[i].mound_slope_deg >= 0 ? items[i].mound_slope_deg : g.mound_slope_deg;
+        out.push_back({item_oz[i] * scale * kMlPerOz * 1000.0, slope});
+    }
+    return out;
+}
+
+double mound_peak_mm(const BowlGeometry &g, const std::vector<MoundLayer> &layers)
+{
+    return layers.empty() ? 0.0 : mound_surfaces(g, layers).back().front();
+}
+
+double BowlGeometry::cup_volume_below_mm3(double height_mm) const
+{
+    if (cup_height_mm <= 0) return 0.0;
+    const double a = std::clamp(height_mm, 0.0, cup_height_mm);
+    const double r0 = cup_base_diameter_mm / 2.0;
+    const double r1 = r0 + (cup_diameter_mm - cup_base_diameter_mm) / 2.0 * a / cup_height_mm;
+    return M_PI * a / 3.0 * (r0 * r0 + r0 * r1 + r1 * r1);   // frustum of height a
 }
 
 double tallest_chunk_mm(const std::vector<BowlItem> &items)
@@ -197,6 +327,8 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
     else
         result.verdict = Verdict::OverWhileRamping;
 
+    result.fill = fill_uncertainty(result.items, result.last().per_item_oz, cap,
+                                   result.settings.rim_oz(), &result.settings.dispense);
     return result;
 }
 
@@ -205,6 +337,63 @@ double split_base_start(const Ingredient &ingredient, bool split_on, bool two_ba
     const double full = ingredient.full_portion();
     if (!split_on || !two_bases) return full;
     return std::max(std::round(full * 0.5), ingredient.per_portion_minimum_weight_g);
+}
+
+double DispenseVariation::for_kind(Kind kind) const
+{
+    switch (kind) {
+    case Kind::Base: return base;
+    case Kind::Protein: return protein;
+    case Kind::Topping: return topping;
+    }
+    return topping;
+}
+
+double DispenseVariation::bias_for(Kind kind) const
+{
+    switch (kind) {
+    case Kind::Base: return base_bias;
+    case Kind::Protein: return protein_bias;
+    case Kind::Topping: return topping_bias;
+    }
+    return topping_bias;
+}
+
+FillUncertainty fill_uncertainty(const std::vector<BowlItem> &items,
+                                 const std::vector<double> &item_oz, double room_oz,
+                                 double rim_oz, const DispenseVariation *dispense)
+{
+    FillUncertainty u;
+    if (items.empty() || items.size() != item_oz.size()) return u;
+    double var = 0;
+    for (size_t i = 0; i < items.size(); ++i) {
+        const BowlItem &it = items[i];
+        double rel2 = it.rel_sd * it.rel_sd + it.curve_rel_se * it.curve_rel_se;
+        const double p = it.has_curve ? it.p : 1.0;
+        double oz = item_oz[i];
+        // A share d off in mass moves volume by p * d along a power law, and a robot
+        // that runs heavy by b on average moves the whole item by (1 + b)^p.
+        if (dispense) {
+            const double d = p * dispense->for_kind(it.kind);
+            rel2 += d * d;
+            oz *= std::pow(1.0 + dispense->bias_for(it.kind), p);
+        }
+        u.median_oz += oz;
+        var += oz * oz * rel2;
+    }
+    u.sd_oz = std::sqrt(var);
+    u.p10_oz = u.median_oz - kZ80 * u.sd_oz;
+    u.p90_oz = u.median_oz + kZ80 * u.sd_oz;
+    u.room_oz = room_oz;
+    u.rim_oz = rim_oz;
+    auto p_over = [&](double limit) {
+        if (u.sd_oz <= 0) return u.median_oz > limit ? 1.0 : 0.0;
+        return 0.5 * std::erfc((limit - u.median_oz) / (u.sd_oz * std::sqrt(2.0)));
+    };
+    u.p_over_room = p_over(room_oz);
+    u.p_over_rim = p_over(rim_oz);
+    u.valid = true;
+    return u;
 }
 
 Fit composite_curve(Kind kind, const CurveSet &curves, Method method, QStringList *members)
@@ -242,6 +431,28 @@ Fit composite_curve(Kind kind, const CurveSet &curves, Method method, QStringLis
         out.n = static_cast<int>(fits.size());   // members, not samples
         out.lo_g = lo;
         out.hi_g = hi;
+        // A stand-in is as uncertain as its members, and more so the more they
+        // disagree with each other about this mass.
+        double member2 = 0;
+        for (const Fit *m : fits) {
+            const double r = m->rel_sd > 0 ? m->rel_sd : kAssumedRelSd;
+            member2 += r * r;
+        }
+        member2 /= fits.size();
+        double between2 = 0;
+        for (int i = 0; i < kSamples; ++i) {
+            const double g = lo + (hi - lo) * i / (kSamples - 1);
+            double sum = 0, sum2 = 0;
+            for (const Fit *m : fits) {
+                const double v = m->volume_oz(g);
+                sum += v;
+                sum2 += v * v;
+            }
+            const double mean = sum / fits.size();
+            if (mean > 0) between2 += (sum2 / fits.size() - mean * mean) / (mean * mean);
+        }
+        between2 /= kSamples;
+        out.rel_sd = std::sqrt(member2 + between2);
     }
     if (members) *members = names;
     return out;
@@ -250,10 +461,14 @@ Fit composite_curve(Kind kind, const CurveSet &curves, Method method, QStringLis
 CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves, Method method)
 {
     CurveChoice c;
+    // Scatter of a fit, or the assumed figure when it has too few points to say.
+    auto scatter = [](const Fit &f) { return f.rel_sd > 0 ? f.rel_sd : kAssumedRelSd; };
     if (const Fit *f = curves.fit(name, method)) {
         c.source = CurveSource::Own;
         c.K = f->K;
         c.p = f->p;
+        c.rel_sd = scatter(*f);
+        c.rel_se = c.rel_sd / std::sqrt(std::max(1, f->n));
         return c;
     }
     if (const QString proxy = proxy_curve_for(name, curves); !proxy.isEmpty())
@@ -262,6 +477,8 @@ CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves,
             c.K = f->K;
             c.p = f->p;
             c.from = {proxy};
+            c.rel_sd = std::hypot(scatter(*f), kBorrowedExtraRelSd);
+            c.rel_se = scatter(*f) / std::sqrt(std::max(1, f->n));
             return c;
         }
     QStringList members;
@@ -271,6 +488,8 @@ CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves,
         c.K = f.K;
         c.p = f.p;
         c.from = members;
+        c.rel_sd = scatter(f);
+        c.rel_se = c.rel_sd / std::sqrt(std::max(1, f.n));
     }
     return c;
 }
@@ -306,6 +525,8 @@ BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method 
         item.K = c.K;
         item.p = c.p;
     }
+    item.rel_sd = c.rel_sd;
+    item.curve_rel_se = c.rel_se;
     return item;
 }
 

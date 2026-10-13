@@ -168,6 +168,18 @@ bool load_piece_heights(const QString &path, PieceHeights &out, QString *error =
 bool save_piece_heights(const QString &path, const PieceHeights &pieces,
                         QString *error = nullptr);
 
+///
+/// Mound slopes (angle of repose, degrees) of ingredients that pile steeper or
+/// flatter than the default, keyed by the name in use like piece heights. Stored in
+/// data/ingredient_mounds.csv as ingredient,mound_slope_deg. Unlisted ingredients
+/// take the default slope set in the window.
+///
+using MoundSlopes = std::map<QString, double>;
+
+bool load_mound_slopes(const QString &path, MoundSlopes &out, QString *error = nullptr);
+bool save_mound_slopes(const QString &path, const MoundSlopes &slopes,
+                       QString *error = nullptr);
+
 /// The name a menu spelling is offered under, with prep and version words dropped:
 /// "White Jasmine Rice retherm v11" -> "White Jasmine Rice". The same cleaning the
 /// loader applies, for data typed straight from station or menu labels.

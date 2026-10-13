@@ -169,7 +169,9 @@ int main()
     LoadResult loaded = load_menus(assets + "/menus");
     for (const QString &w : loaded.warnings) std::printf("  warn %s\n", qPrintable(w));
     for (const QString &w : loaded.issues) std::printf("  issue %s\n", qPrintable(w));
-    expect_near("brands parsed", loaded.menus.size(), 7, 0.01);
+    // The menus folder grows with the brand refresh; the brands below must be there.
+    expect_true(QString("at least 7 brands parsed (%1)").arg(loaded.menus.size()),
+                loaded.menus.size() >= 7);
 
     const Menu *farmstand = by_brand(loaded.menus, "Farmstand");
     const Menu *cowgirl = by_brand(loaded.menus, "The Hungry Cowgirl");
@@ -323,7 +325,8 @@ int main()
         {cowgirl,   "Pollo Verde Asado Bowl",  125,  4.4, Verdict::Saturated},
         {siren,     "The Hungry Siren Bowl",   571, 24.8, Verdict::FitsMassBound},
         {farmstand, "Farmstand Ranch Salad",   407, 50.9, Verdict::OverAtStart},
-        {pita,      "The Oasis",               620, 27.9, Verdict::FitsMassBound},
+        // Over since the cups were measured at 70 ml each (they were taken as 50).
+        {pita,      "The Oasis",               620, 27.9, Verdict::OverAtStart},
         {meatrice,  "Meat Rice Meat",          545, 23.1, Verdict::NoFloor},
     };
     for (const auto &c : cases) {
@@ -347,7 +350,8 @@ int main()
         expect_near("floor", s.floor_g, 365, 0.01);
         expect_near("final g", r.last().grams, 225, 0.6);
         expect_near("final oz", r.last().ounces, 27.8, 0.15);
-        expect_eq("verdict", verdict_name(r.verdict), "Saturated");
+        // Two 70 ml cups leave 27.3 oz, so the ramp now runs into the volume limit.
+        expect_eq("verdict", verdict_name(r.verdict), "OverWhileRamping");
     }
 
     std::printf("\nCompression model (reduces to the plain fit at zero load)\n");
@@ -508,7 +512,7 @@ int main()
         AdaptiveSettings as;
         as.bowl_capacity_oz = 32.0;
         as.sauce.cups = 2;
-        expect_near("two sauce cups in oz", as.sauce_volume_oz(), 3.381, 0.01);
+        expect_near("two sauce cups in oz", as.sauce_volume_oz(), 4.734, 0.01);
 
         auto recipe_items = [&](const Menu &m, const char *name) {
             auto it = std::find_if(m.recipes.begin(), m.recipes.end(),
@@ -516,14 +520,23 @@ int main()
             return bowl_from_recipe(m, *it, curves, Method::Robot);
         };
 
+        // The target is a share of the food room, so cups lower it.
+        AdaptiveSettings no_cups = as;
+        no_cups.sauce.cups = 0;
+        expect_near("the target is a share of the food room",
+                    solve_adaptive(recipe_items(*pita, "The Oasis"), as, &costs)
+                        .settings.food_capacity_oz(),
+                    32.0 - 4.734, 0.01);
+
         // Scenario 2: a bowl a little over the band is pulled back onto target. The
-        // Oasis is 27.9 oz nominal against a 27.2 oz target. (The Cowgirl Bowl used to
-        // be the example, but without its sauces in the bowl it sits inside the band.)
+        // Oasis is 27.9 oz nominal; with no cups the food room is the whole 32 oz, a
+        // 27.2 oz target. (The Cowgirl Bowl used to be the example, but without its
+        // sauces in the bowl it sits inside the band.)
         std::vector<BowlItem> cow = recipe_items(*pita, "The Oasis");
-        AdaptiveResult ar = solve_adaptive(cow, as, &costs);
+        AdaptiveResult ar = solve_adaptive(cow, no_cups, &costs);
         expect_eq("oasis status", to_string(ar.status), "adjusted");
         expect_near("oasis lands on target", ar.food_volume_oz,
-                    as.target_fill * 32.0, 0.05);
+                    no_cups.target_fill * 32.0, 0.05);
         ++checks;
         if (ar.alpha >= 0) { ++failures; std::printf("  FAIL expected a reduction\n"); }
         else std::printf("  ok   alpha negative (%.3f), a reduction\n", ar.alpha);
@@ -553,10 +566,11 @@ int main()
         }
 
         // Scenario 1: a bowl already inside the visual band is left alone. The Ranch
-        // Salad's nominal is 34.5 oz, so a 43 oz bowl puts it at ~80%.
+        // Salad's nominal is 34.5 oz, so a 48 oz bowl, 43.3 oz of food room after the
+        // cups, puts it at ~80%.
         std::vector<BowlItem> ranch = recipe_items(*farmstand, "Farmstand Ranch Salad");
         AdaptiveSettings wide = as;
-        wide.bowl_capacity_oz = 43.0;
+        wide.bowl_capacity_oz = 48.0;
         AdaptiveResult none = solve_adaptive(ranch, wide, &costs);
         expect_eq("wide bowl status", to_string(none.status), "no adjustment");
         expect_near("wide bowl alpha", none.alpha, 0.0, 1e-9);
@@ -596,7 +610,7 @@ int main()
         else std::printf("  ok   delivered volume monotone in target\n");
 
         // COGS is reported, never solved for.
-        AdaptiveSettings priced = as;
+        AdaptiveSettings priced = no_cups;
         priced.menu_price = 12.95;
         AdaptiveResult pr = solve_adaptive(cow, priced, &costs);
         ++checks;
@@ -674,9 +688,10 @@ int main()
         expect_true("finished bowls sort above modifier templates at equal severity",
                     cow.rows.front().complete_bowl);
         // Seven protein-only templates all fall short; none of them may be counted.
-        // The one shortfall that remains is a finished bowl, Hungry Cowboy.
+        // (Hungry Cowboy used to fall short too, until the target was taken from the
+        // food room, which the cups make smaller.)
         expect_true("partial shortfalls stay out of the brand's failure count",
-                    cow.partial == 7 && cow.legacy_short == 0 && cow.adaptive_short == 1);
+                    cow.partial == 7 && cow.legacy_short == 0 && cow.adaptive_short == 0);
 
         const QStringList lines = a.to_csv().split('\n', Qt::SkipEmptyParts);
         expect_true("CSV carries a header and one row per recipe",
@@ -695,7 +710,7 @@ int main()
         expect_near("no cups leaves the whole bowl", none.food_capacity_oz(), 32.0, 1e-9);
         SimSettings two;
         two.sauce.cups = 2;
-        expect_near("two cups", two.food_capacity_oz(), 32.0 - 3.381, 0.01);
+        expect_near("two cups", two.food_capacity_oz(), 32.0 - 4.734, 0.01);
         SimSettings over_max;
         over_max.sauce.cups = 5;
         expect_near("cups are capped at two", over_max.food_capacity_oz(),
@@ -724,35 +739,103 @@ int main()
 
     std::printf("\nBowl geometry: cups and chunks by height\n");
     {
-        // 32 oz at a 44.5 mm rim; cups 35 mm tall and 62 mm across.
+        // The measured bowl: 46 mm deep, 161 mm across the floor and 181 mm at the rim,
+        // under a lid rising 5 mm over a 160 mm centre. Cups 30 mm tall, 65 mm across
+        // the lid, 45 mm at the base.
         BowlGeometry g;
         g.enabled = true;
         SauceCups none, two;
         none.cups = 0;
         two.cups = 2;
         const double kOz = 29.5735295625;
-        const double cup_column_oz = 2 * M_PI * 31.0 * 31.0 * 35.0 / 1000.0 / kOz;
+        // Bottom `a` mm of a frustum that widens from radius r0 by `grow` over `h`.
+        auto frustum = [](double r0, double grow, double h, double a) {
+            const double r1 = r0 + grow * a / h;
+            return M_PI * a / 3.0 * (r0 * r0 + r0 * r1 + r1 * r1);
+        };
+        auto bowl_mm3 = [&](double a) { return frustum(80.5, 10.0, 46.0, a); };
+        auto cup_mm3 = [&](double a) { return frustum(22.5, 10.0, 30.0, a); };
 
-        expect_near("no cups, no chunks: the whole bowl", food_capacity_oz(32, none, g, 0),
-                    32.0, 1e-9);
-        expect_near("pressed cups cost their columns", food_capacity_oz(32, two, g, 0),
-                    32.0 - cup_column_oz, 1e-6);
+        expect_near("a whole cup is 72 ml, near the camera's 70",
+                    g.cup_volume_below_mm3(30.0) / 1000.0, 72.06, 0.01);
+        BowlGeometry straight = g;
+        straight.cup_base_diameter_mm = straight.cup_diameter_mm;
+        expect_near("a straight-sided cup is a column",
+                    straight.cup_volume_below_mm3(20.0), M_PI * 32.5 * 32.5 * 20.0, 1e-6);
+
+        expect_near("the bowl holds 1058 ml to the rim", g.rim_ml(), 1057.63, 0.01);
+        expect_near("the lid's raised centre adds a 160 mm disc 5 mm deep",
+                    g.volume_below_mm3(51.0) - g.volume_below_mm3(46.0),
+                    M_PI * 80.0 * 80.0 * 5.0, 1e-6);
+        const double fill_mm = g.height_of_mm3(32.0 * kOz * 1000.0);
+        expect_near("32 oz is a fill line 4.4 mm below the rim", fill_mm, 41.63, 0.01);
+
+        expect_near("no cups, no chunks: the fill line", food_capacity_oz(32, none, g, 0),
+                    32.0, 1e-6);
+        // Pressed cups have their tops at the lid (51 mm), so their bases sit at 21 mm
+        // and the fill line covers the bottom 20.6 mm of each.
+        const double pressed = 32.0 - 2 * cup_mm3(fill_mm - 21.0) / 1000.0 / kOz;
+        expect_near("pressed cups cost what they displace", food_capacity_oz(32, two, g, 0),
+                    pressed, 1e-6);
         BowlGeometry resting = g;
         resting.cups_pressed = false;
         expect_near("resting cups hold the whole surface a cup below the lid",
-                    food_capacity_oz(32, two, resting, 0), 32.0 * (44.5 - 35.0) / 44.5, 1e-6);
+                    food_capacity_oz(32, two, resting, 0), bowl_mm3(21.0) / 1000.0 / kOz, 1e-6);
 
-        // A 20 mm protein standing half proud needs 10 mm everywhere, and the cup
-        // columns shrink by the same 10 mm because the surface under them is already
-        // that much lower.
-        const double chunky = 32.0 * (44.5 - 10.0) / 44.5
-                              - 2 * M_PI * 31.0 * 31.0 * 25.0 / 1000.0 / kOz;
-        expect_near("chunks and pressed cups", food_capacity_oz(32, two, g, 20), chunky, 1e-6);
+        // A 20 mm protein standing half proud needs the surface at 41 mm, under the
+        // fill line; a 10 mm one needs it at 46 mm, which the fill line already clears.
+        const double chunky = (bowl_mm3(41.0) - 2 * cup_mm3(20.0)) / 1000.0 / kOz;
+        expect_near("a tall chunk lowers the surface", food_capacity_oz(32, two, g, 20), chunky,
+                    1e-6);
+        expect_near("a short chunk clears the lid for free", food_capacity_oz(32, two, g, 10),
+                    pressed, 1e-6);
 
-        BowlGeometry domed = g;
-        domed.lid_headroom_mm = 10;
-        expect_near("a 10 mm dome adds half its cylinder",
-                    food_capacity_oz(32, none, domed, 0), 32.0 * (44.5 + 5.0) / 44.5, 1e-6);
+        expect_near("a fill above the rim reaches into the lid",
+                    food_capacity_oz(1100.0 / kOz, none, g, 0), 1100.0 / kOz, 1e-6);
+        // Mounding: each layer a cone from the centre at its own slope, cut off by the
+        // walls and piled on what is below.
+        auto peak = [&](std::vector<MoundLayer> layers) { return mound_peak_mm(g, layers); };
+        expect_near("a 0 degree mound is a level fill", peak({{600e3, 0}}),
+                    g.height_of_mm3(600e3), 0.1);
+        // A heap too small to reach the walls is a plain cone: V = pi h^3 / (3 tan^2).
+        const double tan30 = std::tan(M_PI / 6);
+        const double cone = M_PI * 40.0 * 40.0 * 40.0 / (3.0 * tan30 * tan30);
+        expect_near("a small heap is a cone", peak({{cone, 30}}), 40.0, 0.2);
+        expect_true("a mound peaks above the level it would settle to",
+                    peak({{600e3, 30}}) > g.height_of_mm3(600e3) + 10);
+        const std::vector<double> rings = mound_radii(g);
+        const std::vector<std::vector<double>> heap = mound_surfaces(g, {{cone, 30}});
+        expect_near("its surface falls away at the slope", heap.back()[0] - heap.back()[60],
+                    (rings[60] - rings[0]) * tan30, 0.01);
+        // Layers pile on each other: a steep topping on a level base peaks higher than
+        // the same volume all level, and lower than all steep.
+        const double mixed = peak({{400e3, 0}, {200e3, 30}});
+        expect_true("a steep layer on a flat one makes a peak",
+                    mixed > peak({{600e3, 0}}) + 5 && mixed < peak({{600e3, 30}}));
+        expect_near("layers keep their volume",
+                    [&] {
+                        const auto s = mound_surfaces(g, {{400e3, 0}, {200e3, 30}});
+                        const auto f = mound_surfaces(g, {}).front();
+                        double v = 0, dr = rings[1] - rings[0];
+                        for (size_t i = 0; i < rings.size(); ++i)
+                            v += 2 * M_PI * rings[i] * dr * (s.back()[i] - f[i]);
+                        return v;
+                    }(),
+                    600e3, 600e3 * 0.002);
+        BowlItem steep, flat_item;
+        steep.mound_slope_deg = 40;
+        BowlGeometry deflt = g;
+        deflt.mound_slope_deg = 15;
+        const std::vector<MoundLayer> ml =
+            mound_layers({flat_item, steep}, {10.0, 5.0}, deflt, 2.0);
+        expect_true("unset slopes take the default, set ones their own, volumes scale",
+                    ml.size() == 2 && ml[0].slope_deg == 15 && ml[1].slope_deg == 40
+                        && std::fabs(ml[1].volume_mm3 - 10.0 * 29.5735295625 * 1000) < 1e-6);
+
+        expect_near("the rim, less what pressed cups displace there",
+                    rim_food_oz(two, g), (bowl_mm3(46.0) - 2 * cup_mm3(25.0)) / 1000.0 / kOz,
+                    1e-6);
+
 
         BowlGeometry off;
         expect_near("geometry off keeps the volume model", food_capacity_oz(32, two, off, 20),
@@ -1021,11 +1104,30 @@ int main()
                         simulate({rice}, on).first().per_item_oz[0], want, 1e-9);
         }
 
+        // A trusted scale total rescales the robot's per-ingredient weights.
+        {
+            const QString sp = QDir::temp().filePath("bowlfill-verify-scale.csv");
+            {
+                QFile f(sp);
+                expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
+                f.write("Romaine Base,lemon couscous,ml,scale_g\n70,140,500,231\n60,,300,\n");
+            }
+            BowlSheet sheet;
+            load_bowl_csv(sp, sheet);
+            expect_near("rows rescaled", sheet.rescaled, 1, 0.01);
+            expect_near("the robot's split is kept: romaine 70 * 231/210",
+                        sheet.rows[0].items[0].second, 77.0, 1e-9);
+            expect_near("... couscous 140 * 231/210", sheet.rows[0].items[1].second, 154.0, 1e-9);
+            expect_near("a row with no scale total is left alone", sheet.rows[1].items[0].second, 60.0, 1e-9);
+            expect_near("largest correction reported", sheet.largest_rescale_g, 21.0, 1e-9);
+            QFile::remove(sp);
+        }
+
         // The empty-bowl correction rescues small scans that read below zero.
         const QString path = QDir::temp().filePath("bowlfill-verify-zero.csv");
         {
             QFile f(path);
-            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
             f.write("test beans,ml\n2.3,-3\n4.4,-1\n100,105\n");
         }
         BowlSheet raw, fixed;
@@ -1089,21 +1191,21 @@ int main()
         QDir().mkpath(root.path());
         {
             QFile f(root.filePath("beans.csv"));
-            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
             QTextStream out(&f);
             out << "test beans,ml\n";
             for (double g = 10; g <= 460; g += 15) out << g << "," << camera(g / 0.8) << "\n";
         }
         {
             QFile f(root.filePath("food.csv"));
-            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
             QTextStream out(&f);
             out << "slaw,ml\n";
             for (double g : {20.0, 60.0, 120.0, 200.0}) out << g << "," << camera(1.5 * g) << "\n";
         }
         {
             QFile f(root.filePath("wet.csv"));
-            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
             f.write("pico,ml\n40,12\n60,70\n");   // 40 g reading 12 ml: below its solids
         }
 
@@ -1141,9 +1243,103 @@ int main()
         expect_near("the rest of that ingredient stays", dropped_set.count("pico", Method::Pooled), 1, 0.01);
         expect_near("off again, it is back", plain.count("pico", Method::Pooled), 2, 0.01);
         QFile wet(root.filePath("wet.csv"));
-        wet.open(QIODevice::ReadOnly);
+        expect_true("test file opens", wet.open(QIODevice::ReadOnly));
         expect_true("the file is not changed", wet.readAll().contains("40,12"));
         root.removeRecursively();
+    }
+
+    std::printf("\nOverfill odds and the 80%% range\n");
+    {
+        // Scatter: readings 10% either side of an exact curve, alternating.
+        CurveSet c;
+        for (int i = 0; i < 20; ++i) {
+            const double g = 50 + 10 * i;
+            c.add({"slaw", Method::Robot, g, 0.1 * g * (i % 2 ? 1.1 : 0.9)});
+        }
+        c.refit();
+        const Fit *f = c.fit("slaw", Method::Robot);
+        expect_near("a curve measures its own scatter (10%)", f ? f->rel_sd : 0, 0.10, 0.01);
+
+        // Two items of 10 oz, each 10% scatter, no curve or dispense term: sd = sqrt(2) oz.
+        BowlItem a, b;
+        a.rel_sd = b.rel_sd = 0.10;
+        a.curve_rel_se = b.curve_rel_se = 0.0;
+        const FillUncertainty u = fill_uncertainty({a, b}, {10.0, 10.0}, 20.0, 22.0, nullptr);
+        expect_near("median is the sum", u.median_oz, 20.0, 1e-12);
+        expect_near("independent scatter adds in variance", u.sd_oz, std::sqrt(2.0), 1e-9);
+        expect_near("80% range low", u.p10_oz, 20.0 - kZ80 * std::sqrt(2.0), 1e-9);
+        expect_near("a median right at the room is a coin flip", u.p_over_room, 0.5, 1e-12);
+        expect_near("2 oz of headroom at sd 1.414 is a 7.9% chance", u.p_over_rim,
+                    0.5 * std::erfc(2.0 / (std::sqrt(2.0) * std::sqrt(2.0))), 1e-12);
+        DispenseVariation d;
+        d.topping = 0.10;
+        a.kind = b.kind = Kind::Topping;
+        DispenseVariation unbiased = d;
+        unbiased.base_bias = unbiased.protein_bias = unbiased.topping_bias = 0;
+        const FillUncertainty ud =
+            fill_uncertainty({a, b}, {10.0, 10.0}, 20.0, 22.0, &unbiased);
+        expect_near("dispense variation widens it (flat-rate items: p = 1)", ud.sd_oz, 2.0, 1e-9);
+        DispenseVariation heavy = unbiased;
+        heavy.topping_bias = 0.05;
+        const FillUncertainty uh = fill_uncertainty({a, b}, {10.0, 10.0}, 20.0, 22.0, &heavy);
+        expect_near("a robot running 5% heavy moves the median 5%", uh.median_oz, 21.0, 1e-9);
+        BowlItem curved = a;
+        curved.has_curve = true;
+        curved.p = 0.8;
+        expect_near("along a curve the shift is (1 + b)^p",
+                    fill_uncertainty({curved}, {10.0}, 20.0, 22.0, &heavy).median_oz,
+                    10.0 * std::pow(1.05, 0.8), 1e-9);
+        expect_near("a weighed bowl (no dispense) has no bias",
+                    fill_uncertainty({a, b}, {10.0, 10.0}, 20.0, 22.0, nullptr).median_oz,
+                    20.0, 1e-12);
+
+        // Stand-ins carry wider bands than measured curves.
+        CurveSet m;
+        // Readings 5% either side of their curves, so ranges have width.
+        for (double g : {50.0, 100.0, 150.0, 200.0, 250.0, 300.0}) {
+            const double wiggle = (static_cast<int>(g) / 50) % 2 ? 1.05 : 0.95;
+            m.add({"Chicken Al Pastor", Method::Robot, g, wiggle * g / 30.0});
+            m.add({"Suadero Beef", Method::Robot, g, wiggle * g / 20.0});
+        }
+        m.refit();
+        const CurveChoice own = choose_curve("Suadero Beef", Kind::Protein, m, Method::Robot);
+        const CurveChoice comp = choose_curve("Guajillo Cumin Chicken", Kind::Protein, m, Method::Robot);
+        const CurveChoice flat = choose_curve("Corn", Kind::Topping, m, Method::Robot);
+        expect_true("a composite of members that disagree is wider than either",
+                    comp.rel_sd > own.rel_sd + 0.1);
+        expect_near("a flat rate carries the widest band", flat.rel_sd, kFlatRateRelSd, 1e-12);
+
+        // The range check: bowls built exactly as the curves predict sit inside.
+        BowlSheet sheet;
+        for (double g : {60.0, 90.0, 120.0}) {
+            BowlRow r;
+            r.items = {{"Suadero Beef", g}, {"Chicken Al Pastor", g}};
+            r.ounces = g / 20.0 + g / 30.0;
+            sheet.rows.push_back(r);
+        }
+        BowlRow way_over;
+        way_over.items = {{"Suadero Beef", 60.0}, {"Chicken Al Pastor", 60.0}};
+        way_over.ounces = 3 * (60 / 20.0 + 60 / 30.0);
+        sheet.rows.push_back(way_over);
+        const RangeCheck rc = check_ranges(sheet, m, Method::Robot, 0.0);
+        expect_true(QString("range check: %1 inside, %2 above").arg(rc.inside).arg(rc.above),
+                    rc.bowls == 4 && rc.inside == 3 && rc.above == 1);
+
+        // A simulated bowl carries its distribution.
+        SimSettings ss;
+        BowlItem rice;
+        rice.kind = Kind::Base;
+        rice.has_curve = true;
+        rice.K = 0.05;
+        rice.p = 1.0;
+        rice.rel_sd = 0.1;
+        rice.start_g = 300;
+        const SimResult sr = simulate({rice}, ss);
+        expect_true("simulate() fills in the distribution",
+                    // 15 oz planned; the robot runs heavy by the base bias on average.
+                    sr.fill.valid
+                        && std::fabs(sr.fill.median_oz - 15.0 * (1 + ss.dispense.base_bias)) < 1e-9
+                        && sr.fill.room_oz == ss.food_capacity_oz());
     }
 
     std::printf("\nMeasurement store (data/measurements)\n");
@@ -1153,7 +1349,7 @@ int main()
         QDir().mkpath(root.path());
         auto write = [&](const QString &name, const QString &text) {
             QFile f(root.filePath(name));
-            f.open(QIODevice::WriteOnly | QIODevice::Text);
+            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
             f.write(text.toUtf8());
         };
         write("curves.csv", "method,ingredient,g,ml\nrobot,white rice,100,90\nrobot,White Rice,200,170\n");
@@ -1190,7 +1386,7 @@ int main()
         outside.removeRecursively();
         QDir().mkpath(outside.path());
         const QString up = outside.filePath("curves.csv");
-        { QFile f(up); f.open(QIODevice::WriteOnly); f.write("ingredient,g,ml\nfeta,50,60\n"); }
+        { QFile f(up); expect_true("test file opens", f.open(QIODevice::WriteOnly)); f.write("ingredient,g,ml\nfeta,50,60\n"); }
         QString err;
         const QString stored = store_measurement_file(up, root.path(), &err);
         expect_eq("a name clash gets a numbered copy", QFileInfo(stored).fileName(), "curves_2.csv");

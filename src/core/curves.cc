@@ -134,6 +134,17 @@ Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
         ss_res += (o->ounces - pred) * (o->ounces - pred);
     }
     f.r2 = ss_tot > 0 ? 1.0 - ss_res / ss_tot : 0.0;
+    // Scatter as a share of the prediction: spread grows with portion size, so a
+    // relative figure carries from 50 g to 200 g where an absolute one would not.
+    // Two parameters are fitted, so n - 2 degrees of freedom remain.
+    if (f.n > 2) {
+        double ss_rel = 0;
+        for (const Observation *o : pts) {
+            const double r = o->ounces / (f.K * std::pow(o->grams, f.p)) - 1.0;
+            ss_rel += r * r;
+        }
+        f.rel_sd = std::sqrt(ss_rel / (f.n - 2));
+    }
     f.lo_g = (*lo)->grams;
     f.hi_g = (*hi)->grams;
     f.valid = true;

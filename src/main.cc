@@ -39,18 +39,42 @@ bowlfill::BowlGeometry configured_geometry(bool volume_only)
     const QSettings prefs;
     BowlGeometry g;
     g.enabled = !volume_only && prefs.value("geometry/enabled", true).toBool();
-    g.depth_mm = prefs.value("geometry/depth_mm", g.depth_mm).toDouble();
-    g.lid_headroom_mm = prefs.value("geometry/lid_headroom_mm", g.lid_headroom_mm).toDouble();
+    g.depth_mm = prefs.value("bowl/depth_mm", g.depth_mm).toDouble();
+    g.top_diameter_mm = prefs.value("bowl/top_diameter_mm", g.top_diameter_mm).toDouble();
+    g.bottom_diameter_mm =
+        prefs.value("bowl/bottom_diameter_mm", g.bottom_diameter_mm).toDouble();
+    g.lid_headroom_mm = prefs.value("lid/headroom_mm", g.lid_headroom_mm).toDouble();
+    g.lid_plateau_diameter_mm =
+        prefs.value("lid/plateau_diameter_mm", g.lid_plateau_diameter_mm).toDouble();
     g.cups_pressed = prefs.value("geometry/cups_pressed", g.cups_pressed).toBool();
-    g.cup_height_mm = prefs.value("geometry/cup_height_mm", g.cup_height_mm).toDouble();
-    g.cup_diameter_mm = prefs.value("geometry/cup_diameter_mm", g.cup_diameter_mm).toDouble();
+    g.cup_height_mm = prefs.value("cups/height_mm", g.cup_height_mm).toDouble();
+    g.cup_diameter_mm = prefs.value("cups/top_diameter_mm", g.cup_diameter_mm).toDouble();
+    g.cup_base_diameter_mm =
+        prefs.value("cups/base_diameter_mm", g.cup_base_diameter_mm).toDouble();
     g.chunk_proud = prefs.value("geometry/chunk_proud_pct", g.chunk_proud * 100).toDouble() / 100;
     return g;
 }
 
+/// The dispense variation last set in the window, for the reports' overfill odds.
+bowlfill::DispenseVariation configured_dispense()
+{
+    const QSettings prefs;
+    bowlfill::DispenseVariation d;
+    d.base = prefs.value("dispense/base_pct", d.base * 100).toDouble() / 100;
+    d.protein = prefs.value("dispense/protein_pct", d.protein * 100).toDouble() / 100;
+    d.topping = prefs.value("dispense/topping_pct", d.topping * 100).toDouble() / 100;
+    d.base_bias = prefs.value("dispense/base_bias_pct", d.base_bias * 100).toDouble() / 100;
+    d.protein_bias =
+        prefs.value("dispense/protein_bias_pct", d.protein_bias * 100).toDouble() / 100;
+    d.topping_bias =
+        prefs.value("dispense/topping_bias_pct", d.topping_bias * 100).toDouble() / 100;
+    return d;
+}
+
 /// The measurement store the window loads, data/measurements. Reports files that
-/// could not be read, and the squash fitted from the mixed bowls on file, which the
-/// window applies too. False when there is nothing to fit curves from.
+/// could not be read, and the squash fitted from the mixed bowls on file. Like the
+/// window, the reports never apply that fit; they use the default settings.
+/// False when there is nothing to fit curves from.
 bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
                      bowlfill::SquashFit *squash)
 {
@@ -101,10 +125,7 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         SimSettings legacy;
         AdaptiveSettings adaptive;
         legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
-        if (squash.valid) {
-            legacy.compress = true;
-            legacy.load_transfer = squash.load_transfer;
-        }
+        legacy.dispense = adaptive.dispense = configured_dispense();
         const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs);
         const QString csv = audit.to_csv();
         out << (header_written ? csv.section('\n', 1) : csv);
@@ -162,7 +183,7 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     SimSettings legacy;
     AdaptiveSettings adaptive;
     legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
-    if (squash.valid) legacy.load_transfer = squash.load_transfer;   // the sweep forces compression on
+    legacy.dispense = adaptive.dispense = configured_dispense();
     run_sweep(menus, curves, Method::Robot, legacy, adaptive, &costs,
               limits, out, [&](qint64 done, qint64 total) {
                   const qint64 pct = total > 0 ? done * 100 / total : 100;
