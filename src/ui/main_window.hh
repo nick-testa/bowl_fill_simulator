@@ -2,6 +2,7 @@
 
 #include "core/adaptive.hh"
 #include "core/curves.hh"
+#include "core/manual_entry.hh"
 #include "core/measurements.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
@@ -70,6 +71,7 @@ struct BreakdownRow {
 struct Scenario {
     QString name, brand, recipe;   ///< recipe empty for build-your-own
     bool adaptive = false;
+    bool volume = false;           ///< Volume Fill (when not adaptive)
     QString base1, base2;
     QStringList proteins, toppings, sauces;
     bool split = true;
@@ -92,6 +94,7 @@ public:
 
 public slots:
     void set_mode(bool adaptive);
+    void set_volume_fill() { set_model(Model::VolumeFill); }
 
 private slots:
     void on_brand_changed();
@@ -175,7 +178,24 @@ private:
     QStringList bowl_names() const;
 
     QString asset_dir_;
-    std::vector<Menu> menus_;
+    std::vector<Menu> menus_;   ///< the loaded brands, then Manual Entry last
+
+    // Manual Entry: the robot's stations, edited on their own settings page.
+    ManualEntry manual_;
+    struct StationRow {
+        QComboBox *name = nullptr;
+        QComboBox *kind = nullptr;
+    };
+    std::vector<StationRow> station_rows_;
+    ChipPicker *manual_sauces_ = nullptr;
+    /// Rebuilds the Manual Entry brand from manual_ in menus_ (adding it if missing).
+    void rebuild_manual_menu();
+    /// Saves manual_ and rebuilds the brand, refreshing the bowl if it is showing.
+    void apply_manual_entry();
+    /// Refills the station dropdowns from the loaded brands, keeping what each holds.
+    void refresh_station_catalog();
+    /// The loaded brands without Manual Entry.
+    std::vector<Menu> loaded_menus() const;
     CurveSet curves_;
     MeasurementSet measurements_;   ///< what was loaded from data/measurements
     QDoubleSpinBox *empty_bowl_ml_ = nullptr;   ///< the camera's zero, applied to scans
@@ -234,7 +254,19 @@ private:
     SimResult last_;
     AdaptiveResult last_adaptive_;
     CostTable costs_;
-    bool adaptive_ = false;
+    /// Which dispense model runs: the menu's dynamic ramp, Adaptive fill, or the
+    /// ramp made to respect the bowl (Volume Fill).
+    enum class Model { Dynamic, Adaptive, VolumeFill };
+    Model model_ = Model::Dynamic;
+    bool adaptive_ = false;   ///< model_ == Model::Adaptive
+    void set_model(Model model);
+    VolumeFillSettings volume_fill_settings() const;
+    QPushButton *mode_volume_ = nullptr;
+    QLabel *floor_panel_title_ = nullptr;
+    QWidget *volume_fields_ = nullptr;
+    QWidget *floor_fields_ = nullptr;   ///< the weight floor, hidden under Volume Fill
+    QDoubleSpinBox *fit_pct_ = nullptr;
+    QDoubleSpinBox *min_pct_ = nullptr;
 
     // Controls
     QComboBox *brand_ = nullptr;

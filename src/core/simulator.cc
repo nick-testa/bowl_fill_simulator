@@ -269,15 +269,9 @@ double SimResult::squeezed_oz() const
 // ############################################################################
 //
 
-SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
+Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &grams,
+                 const SimSettings &settings)
 {
-    SimResult result;
-    result.settings = settings;
-    result.settings.chunk_height_mm = tallest_chunk_mm(items);
-
-    std::vector<double> weight(items.size());
-    for (size_t i = 0; i < items.size(); ++i) weight[i] = items[i].start_g;
-
     // Loaded volume. The fit's own exponent already encodes self-compaction: a bed
     // of mass g carries a mean internal load of about g/2, and specific volume goes
     // as load^(p-1). Anchoring so that zero surcharge reproduces K*g^p exactly gives
@@ -292,25 +286,34 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
         if (!settings.compress || !it.has_curve || g <= 0 || it.p >= 1.0)
             return it.volume_oz(g);
         double above = 0.0;
-        for (size_t j = i + 1; j < items.size(); ++j) above += weight[j];
+        for (size_t j = i + 1; j < items.size(); ++j) above += grams[j];
         const double e = it.p - 1.0;   // negative here: the bed compacts
         return g * it.K * std::pow(2.0, e)
                * std::pow(g / 2.0 + settings.load_transfer * above, e);
     };
+    Frame f;
+    for (size_t i = 0; i < items.size() && i < grams.size(); ++i) {
+        const double oz = loaded_oz(i, grams[i]);
+        const double raw = items[i].volume_oz(grams[i]);
+        f.per_item_oz.push_back(oz);
+        f.per_item_oz_uncompressed.push_back(raw);
+        f.grams += grams[i];
+        f.ounces += oz;
+        f.ounces_uncompressed += raw;
+    }
+    return f;
+}
 
-    auto snapshot = [&] {
-        Frame f;
-        for (size_t i = 0; i < items.size(); ++i) {
-            const double oz = loaded_oz(i, weight[i]);
-            const double raw = items[i].volume_oz(weight[i]);
-            f.per_item_oz.push_back(oz);
-            f.per_item_oz_uncompressed.push_back(raw);
-            f.grams += weight[i];
-            f.ounces += oz;
-            f.ounces_uncompressed += raw;
-        }
-        result.frames.push_back(std::move(f));
-    };
+SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
+{
+    SimResult result;
+    result.settings = settings;
+    result.settings.chunk_height_mm = tallest_chunk_mm(items);
+
+    std::vector<double> weight(items.size());
+    for (size_t i = 0; i < items.size(); ++i) weight[i] = items[i].start_g;
+
+    auto snapshot = [&] { result.frames.push_back(bowl_frame(items, weight, settings)); };
     snapshot();
 
     int guard = 0;
@@ -356,6 +359,92 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
     result.fill = fill_uncertainty(result.items, result.last().per_item_oz, cap,
                                    result.settings.rim_oz(), &result.settings.dispense);
     return result;
+}
+
+QString to_string(VolumeFillStatus s)
+{
+    switch (s) {
+    case VolumeFillStatus::FilledToLimit: return "filled to the limit";
+    case VolumeFillStatus::AtMax: return "at max under the limit";
+    case VolumeFillStatus::SteppedDown: return "stepped down to fit";
+    case VolumeFillStatus::StillOver: return "still over at the lowest";
+    }
+    return {};
+}
+
+VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &settings,
+                             const VolumeFillSettings &vf)
+{
+    VolumeFillResult out;
+    SimResult &result = out.sim;
+    result.settings = settings;
+    result.settings.floor_g = 0;   // volume alone decides; no floor is reported against
+    result.settings.chunk_height_mm = tallest_chunk_mm(items);
+    const double room = result.settings.food_capacity_oz();
+    out.limit_oz = std::max(0.0, vf.fit_share) * room;
+
+    std::vector<double> weight(items.size());
+    for (size_t i = 0; i < items.size(); ++i) weight[i] = items[i].start_g;
+    result.frames.push_back(bowl_frame(items, weight, settings));
+    auto fits = [&](const Frame &f) { return f.ounces <= out.limit_oz + 1e-9; };
+
+    int guard = 0;
+    if (fits(result.frames.back())) {
+        // Up to the limit, a whole pass at a time, never into overfill. Weight and
+        // the floor do not enter into it.
+        out.status = VolumeFillStatus::FilledToLimit;
+        while (guard++ < 4000) {
+            std::vector<double> next = weight;
+            bool moved = false;
+            for (size_t i = 0; i < items.size(); ++i)
+                if (items[i].step_g > 0 && next[i] < items[i].max_g) {
+                    next[i] = std::min(next[i] + items[i].step_g, items[i].max_g);
+                    moved = true;
+                }
+            if (!moved) {
+                out.status = VolumeFillStatus::AtMax;
+                break;
+            }
+            Frame f = bowl_frame(items, next, settings);
+            if (!fits(f)) break;
+            weight = std::move(next);
+            result.frames.push_back(std::move(f));
+            ++out.passes_up;
+        }
+    } else {
+        // Over as written: bases and toppings come down a step per pass; proteins
+        // keep their portion. Nothing goes below its share of the recipe portion.
+        out.status = VolumeFillStatus::SteppedDown;
+        while (!fits(result.frames.back()) && guard++ < 4000) {
+            bool moved = false;
+            for (size_t i = 0; i < items.size(); ++i) {
+                const BowlItem &it = items[i];
+                if (it.kind == Kind::Protein || it.step_g <= 0) continue;
+                const double lowest = it.start_g * std::clamp(vf.min_share, 0.0, 1.0);
+                if (weight[i] > lowest + 1e-9) {
+                    weight[i] = std::max(weight[i] - it.step_g, lowest);
+                    moved = true;
+                }
+            }
+            if (!moved) {
+                out.status = VolumeFillStatus::StillOver;
+                break;
+            }
+            result.frames.push_back(bowl_frame(items, weight, settings));
+            ++out.passes_down;
+        }
+    }
+
+    for (size_t i = 0; i < items.size(); ++i) items[i].final_g = weight[i];
+    result.items = std::move(items);
+    result.passes = static_cast<int>(result.frames.size()) - 1;
+    result.saturated = out.status == VolumeFillStatus::AtMax;
+    result.verdict = out.status == VolumeFillStatus::StillOver ? Verdict::OverAtStart
+                     : out.status == VolumeFillStatus::AtMax   ? Verdict::Saturated
+                                                               : Verdict::FitsMassBound;
+    result.fill = fill_uncertainty(result.items, result.last().per_item_oz, room,
+                                   result.settings.rim_oz(), &result.settings.dispense);
+    return out;
 }
 
 double split_base_start(const Ingredient &ingredient, bool split_on, bool two_bases)

@@ -104,6 +104,9 @@ struct Menu {
     /// What the brand serves in sauce cups, sorted. Never in `ingredients`: a sauce
     /// takes a cup's room in the bowl, not a dispensed weight.
     QStringList sauces;
+    /// The order to offer ingredients in, when it matters (Manual Entry lists them
+    /// in station order). Empty means alphabetical.
+    QStringList order;
 
     const Ingredient *find(const QString &name) const;
     QStringList names_of(Kind kind) const;

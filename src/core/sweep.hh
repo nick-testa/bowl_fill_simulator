@@ -12,7 +12,7 @@ namespace bowlfill {
 
 ///
 /// The combinatorial workup: every bowl a brand's menu can actually produce, run
-/// through both dispense models.
+/// through all three dispense models.
 ///
 /// A row is one named recipe served over one ingredient combination. The recipe
 /// contributes its pinned gram weights wherever the combination still contains the
@@ -46,7 +46,7 @@ struct SweepPlan {
 
     qint64 rows() const { return combinations * recipes; }
     /// Rough CSV size, for warning the user before they commit to a 20 GB file.
-    qint64 bytes() const { return rows() * 225; }
+    qint64 bytes() const { return rows() * 290; }
 };
 
 SweepPlan plan_sweep(const Menu &menu, const SweepLimits &limits);
@@ -59,6 +59,9 @@ struct SweepTotals {
     /// count that actually overflows.
     qint64 adaptive_ok = 0, adaptive_over = 0, adaptive_short = 0;
     qint64 adaptive_over_bowl = 0;
+    /// Volume Fill: fits (filled to the limit or stepped down), everything at its max
+    /// and still under the limit, or still over at its lowest.
+    qint64 volume_fits = 0, volume_short = 0, volume_over = 0;
 
     double legacy_pass_rate() const { return rows ? double(legacy_fits) / rows : 0.0; }
 };
@@ -74,6 +77,7 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                const AdaptiveSettings &adaptive_settings, const CostTable *costs,
                const SweepLimits &limits, QTextStream &out,
                const std::function<bool(qint64, qint64)> &progress,
-               std::vector<SweepTotals> *per_brand = nullptr);
+               std::vector<SweepTotals> *per_brand = nullptr,
+               const VolumeFillSettings &volume_settings = {});
 
 }  // namespace bowlfill

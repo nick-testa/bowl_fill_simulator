@@ -41,6 +41,12 @@ from IPython.display import Markdown
 df = pd.read_csv(report)
 
 
+def fits_share(counts):
+    """Share of each row's total that fits; 0 where nothing fits (e.g. a brand with no floors)."""
+    fits = counts["fits"] if "fits" in counts else 0
+    return (fits / counts.sum(axis=1)).fillna(0)
+
+
 def ordered(present, preferred):
     """Known values in their preferred order, then anything unexpected at the end."""
     present = list(pd.unique(present))
@@ -61,10 +67,32 @@ VERDICT_COLORS = {
     "over after ramping": "#fab219",  # warning
     "saturates short": "#ec835a",     # serious
     "over as written": "#d03b3b",     # critical
+    "no floor": "#8a8984",            # neutral: the menu sets no floor, nothing ramps
 }
 VERDICT_ORDER = ordered(df["legacy_verdict"], list(VERDICT_COLORS))
 VERDICT_COLORS = {v: VERDICT_COLORS.get(v, "#8a8984") for v in VERDICT_ORDER}
 INK, INK_2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
+
+# Columns added by later versions of the simulator; sections that need them are
+# skipped for CSVs written before them.
+HAS_VOLUME = "volume_status" in df.columns
+HAS_ODDS = "legacy_p_over_room" in df.columns
+
+# Volume Fill outcomes, from best to worst.
+VOLUME_COLORS = {
+    "filled to the limit": "#0ca30c",
+    "stepped down to fit": "#2a78d6",
+    "at max under the limit": "#fab219",
+    "still over at the lowest": "#d03b3b",
+    # Outcomes from CSVs written before Volume fill stopped using the weight floor.
+    "fits at the floor": "#0ca30c",
+    "no floor": "#5fa85f",
+    "short of the floor (out of room)": "#fab219",
+    "short of the floor (at max)": "#ec835a",
+}
+if HAS_VOLUME:
+    VOLUME_ORDER = ordered(df["volume_status"], list(VOLUME_COLORS))
+    VOLUME_COLORS = {v: VOLUME_COLORS.get(v, "#8a8984") for v in VOLUME_ORDER}
 
 plt.rcParams.update({
     "figure.facecolor": SURFACE,
@@ -127,8 +155,7 @@ share of `fits`, best first.
 recipe_counts = (df.groupby(["recipe", "legacy_verdict"]).size()
                    .unstack(fill_value=0)
                    .reindex(columns=VERDICT_ORDER, fill_value=0))
-recipe_counts = recipe_counts.loc[recipe_counts["fits"].div(recipe_counts.sum(axis=1))
-                                  .sort_values(ascending=False).index]
+recipe_counts = recipe_counts.loc[fits_share(recipe_counts).sort_values(ascending=False).index]
 
 ncols = 3
 nrows = int(np.ceil(len(recipe_counts) / ncols))
@@ -158,7 +185,7 @@ Same data as a table (small categories are hard to read on a linear axis):
 
 ```{python}
 md_table(recipe_counts.assign(total=recipe_counts.sum(axis=1),
-                              **{"fits %": lambda t: (t["fits"] / t["total"] * 100).round(1)}))
+                              **{"fits %": lambda t: (fits_share(recipe_counts) * 100).round(1)}))
 ```
 
 {{< pagebreak >}}
@@ -175,7 +202,7 @@ def verdict_share_chart(col, title, order=None, label=None, sort_by_fits=False):
     if order is not None:
         share = share.reindex([k for k in order if k in share.index]
                               + [k for k in share.index if k not in order])
-    elif sort_by_fits:
+    elif sort_by_fits and "fits" in share:
         share = share.sort_values("fits", ascending=False)
     n = df[col].value_counts()
     label = label or str
@@ -239,23 +266,97 @@ plt.tight_layout()
 plt.show()
 ```
 
-{{< pagebreak >}}
-
-# Fill % distribution: legacy vs adaptive
-
-Two panels on one shared x-axis (not overlaid) so each distribution reads on its own.
+```{python}
+#| output: asis
+if HAS_VOLUME:
+    print("{{< pagebreak >}}\n\n# Volume fill\n\n"
+          "Volume fill works in the same `step_g` passes as the legacy ramp, but against the "
+          "bowl alone, ignoring the weight floor: it tops up while the next whole pass still "
+          "fits the fit target, and when a "
+          "bowl is over as written it steps bases and toppings down (never proteins, never "
+          "below a set share of their portion) until it fits.\n")
+else:
+    print("_This CSV predates Volume fill; re-run the full report to include it._\n")
+```
 
 ```{python}
-fill_cols = ["legacy_fill_pct", "adaptive_fill_pct"]
+if HAS_VOLUME:
+    counts = df["volume_status"].value_counts().reindex(VOLUME_ORDER)
+    fig, ax = plt.subplots(figsize=(8, 0.5 * len(counts) + 1))
+    bars = ax.barh(counts.index, counts.values,
+                   color=[VOLUME_COLORS[v] for v in counts.index], height=0.6)
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.xaxis.set_major_formatter(thousands)
+    ax.bar_label(bars, labels=[f"{n:,}  ({n / len(df):.1%})" for n in counts.values],
+                 padding=4, color=INK_2, fontsize=9)
+    ax.set_xlim(0, counts.max() * 1.25)
+    ax.set_xlabel("rows (bowl configurations)")
+    ax.set_title(f"Volume fill outcome across all {len(df):,} configurations")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{python}
+if HAS_VOLUME:
+    xt = (pd.crosstab(df["legacy_verdict"], df["volume_status"])
+            .reindex(index=VERDICT_ORDER, columns=VOLUME_ORDER, fill_value=0))
+    row_share = xt.div(xt.sum(axis=1), axis=0)
+    fig, ax = plt.subplots(figsize=(10, 0.8 * len(xt) + 0.8))
+    im = ax.imshow(row_share.values, cmap="Blues", vmin=0, vmax=1, aspect="auto")
+    ax.set_xticks(range(len(xt.columns)), [textwrap.fill(c, 14) for c in xt.columns])
+    ax.set_yticks(range(len(xt.index)), xt.index)
+    ax.grid(False)
+    for s in ax.spines.values():
+        s.set_visible(False)
+    for i in range(xt.shape[0]):
+        for j in range(xt.shape[1]):
+            share = row_share.iat[i, j]
+            ax.text(j, i, f"{xt.iat[i, j]:,}\n{share:.0%}", ha="center", va="center",
+                    fontsize=8, color="white" if share > 0.55 else INK)
+    ax.set_xlabel("volume fill outcome")
+    ax.set_ylabel("legacy verdict")
+    ax.set_title("Legacy verdict → volume fill outcome (share of each legacy row)")
+    fig.colorbar(im, ax=ax, format=mticker.PercentFormatter(1.0), shrink=0.85)
+    plt.tight_layout()
+    plt.show()
+```
+
+```{python}
+if HAS_VOLUME:
+    stepped = df[df["volume_passes"] < 0]
+    if len(stepped):
+        fig, ax = plt.subplots(figsize=(9, 3))
+        ax.hist(-stepped["volume_passes"], bins=range(1, int(-stepped["volume_passes"].min()) + 2),
+                color="#2a78d6", edgecolor=SURFACE, linewidth=0.5)
+        ax.set_xlabel("passes stepped down (each base and topping loses one step_g per pass)")
+        ax.yaxis.set_major_formatter(thousands)
+        ax.set_title(f"How far over-as-written bowls are stepped down "
+                     f"({len(stepped):,} rows, median {(-stepped['volume_passes']).median():.0f} passes)")
+        plt.tight_layout()
+        plt.show()
+```
+
+{{< pagebreak >}}
+
+# Fill % distribution by model
+
+One panel per model on a shared x-axis (not overlaid) so each distribution reads on
+its own. Legacy and Volume fill are a share of the whole bowl, sauce cups included;
+Adaptive is a share of the food room.
+
+```{python}
+panels = [("legacy_fill_pct", "Legacy", "#2a78d6"), ("adaptive_fill_pct", "Adaptive", "#eb6834")]
+if HAS_VOLUME:
+    panels.append(("volume_fill_pct", "Volume fill", "#0ca30c"))
+fill_cols = [c for c, _, _ in panels]
 lo = int(np.floor(df[fill_cols].min().min() / 10) * 10)
 hi = int(np.ceil(df[fill_cols].max().max() / 10) * 10) + 2
 bins = np.arange(lo, hi, 2)
 
-fig, axes = plt.subplots(2, 1, figsize=(9, 5), sharex=True, sharey=True)
-for ax, col, label, color in [
-    (axes[0], "legacy_fill_pct", "Legacy", "#2a78d6"),
-    (axes[1], "adaptive_fill_pct", "Adaptive", "#eb6834"),
-]:
+fig, axes = plt.subplots(len(panels), 1, figsize=(9, 2.5 * len(panels)), sharex=True,
+                         sharey=True)
+for ax, (col, label, color) in zip(axes, panels):
     ax.hist(df[col], bins=bins, color=color, edgecolor=SURFACE, linewidth=0.5)
     med = df[col].median()
     ax.axvline(med, color=INK, linewidth=1, linestyle="--")
@@ -265,30 +366,67 @@ for ax, col, label, color in [
     ax.set_title(f"{label} fill %", fontsize=10)
     ax.yaxis.set_major_formatter(thousands)
     ax.grid(axis="x", visible=False)
-axes[1].text(101, 0.92, "100% (bowl full)", transform=axes[1].get_xaxis_transform(),
-             fontsize=8, color=INK_2)
-axes[1].xaxis.set_major_formatter(mticker.PercentFormatter(100))
-axes[1].set_xlabel("fill % of bowl")
+axes[-1].text(101, 0.92, "100% (bowl full)", transform=axes[-1].get_xaxis_transform(),
+              fontsize=8, color=INK_2)
+axes[-1].xaxis.set_major_formatter(mticker.PercentFormatter(100))
+axes[-1].set_xlabel("fill % of bowl")
 fig.supylabel("rows", color=INK_2, fontsize=10)
 plt.tight_layout()
 plt.show()
+```
+
+```{python}
+#| output: asis
+if HAS_ODDS:
+    print("{{< pagebreak >}}\n\n# Chance of overfilling\n\n"
+          "Each row carries the chance a real bowl overfills the food room, from ingredient "
+          "scatter, curve uncertainty and dispense variation. The share of configurations "
+          "more likely than not to overfill, and the typical odds, per model:\n")
+```
+
+```{python}
+if HAS_ODDS:
+    models = [("Legacy", "legacy_p_over_room"), ("Adaptive", "adaptive_p_over_room")]
+    if HAS_VOLUME:
+        models.append(("Volume fill", "volume_p_over_room"))
+    odds = pd.DataFrame({
+        "model": [m for m, _ in models],
+        "rows ≥ 50% likely to overfill": [int((df[c] >= 0.5).sum()) for _, c in models],
+        "share": [f"{(df[c] >= 0.5).mean():.1%}" for _, c in models],
+        "mean P(overfill)": [f"{df[c].mean():.0%}" for _, c in models],
+        "median P(overfill)": [f"{df[c].median():.0%}" for _, c in models],
+    })
+    display(md_table(odds, index=False))
 ```
 
 {{< pagebreak >}}
 
 # Verdict by base
 
-`bases` is a `|`-separated list. Each base is classed as a **green** (Romaine,
-Kale) or a **grain** (White Rice, Mexican Rice, Brown Rice and Lentils). A
-2-base bowl is `green`, `grain`, or `green + grain` when it mixes one of each.
+`bases` is a `|`-separated list. Each base is classed by the words in its name,
+so renamed bases (the brand refresh) are classed without editing this report: a
+**green** names romaine, kale, spinach, lettuce, arugula or greens; a **grain**
+names rice, couscous, farro, quinoa, orzo, lentils or grains. A 2-base bowl is
+`green`, `grain`, or `green + grain` when it mixes one of each. A base matching
+neither is classed `other` and listed below, rather than stopping the report.
 
 ```{python}
-GREENS = {"Romaine Base", "Massaged Kale"}
-GRAINS = {"White Rice", "Mexican Rice", "Brown Rice and Lentils"}
+import re
+
+GREEN_WORDS = r"romaine|kale|spinach|lettuce|arugula|greens"
+GRAIN_WORDS = r"rice|couscous|farro|quinoa|orzo|lentil|grain"
+
+
+def base_kind(base):
+    if re.search(GREEN_WORDS, base, re.IGNORECASE):
+        return "green"
+    if re.search(GRAIN_WORDS, base, re.IGNORECASE):
+        return "grain"
+    return "other"
 
 
 def base_type(bases):
-    kinds = {"green" if b in GREENS else "grain" if b in GRAINS else "other" for b in bases}
+    kinds = {base_kind(b) for b in bases}
     return " + ".join(sorted(kinds, key=["green", "grain", "other"].index))
 
 
@@ -297,9 +435,13 @@ df["base_count"] = base_lists.str.len()
 df["base_type"] = base_lists.map(base_type)
 df["base_group"] = (df["base_count"].map(lambda n: f"{n} base" + ("s" if n > 1 else ""))
                     + " · " + df["base_type"])
-unknown = sorted({b for bl in base_lists for b in bl} - GREENS - GRAINS)
-assert not unknown, f"classify these bases as GREENS or GRAINS: {unknown}"
+all_bases = sorted({b for bl in base_lists for b in bl})
 
+md_table(pd.DataFrame({"base": all_bases, "class": [base_kind(b) for b in all_bases]}),
+         index=False)
+```
+
+```{python}
 md_table(df.groupby(["base_count", "base_type"]).size().rename("rows").reset_index(),
          index=False)
 ```

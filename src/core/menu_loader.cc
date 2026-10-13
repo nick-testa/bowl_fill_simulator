@@ -270,6 +270,11 @@ QStringList Menu::sauces_in(const Recipe &recipe) const
 QStringList Menu::names_of(Kind kind) const
 {
     QStringList out;
+    if (!order.isEmpty()) {
+        for (const QString &name : order)
+            if (const Ingredient *ing = find(name); ing && ing->kind == kind) out << name;
+        return out;
+    }
     for (const auto &[name, ing] : ingredients)
         if (ing.kind == kind) out << name;
     return out;

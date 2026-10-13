@@ -46,6 +46,19 @@ QString adaptive_tag(const RecipeAudit &r)
     return {};
 }
 
+QString volume_tag(const RecipeAudit &r)
+{
+    if (r.customer_built) return "\u2014";
+    switch (r.volume.status) {
+    case VolumeFillStatus::FilledToLimit:
+        return r.volume.passes_up > 0 ? "filled to limit" : "fits as written";
+    case VolumeFillStatus::AtMax: return "at max, under";
+    case VolumeFillStatus::SteppedDown: return "stepped down";
+    case VolumeFillStatus::StillOver: return "still over";
+    }
+    return {};
+}
+
 QColor severity_colour(const RecipeAudit &r)
 {
     const theme::Palette &pal = theme::palette();
@@ -71,7 +84,7 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
 {
     setWindowTitle(QString("Recipe feasibility — %1").arg(audit_.brand));
     setStyleSheet(theme::stylesheet());
-    resize(1100, 620);
+    resize(1320, 620);
 
     auto *v = new QVBoxLayout(this);
     v->setContentsMargins(18, 16, 18, 16);
@@ -88,17 +101,18 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     v->addWidget(note);
 
     table_ = new QTableWidget(this);
-    table_->setColumnCount(9);
+    table_->setColumnCount(11);
     table_->setHorizontalHeaderLabels(
         {"Recipe", "Kind", "Pins", "As written (g)",
          QString("As written (%1)").arg(units::suffix()), "Dynamic portioning", "Dynamic P(over)",
-         "Adaptive fill", "Adaptive P(over)"});
+         "Adaptive fill", "Adaptive P(over)", "Volume fill", "Volume P(over)"});
     if (QTableWidgetItem *h = table_->horizontalHeaderItem(6))
         h->setToolTip("Chance a real bowl overfills the food room (the bowl less cups and "
                       "chunk clearance), from ingredient scatter, curve uncertainty and "
                       "dispense variation.");
-    if (QTableWidgetItem *h = table_->horizontalHeaderItem(8))
-        h->setToolTip(table_->horizontalHeaderItem(6)->toolTip());
+    for (int c : {8, 10})
+        if (QTableWidgetItem *h = table_->horizontalHeaderItem(c))
+            h->setToolTip(table_->horizontalHeaderItem(6)->toolTip());
     table_->verticalHeader()->setVisible(false);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -197,6 +211,8 @@ void ReportDialog::populate()
         table_->setItem(i, 6, odds(r.legacy.fill));
         table_->setItem(i, 7, cell(adaptive_tag(r), fg));
         table_->setItem(i, 8, odds(r.adaptive.fill));
+        table_->setItem(i, 9, cell(volume_tag(r), fg));
+        table_->setItem(i, 10, odds(r.volume.sim.fill));
         for (int c = 0; c < table_->columnCount(); ++c) table_->item(i, c)->setFont(row_font);
     }
     table_->resizeColumnsToContents();
@@ -217,8 +233,10 @@ void ReportDialog::show_detail(int row)
     html += QString("<span style='color:%1'>Dynamic portioning — %2</span><br>")
                 .arg(pal.ink.name(), r.legacy_summary().toHtmlEscaped());
     if (!r.customer_built)
-        html += QString("<span style='color:%1'>Adaptive fill — %2</span>")
-                    .arg(pal.ink_soft.name(), r.adaptive_summary().toHtmlEscaped());
+        html += QString("<span style='color:%1'>Adaptive fill — %2</span><br>"
+                        "<span style='color:%1'>Volume fill — %3</span>")
+                    .arg(pal.ink_soft.name(), r.adaptive_summary().toHtmlEscaped(),
+                         r.volume_summary().toHtmlEscaped());
     if (!r.customer_built && !r.complete_bowl)
         html += QString("<br><span style='color:%1'>Pins only %2 ingredient%3, so this is "
                         "a modifier rather than a finished bowl.</span>")

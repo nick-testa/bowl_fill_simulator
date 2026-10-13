@@ -8,6 +8,7 @@
 #include "core/measurements.hh"
 #include "core/curves.hh"
 #include "core/feasibility.hh"
+#include "core/manual_entry.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 #include "core/sweep.hh"
@@ -693,6 +694,10 @@ int main()
         expect_true("partial shortfalls stay out of the brand's failure count",
                     cow.partial == 7 && cow.legacy_short == 0 && cow.adaptive_short == 0);
 
+        bool volume_ran = true;
+        for (const RecipeAudit &r : a.rows)
+            if (!r.customer_built && r.volume.sim.frames.empty()) volume_ran = false;
+        expect_true("the audit runs Volume Fill on every recipe", volume_ran);
         const QStringList lines = a.to_csv().split('\n', Qt::SkipEmptyParts);
         expect_true("CSV carries a header and one row per recipe",
                     lines.size() == static_cast<int>(a.rows.size()) + 1);
@@ -985,6 +990,11 @@ int main()
         expect_near("verdicts partition the rows",
                     totals.at(0).legacy_fits + totals.at(0).legacy_over
                         + totals.at(0).legacy_short,
+                    totals.at(0).rows, 0.01);
+        expect_true("the sweep carries Volume Fill", lines.first().contains("volume_status")
+                                                         && lines.first().endsWith("volume_p_over_rim"));
+        expect_near("Volume Fill outcomes partition the rows",
+                    totals.at(0).volume_fits + totals.at(0).volume_short + totals.at(0).volume_over,
                     totals.at(0).rows, 0.01);
 
         // A recipe pin must survive into the swept bowl, and must not leak into a bowl
@@ -1422,6 +1432,145 @@ int main()
         expect_near("a stored upload loads with the rest", after.observations().size(), 5, 0.01);
         root.removeRecursively();
         outside.removeRecursively();
+    }
+
+    std::printf("\nVolume Fill: step_g passes against the bowl\n");
+    {
+        // Flat-rate items keep the arithmetic in view: 1 oz per 25 g.
+        auto item = [](Kind kind, double start, double step, double max) {
+            BowlItem it;
+            it.kind = kind;
+            it.start_g = start;
+            it.step_g = step;
+            it.max_g = max;
+            it.flat_oz_per_100g = 4.0;
+            return it;
+        };
+        SimSettings s;
+        s.bowl_capacity_oz = 32.0;
+        s.sauce.cups = 0;   // a 32 oz food room
+        VolumeFillSettings vf;
+
+        // Over as written: 850 g is 34 oz. Rice and topping come down 5 g a pass each
+        // (0.4 oz a pass) until it fits: five passes reach 800 g, exactly 32 oz. The
+        // protein never moves.
+        const std::vector<BowlItem> over = {item(Kind::Base, 500, 5, 600),
+                                            item(Kind::Protein, 150, 0.5, 160),
+                                            item(Kind::Topping, 200, 5, 250)};
+        const VolumeFillResult down = volume_fill(over, s, vf);
+        expect_eq("an overfull bowl is stepped down", to_string(down.status), "stepped down to fit");
+        expect_near("until it fits", down.sim.last().ounces, 32.0, 1e-9);
+        expect_near("in whole passes", down.passes_down, 5, 0);
+        expect_near("the protein keeps its portion", down.sim.items[1].final_g, 150, 1e-9);
+        expect_near("the base steps by its step_g", down.sim.items[0].final_g, 475, 1e-9);
+
+        // Nothing goes below its share of the recipe portion: at 70%, 350 + 150 + 140 g
+        // is 25.6 oz, still over a 20 oz limit.
+        VolumeFillSettings tight;
+        tight.fit_share = 20.0 / 32.0;
+        const VolumeFillResult stuck = volume_fill(over, s, tight);
+        expect_eq("past the lowest portions it is flagged", to_string(stuck.status),
+                  "still over at the lowest");
+        expect_near("bases stop at 70% of their portion", stuck.sim.items[0].final_g, 350, 1e-9);
+        expect_near("toppings likewise", stuck.sim.items[2].final_g, 140, 1e-9);
+
+        // Fits as written: topped up a pass at a time, proteins too, but never into
+        // overfill. 700 g is 28 oz; each pass adds 10.5 g (0.42 oz), so nine passes
+        // reach 31.78 oz and the tenth, which would pass 32, is not taken.
+        const std::vector<BowlItem> under = {item(Kind::Base, 400, 5, 600),
+                                             item(Kind::Protein, 150, 0.5, 200),
+                                             item(Kind::Topping, 150, 5, 250)};
+        const VolumeFillResult up = volume_fill(under, s, vf);
+        expect_eq("a bowl with room is filled to the limit", to_string(up.status),
+                  "filled to the limit");
+        expect_near("one pass short of the limit", up.passes_up, 9, 0);
+        expect_true("and within it", up.sim.last().ounces <= 32.0 + 1e-9
+                                         && up.sim.last().ounces + 0.42 > 32.0);
+        expect_true("proteins are raised with the rest", up.sim.items[1].final_g > 150);
+
+        // The weight floor plays no part: a low floor, a high one, or none at all give
+        // the same bowl.
+        bool same = true;
+        for (double floor : {0.0, 720.0, 900.0, 2000.0}) {
+            s.floor_g = floor;
+            const VolumeFillResult f = volume_fill(under, s, vf);
+            same = same && f.status == up.status && f.passes_up == up.passes_up
+                   && std::fabs(f.sim.last().grams - up.sim.last().grams) < 1e-9
+                   && f.sim.settings.floor_g == 0;
+        }
+        expect_true("the weight floor makes no difference", same);
+        s.floor_g = 900;
+        expect_true("nor does it decide stepping down",
+                    volume_fill(over, s, vf).passes_down == down.passes_down);
+        s.floor_g = 0;
+
+        VolumeFillSettings headroom;
+        headroom.fit_share = 0.9;
+        expect_true("a lower fit target stops sooner",
+                    volume_fill(under, s, headroom).sim.last().ounces <= 0.9 * 32 + 1e-9);
+
+        // 790 g is 31.6 oz: one more pass would reach 32.02, so it stays as written.
+        const VolumeFillResult snug = volume_fill({item(Kind::Base, 490, 5, 600),
+                                                   item(Kind::Protein, 150, 0.5, 200),
+                                                   item(Kind::Topping, 150, 5, 250)},
+                                                  s, vf);
+        expect_eq("a snug bowl is already at the limit", to_string(snug.status),
+                  "filled to the limit");
+        expect_near("and is dispensed as written", snug.sim.last().grams, 790, 1e-9);
+
+        // Low maxes: 240 g at most is 9.6 oz, so everything reaches its max under the limit.
+        const VolumeFillResult small = volume_fill({item(Kind::Base, 100, 5, 120),
+                                                    item(Kind::Protein, 50, 0.5, 60),
+                                                    item(Kind::Topping, 50, 5, 60)},
+                                                   s, vf);
+        expect_eq("a bowl that cannot reach the limit ends at max", to_string(small.status),
+                  "at max under the limit");
+        expect_near("every ingredient at its max", small.sim.last().grams, 240, 1e-9);
+    }
+
+    std::printf("\nManual Entry\n");
+    {
+        const QStringList catalog = ingredient_catalog(loaded.menus);
+        expect_true("the catalogue lists ingredients and sauces from every brand",
+                    catalog.contains("Romaine Base") && catalog.contains("Ranch"));
+        expect_eq("a sauce is catalogued as one", catalog_kind(loaded.menus, "Ranch"), "sauce");
+        expect_eq("a base is catalogued as one", catalog_kind(loaded.menus, "Romaine Base"), "base");
+
+        const QString protein = farmstand->names_of(Kind::Protein).front();
+        ManualEntry entry;
+        entry.stations[0] = {"Romaine Base", "base"};
+        entry.stations[1] = {protein, "topping"};          // served as a topping here
+        entry.stations[2] = {"Ranch", "sauce"};
+        entry.stations[3] = {farmstand->names_of(Kind::Protein).back(), "protein"};
+        entry.stations[4] = {"Dragonfruit Salsa", "topping"};   // no brand has it
+        entry.stations[5] = {"Romaine Base", "base"};       // a second station, same thing
+        entry.sauces = {"Ranch", "Smoked Honey"};
+        entry.floor_g = 600;
+        const Menu manual = manual_entry_menu(loaded.menus, entry);
+
+        expect_eq("Manual Entry is its own brand", manual.brand, kManualEntryBrand);
+        expect_near("one ingredient per distinct dispensing station",
+                    manual.ingredients.size(), 4, 0.01);
+        expect_eq("ingredients are offered in station order",
+                  manual.names_of(Kind::Topping).join("|"), protein + "|Dragonfruit Salsa");
+        expect_true("a station's kind overrides the brand's",
+                    manual.find(protein) && manual.find(protein)->kind == Kind::Topping);
+        expect_near("a known ingredient keeps its brand's portion",
+                    manual.find("Romaine Base")->full_portion(),
+                    farmstand->find("Romaine Base")->full_portion(), 1e-9);
+        const Ingredient *written = manual.find("Dragonfruit Salsa");
+        expect_true("a written-in ingredient borrows typical settings, as an estimate",
+                    written && written->source == WeightSource::Class
+                        && written->full_portion() > 0 && written->step_increment_g > 0);
+        expect_eq("sauce stations and listed sauces are the sauces, once each",
+                  manual.sauces.join("|"), "Ranch|Smoked Honey");
+        expect_true("the floor applies to every bowl",
+                    manual.floor_for({"Romaine Base"})
+                        && manual.floor_for({"Romaine Base"})->minimum_product_weight_g == 600);
+        expect_true("the brand can be swept", plan_sweep(manual, SweepLimits{}).rows() > 0);
+        expect_true("an empty entry is empty", ManualEntry{}.empty() && !entry.empty());
+        expect_true("an empty entry still builds",
+                    manual_entry_menu(loaded.menus, ManualEntry{}).ingredients.empty());
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

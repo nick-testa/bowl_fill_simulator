@@ -263,7 +263,7 @@ void SweepDialog::run()
             progress.setValue(total > 0 ? int(done * 1000 / total) : 1000);
             return !progress.wasCanceled();
         },
-        &totals);
+        &totals, ctx_.volume);
     out.flush();
     file.close();
     progress.close();
@@ -284,6 +284,9 @@ void SweepDialog::run()
         all.adaptive_over += t.adaptive_over;
         all.adaptive_over_bowl += t.adaptive_over_bowl;
         all.adaptive_short += t.adaptive_short;
+        all.volume_fits += t.volume_fits;
+        all.volume_short += t.volume_short;
+        all.volume_over += t.volume_over;
     }
     QString summary =
         QString("%1 bowls in %2.\n\nUnder dynamic portioning: %3 come out right, %4 go over "
@@ -296,6 +299,13 @@ void SweepDialog::run()
             .arg(loc.toString(all.adaptive_over_bowl),
                  loc.toString(std::max<qint64>(0, all.adaptive_over - all.adaptive_over_bowl)),
                  loc.toString(all.adaptive_short));
+    summary += QString("Under Volume fill (within %1% of the food room, stepping down to %2%): "
+                       "%3 fit, %4 stay under the limit with everything at its max, %5 are still over "
+                       "with bases and toppings stepped down as far as allowed.\n\n")
+                   .arg(std::round(ctx_.volume.fit_share * 100))
+                   .arg(std::round(ctx_.volume.min_share * 100))
+                   .arg(loc.toString(all.volume_fits), loc.toString(all.volume_short),
+                        loc.toString(all.volume_over));
     for (size_t i = 0; i < totals.size() && i < menus.size(); ++i)
         summary += QString("%1  %2% of bowls come out right\n")
                        .arg(menus[i]->brand, -20)

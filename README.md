@@ -89,6 +89,20 @@ it borrows the modal weight of its class within its family (greens never borrow 
 grains), and the UI marks that row so an inferred number is never mistaken for
 configuration.
 
+### Manual Entry
+
+The **Manual Entry** brand, last in the brand list, is built from what is loaded on
+the robot rather than from a menu dump. Set it under **Settings → Robot stations**:
+19 ordered stations, each holding one ingredient and what it serves as (base,
+protein, topping or sauce), plus the sauces served in cups and one weight floor for
+every bowl (used by dynamic portioning; Volume fill ignores floors). Pick any name a
+brand uses, or type one in.
+
+A known ingredient takes its step, max and portion from a brand that ramps it. A
+written-in one borrows the median settings for its kind and shows as an estimate.
+The stations are kept in the app's settings (`manual/*`), so `--audit "Manual Entry"`
+and `--sweep "Manual Entry"` use the same list.
+
 ## Adding mass-to-volume measurements
 
 **Upload CSV…** in the left column, with the **?** beside it for the format. Rows
@@ -154,10 +168,16 @@ including metric input and malformed input — plus the Adaptive solver: the 4:1
 identity, all three Day-in-the-Life scenarios, tolerance and clamp bounds,
 monotonicity, and that solving for volume ignores price.
 
-## Two dispense models
+## Dispense models
 
-The **Dynamic portioning / Adaptive fill** switch at the top of the window chooses
-which algorithm runs. They are different shapes of thing, not two tunings of one.
+The **Dynamic portioning / Adaptive fill / Volume fill** switch at the top of the
+window chooses which algorithm runs.
+
+**Volume fill** is dynamic portioning steered by volume alone: in the same `step_g`
+passes, and ignoring the weight floor, it tops up while the next whole pass fits, and
+steps bases and toppings down (never proteins, never below a set share of their
+portion) when a bowl is over as written. "Fits" is a set share of the food room.
+The brand report, the full sweep CSV and `menu_report.qmd` all carry it. They are different shapes of thing, not two tunings of one.
 
 For a plain-language explanation aimed at non-experts, with a worked example, see
 [docs/HOW_FILLING_WORKS.md](docs/HOW_FILLING_WORKS.md).

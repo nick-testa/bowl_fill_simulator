@@ -13,8 +13,9 @@ namespace bowlfill {
 ///
 /// Picks a few names from a fixed list: what is picked shows as chips, each with a
 /// remove button, followed by an "+ Add" button whose menu offers only what is not
-/// yet picked. The list is the brand's menu, so nothing outside it can be chosen, and
-/// once `limit` names are picked the button is disabled.
+/// yet picked. The list is the brand's menu, so nothing outside it can be chosen
+/// unless write-ins are allowed, and once `limit` names are picked the button is
+/// disabled.
 ///
 class ChipPicker : public QWidget {
     Q_OBJECT
@@ -30,6 +31,8 @@ public:
     QStringList picked() const { return picked_; }
     /// At most this many picks (0 for no limit).
     void set_limit(int limit);
+    /// Also offer "Other…" in the add menu, to type a name the list does not have.
+    void set_write_in(bool allowed);
     /// Optional colour swatch for each name, shown on its chip.
     void set_swatches(std::function<QColor(const QString &)> swatch);
 
@@ -42,6 +45,7 @@ private:
     QString noun_;
     QStringList options_, picked_;
     int limit_ = 0;
+    bool write_in_ = false;
     std::function<QColor(const QString &)> swatch_;
     QLayout *flow_ = nullptr;
 };

@@ -38,6 +38,7 @@ endif()
 # linkable from a headless tool as well as the GUI.
 add_library(bowlfill_core STATIC
   src/core/menu_loader.cc
+  src/core/manual_entry.cc
   src/core/curves.cc
   src/core/simulator.cc
   src/core/adaptive.cc

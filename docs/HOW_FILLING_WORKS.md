@@ -134,6 +134,30 @@ now.)*
 
 ---
 
+## Method 3: Volume fill
+
+*In the app: **Volume fill**, at the top of the window.*
+
+Dynamic portioning steered by volume instead of weight. It works in the same small
+steps (`step_g`) the robot already uses, but it ignores the weight floor entirely
+and only asks whether the bowl fits. It recommends the same bowl whether or not a
+floor is set:
+
+- **If the bowl fits as written**, it tops everything up, proteins included, a step
+  at a time, for as long as the next whole step still fits. It stops one step short
+  of the limit, or when everything is at its maximum.
+- **If the bowl is over as written**, it steps the bases and toppings *down* by
+  their step sizes, a step at a time, until it fits. **Proteins are never stepped
+  down**, and nothing goes below a set share of its recipe portion (70% by
+  default). If it still doesn't fit at that point, the bowl is flagged.
+
+"Fits" means within a set share of the food room (100% by default). Because real
+bowls run a little heavier than their targets and vary bowl to bowl, a bowl that
+only just fits on paper still overfills fairly often. Lowering the fit target
+(say to 90%) leaves headroom; the overfill odds under the bowl show the effect.
+
+---
+
 ## Side by side
 
 | | Dynamic portioning | Adaptive fill |

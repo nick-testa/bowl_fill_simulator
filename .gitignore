@@ -2,3 +2,6 @@
 # ignore all csv reports/files
 reports/
 build/
+
+/.quarto/
+**/*.quarto_ipynb

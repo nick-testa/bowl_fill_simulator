@@ -21,6 +21,7 @@ struct SweepContext {
     Method method = Method::Robot;
     SimSettings legacy;
     AdaptiveSettings adaptive;
+    VolumeFillSettings volume;
     const CostTable *costs = nullptr;
 };
 

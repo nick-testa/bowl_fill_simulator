@@ -2,6 +2,8 @@
 #include "theme.hh"
 
 #include <QHBoxLayout>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QLabel>
 #include <QLayout>
 #include <QMenu>
@@ -108,6 +110,12 @@ void ChipPicker::set_limit(int limit)
     rebuild();
 }
 
+void ChipPicker::set_write_in(bool allowed)
+{
+    write_in_ = allowed;
+    rebuild();
+}
+
 void ChipPicker::set_swatches(std::function<QColor(const QString &)> swatch)
 {
     swatch_ = std::move(swatch);
@@ -117,7 +125,12 @@ void ChipPicker::set_swatches(std::function<QColor(const QString &)> swatch)
 void ChipPicker::rebuild()
 {
     while (QLayoutItem *item = flow_->takeAt(0)) {
-        if (QWidget *w = item->widget()) w->deleteLater();
+        // Hidden at once: deleteLater() leaves the old chip drawn until the event
+        // loop gets round to it, on top of the new ones.
+        if (QWidget *w = item->widget()) {
+            w->hide();
+            w->deleteLater();
+        }
         delete item;
     }
     for (const QString &name : picked_) {
@@ -156,7 +169,7 @@ void ChipPicker::rebuild()
     add->setObjectName("chipAdd");
     add->setCursor(Qt::PointingHandCursor);
     const bool full = limit_ > 0 && picked_.size() >= limit_;
-    add->setEnabled(!available.isEmpty() && !full);
+    add->setEnabled((!available.isEmpty() || write_in_) && !full);
     add->setToolTip(options_.isEmpty() ? QString("This menu has no %1s.").arg(noun_)
                     : full ? QString("At most %1 %2%3.").arg(limit_).arg(noun_)
                                  .arg(limit_ == 1 ? "" : "s")
@@ -167,6 +180,23 @@ void ChipPicker::rebuild()
         for (const QString &name : available) {
             QAction *a = menu.addAction(name);
             connect(a, &QAction::triggered, this, [this, name] {
+                picked_ << name;
+                rebuild();
+                emit changed(picked_);
+            });
+        }
+        if (write_in_) {
+            if (!available.isEmpty()) menu.addSeparator();
+            QAction *other = menu.addAction(QString("Other %1…").arg(noun_));
+            connect(other, &QAction::triggered, this, [this] {
+                bool ok = false;
+                const QString name =
+                    QInputDialog::getText(this, QString("Add a %1").arg(noun_),
+                                          QString("Name of the %1:").arg(noun_),
+                                          QLineEdit::Normal, {}, &ok)
+                        .trimmed();
+                if (!ok || name.isEmpty() || picked_.contains(name)) return;
+                if (!options_.contains(name)) options_ << name;
                 picked_ << name;
                 rebuild();
                 emit changed(picked_);

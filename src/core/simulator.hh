@@ -317,6 +317,47 @@ struct SimResult {
 ///
 SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings);
 
+/// The bowl's volume with each item at `grams` (one per item): what simulate() and
+/// volume_fill() both measure, compression included when the settings ask for it.
+Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &grams,
+                 const SimSettings &settings);
+
+///
+/// Volume Fill: the dynamic ramp made to respect the bowl. It works in the same
+/// step_g passes the robot does, but against volume alone; the weight floor plays
+/// no part, so it recommends the same bowl whether or not one is set:
+///   - a bowl that fits as written is topped up, every ingredient (proteins
+///     included) taking a step per pass toward its max, while the whole next pass
+///     still fits; it stops one pass short rather than overfill;
+///   - a bowl over as written has its bases and toppings stepped down, a step per
+///     pass, until it fits. Proteins are never stepped down, and nothing goes below
+///     `min_share` of its recipe portion. An ingredient with no step_g is fixed.
+/// "Fits" means within `fit_share` of the food room.
+///
+struct VolumeFillSettings {
+    double fit_share = 1.0;   ///< of the food room
+    double min_share = 0.7;   ///< of each base's and topping's recipe portion
+};
+
+enum class VolumeFillStatus {
+    FilledToLimit,    ///< topped up until the next pass would not fit
+    AtMax,            ///< everything at its max and still under the limit
+    SteppedDown,      ///< over as written, stepped down until it fits
+    StillOver,        ///< over even with bases and toppings at their lowest
+};
+
+QString to_string(VolumeFillStatus s);
+
+struct VolumeFillResult {
+    SimResult sim;            ///< frames run as-written, then each pass taken
+    VolumeFillStatus status = VolumeFillStatus::FilledToLimit;
+    double limit_oz = 0.0;    ///< the volume it had to fit
+    int passes_up = 0, passes_down = 0;
+};
+
+VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &settings,
+                             const VolumeFillSettings &vf);
+
 ///
 /// apply_proportional_reduction_to_product: halve each base, then floor at its
 /// configured minimum. Only fires when two bases are present.

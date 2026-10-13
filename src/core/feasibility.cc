@@ -127,6 +127,36 @@ QString RecipeAudit::adaptive_summary() const
     return {};
 }
 
+QString RecipeAudit::volume_summary() const
+{
+    if (customer_built) return "\u2014";
+    if (volume.sim.frames.empty()) return "Nothing to dispense.";
+    const double last = volume.sim.last().ounces;
+    switch (volume.status) {
+    case VolumeFillStatus::FilledToLimit:
+        return volume.passes_up == 0
+                   ? QString("Fits as written at %1 oz; one more pass would not fit.")
+                         .arg(last, 0, 'f', 1)
+                   : QString("Topped up %1 pass%2 to %3 oz, %4 g; the next pass would not "
+                             "fit.")
+                         .arg(volume.passes_up).arg(volume.passes_up == 1 ? "" : "es")
+                         .arg(last, 0, 'f', 1).arg(std::round(volume.sim.last().grams));
+    case VolumeFillStatus::AtMax:
+        return QString("Everything at its max at %1 oz, %2 oz under the limit.")
+            .arg(last, 0, 'f', 1).arg(volume.limit_oz - last, 0, 'f', 1);
+    case VolumeFillStatus::SteppedDown:
+        return QString("Over as written at %1 oz; %2 pass%3 down bring it to %4 oz, proteins "
+                       "untouched.")
+            .arg(volume.sim.first().ounces, 0, 'f', 1)
+            .arg(volume.passes_down).arg(volume.passes_down == 1 ? "" : "es")
+            .arg(last, 0, 'f', 1);
+    case VolumeFillStatus::StillOver:
+        return QString("Still over at %1 oz with bases and toppings stepped down as far as "
+                       "allowed; the proteins or the recipe have to change.").arg(last, 0, 'f', 1);
+    }
+    return {};
+}
+
 int RecipeAudit::severity() const
 {
     if (customer_built) return 0;
@@ -179,6 +209,10 @@ QString BrandAudit::headline() const
     if (adaptive_short > 0)
         head += QString("%1 cannot reach the fill target on the ingredients specified. ")
                     .arg(adaptive_short);
+    if (legacy_over > 0)
+        head += volume_over > 0
+                    ? QString("Volume fill leaves %1 over even stepped down. ").arg(volume_over)
+                    : QString("Volume fill brings every overfill back inside the bowl. ");
     if (partial > 0)
         head += QString("%1 template%2 pin only a protein or two, so %3 judged as a "
                         "modifier rather than a bowl.")
@@ -208,7 +242,10 @@ QString BrandAudit::to_csv() const
         // The bowl as a distribution: appended so existing columns keep their places.
         "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,legacy_p90_ml,"
         "adaptive_p_over_room,adaptive_p_over_rim,adaptive_p10_ml,adaptive_median_ml,"
-        "adaptive_p90_ml\n";
+        "adaptive_p90_ml,"
+        // Volume Fill, likewise appended.
+        "volume_status,volume_final_oz,volume_fill_pct,volume_passes,volume_detail,"
+        "volume_p_over_room,volume_p_over_rim,volume_p10_ml,volume_median_ml,volume_p90_ml\n";
     for (const RecipeAudit &r : rows) {
         const double cap = r.legacy.settings.bowl_capacity_oz;
         const double sauce = r.legacy.settings.overhead_oz();
@@ -235,14 +272,28 @@ QString BrandAudit::to_csv() const
                    .arg(csv_escape(r.adaptive_summary()));
         out.chop(1);   // the newline; the distribution columns follow
         out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill) + ','
-               + fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill) + '\n';
+               + fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill);
+        // Volume Fill: status, where it ends, how many passes (+ up, - down), why, odds.
+        const bool vf = !r.customer_built && !r.volume.sim.frames.empty();
+        const double vf_oz = vf ? r.volume.sim.last().ounces : 0.0;
+        const double vf_sauce = vf ? r.volume.sim.settings.overhead_oz() : 0.0;
+        out += QString(",%1,%2,%3,%4,%5,")
+                   .arg(vf ? csv_escape(to_string(r.volume.status)) : QString("n/a"))
+                   .arg(vf ? QString::number(vf_oz, 'f', 2) : QString("n/a"))
+                   .arg(vf && cap > 0 ? QString::number((vf_oz + vf_sauce) / cap * 100, 'f', 0)
+                                      : QString("n/a"))
+                   .arg(vf ? QString::number(r.volume.passes_up - r.volume.passes_down)
+                           : QString("n/a"))
+                   .arg(csv_escape(r.volume_summary()))
+               + fill_csv(vf ? r.volume.sim.fill : FillUncertainty{}) + '\n';
     }
     return out;
 }
 
 BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
                        const SimSettings &legacy_settings,
-                       const AdaptiveSettings &adaptive_settings, const CostTable *costs)
+                       const AdaptiveSettings &adaptive_settings, const CostTable *costs,
+                       const VolumeFillSettings &volume_settings)
 {
     BrandAudit audit;
     audit.brand = menu.brand;
@@ -280,6 +331,7 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
         AdaptiveSettings as = adaptive_settings;
         if (recipe_cups > 0) as.sauce.cups = recipe_cups;
         row.adaptive = solve_adaptive(items, as, costs);
+        row.volume = volume_fill(items, ls, volume_settings);
 
         if (recipe.customer_built) ++audit.customer_built;
         else if (row.complete_bowl) ++audit.complete;
@@ -299,6 +351,9 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
             if (row.adaptive.occupancy() > 1.0) ++audit.adaptive_over;
             if (row.adaptive.status == AdaptiveStatus::Underfilled && row.complete_bowl)
                 ++audit.adaptive_short;
+            if (row.volume.status == VolumeFillStatus::StillOver) ++audit.volume_over;
+            else if (row.volume.status == VolumeFillStatus::AtMax && row.complete_bowl)
+                ++audit.volume_short;
         }
         audit.rows.push_back(std::move(row));
     }

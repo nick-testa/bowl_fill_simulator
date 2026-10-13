@@ -34,10 +34,12 @@ struct RecipeAudit {
 
     SimResult legacy;
     AdaptiveResult adaptive;
+    VolumeFillResult volume;
 
     /// A short, plain description of what goes wrong, or that nothing does.
     QString legacy_summary() const;
     QString adaptive_summary() const;
+    QString volume_summary() const;
     /// Ordering for the report: worst first.
     int severity() const;
     bool legacy_ok() const;
@@ -52,6 +54,9 @@ struct BrandAudit {
     /// they are counted apart rather than summed into one "fails" number.
     int legacy_over = 0, legacy_short = 0;
     int adaptive_over = 0, adaptive_short = 0;
+    /// Volume Fill: still over with bases and toppings stepped down as far as allowed,
+    /// and finished bowls that stay under the limit with everything at its max.
+    int volume_over = 0, volume_short = 0;
 
     int legacy_failing() const { return legacy_over + legacy_short; }
 
@@ -62,6 +67,7 @@ struct BrandAudit {
 BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
                        const SimSettings &legacy_settings,
                        const AdaptiveSettings &adaptive_settings,
-                       const CostTable *costs = nullptr);
+                       const CostTable *costs = nullptr,
+                       const VolumeFillSettings &volume_settings = {});
 
 }  // namespace bowlfill

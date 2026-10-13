@@ -30,7 +30,11 @@ bowlfill::LoadResult load_configured_menus(const QString &asset_dir)
         QTextStream(stderr) << err << "\n";
     if (!load_piece_heights(asset_dir + "/data/ingredient_pieces.csv", pieces, &err))
         QTextStream(stderr) << err << "\n";
-    return load_menus(asset_dir + "/menus", &maps, &pieces);
+    LoadResult loaded = load_menus(asset_dir + "/menus", &maps, &pieces);
+    // The stations set in the window, when there are any.
+    if (const ManualEntry manual = load_manual_entry(); !manual.empty())
+        loaded.menus.push_back(manual_entry_menu(loaded.menus, manual, &pieces));
+    return loaded;
 }
 
 /// The bowl, lid and cup dimensions last set in the window. The height model is on
@@ -55,6 +59,16 @@ bowlfill::BowlGeometry configured_geometry(bool volume_only)
         prefs.value("cups/base_diameter_mm", g.cup_base_diameter_mm).toDouble();
     g.chunk_proud = prefs.value("geometry/chunk_proud_pct", g.chunk_proud * 100).toDouble() / 100;
     return g;
+}
+
+/// Volume Fill's fit target and step-down limit, as last set in the window.
+bowlfill::VolumeFillSettings configured_volume_fill()
+{
+    const QSettings prefs;
+    bowlfill::VolumeFillSettings vf;
+    vf.fit_share = prefs.value("volume_fill/fit_pct", vf.fit_share * 100).toDouble() / 100;
+    vf.min_share = prefs.value("volume_fill/min_pct", vf.min_share * 100).toDouble() / 100;
+    return vf;
 }
 
 /// The dispense variation last set in the window, for the reports' overfill odds.
@@ -128,7 +142,8 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         AdaptiveSettings adaptive;
         legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
         legacy.dispense = adaptive.dispense = configured_dispense();
-        const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs);
+        const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs,
+                                             configured_volume_fill());
         const QString csv = audit.to_csv();
         out << (header_written ? csv.section('\n', 1) : csv);
         header_written = true;
@@ -195,7 +210,7 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
                   }
                   return true;
               },
-              &totals);
+              &totals, configured_volume_fill());
     out.flush();
 
     SweepTotals all;
@@ -207,12 +222,17 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
         all.adaptive_over += t.adaptive_over;
         all.adaptive_over_bowl += t.adaptive_over_bowl;
         all.adaptive_short += t.adaptive_short;
+        all.volume_fits += t.volume_fits;
+        all.volume_short += t.volume_short;
+        all.volume_over += t.volume_over;
     }
     err << "\r" << all.rows << " bowls; legacy: " << all.legacy_fits << " right, "
         << all.legacy_over << " over the bowl, " << all.legacy_short
         << " short of the floor. Adaptive: " << all.adaptive_over_bowl
         << " still do not fit, "
-        << all.adaptive_short << " cannot reach the fill target.\n";
+        << all.adaptive_short << " cannot reach the fill target. Volume fill: "
+        << all.volume_fits << " fit, " << all.volume_short << " at max under the limit, "
+        << all.volume_over << " still over.\n";
     return 0;
 }
 
@@ -252,7 +272,7 @@ int main(int argc, char **argv)
     parser.addOption(dark);
     QCommandLineOption unit("units", "Volume units: oz or ml.", "u");
     parser.addOption(unit);
-    QCommandLineOption mode("mode", "Dispense model: legacy or adaptive.", "m");
+    QCommandLineOption mode("mode", "Dispense model: legacy, adaptive or volume.", "m");
     parser.addOption(mode);
     QCommandLineOption scale("scale",
                              "Render at this device pixel ratio, e.g. 2 for a sharp "
@@ -309,6 +329,7 @@ int main(int argc, char **argv)
 
     bowlfill::MainWindow window(QDir(parser.value(assets)).absolutePath());
     if (parser.isSet(mode) && parser.value(mode).startsWith("a")) window.select_adaptive();
+    if (parser.isSet(mode) && parser.value(mode).startsWith("v")) window.set_volume_fill();
     if (parser.isSet(pick)) {
         const QStringList parts = parser.value(pick).split('|');
         window.select(parts.value(0), parts.value(1));

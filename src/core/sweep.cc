@@ -106,7 +106,9 @@ QString sweep_csv_header()
            "nominal_g,nominal_oz,floor_g,legacy_verdict,legacy_final_g,legacy_final_oz,"
            "legacy_fill_pct,adaptive_status,adaptive_fill_pct,adaptive_alpha,cost,"
            "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,"
-           "legacy_p90_ml,adaptive_p_over_room,adaptive_p_over_rim\n";
+           "legacy_p90_ml,adaptive_p_over_room,adaptive_p_over_rim,"
+           "volume_status,volume_final_g,volume_final_oz,volume_fill_pct,volume_passes,"
+           "volume_p_over_room,volume_p_over_rim\n";
 }
 
 bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
@@ -114,7 +116,7 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                const AdaptiveSettings &adaptive_settings, const CostTable *costs,
                const SweepLimits &limits, QTextStream &out,
                const std::function<bool(qint64, qint64)> &progress,
-               std::vector<SweepTotals> *per_brand)
+               std::vector<SweepTotals> *per_brand, const VolumeFillSettings &volume_settings)
 {
     const double kMl = CurveSet::kMlPerFlOz;
     qint64 total = 0;
@@ -214,6 +216,8 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                         as.sauce.cups = cups;
                         const SimResult sim = simulate(items, ls);
                         const AdaptiveResult ad = solve_adaptive(items, as, costs);
+                        const VolumeFillResult vf = volume_fill(items, ls, volume_settings);
+                        const Frame &vf_last = vf.sim.last();
 
                         const double cap = ls.bowl_capacity_oz;
                         const double sauce_oz = sim.settings.overhead_oz();
@@ -244,7 +248,16 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                             << QString::number(sim.fill.median_oz * kMl, 'f', 0) << ','
                             << QString::number(sim.fill.p90_oz * kMl, 'f', 0) << ','
                             << QString::number(ad.fill.p_over_room, 'f', 3) << ','
-                            << QString::number(ad.fill.p_over_rim, 'f', 3) << '\n';
+                            << QString::number(ad.fill.p_over_rim, 'f', 3) << ','
+                            // Volume Fill; passes are + up toward the floor, - down to fit.
+                            << csv_escape(to_string(vf.status)) << ','
+                            << QString::number(vf_last.grams, 'f', 0) << ','
+                            << QString::number(vf_last.ounces, 'f', 2) << ','
+                            << QString::number(
+                                   cap > 0 ? (vf_last.ounces + sauce_oz) / cap * 100 : 0, 'f', 0)
+                            << ',' << (vf.passes_up - vf.passes_down) << ','
+                            << QString::number(vf.sim.fill.p_over_room, 'f', 3) << ','
+                            << QString::number(vf.sim.fill.p_over_rim, 'f', 3) << '\n';
                         out << line;
 
                         ++totals.rows;
@@ -258,6 +271,12 @@ bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
                         if (ad.status == AdaptiveStatus::StillOver) ++totals.adaptive_over;
                         else if (ad.status == AdaptiveStatus::Underfilled) ++totals.adaptive_short;
                         else ++totals.adaptive_ok;
+
+                        switch (vf.status) {
+                        case VolumeFillStatus::StillOver: ++totals.volume_over; break;
+                        case VolumeFillStatus::AtMax: ++totals.volume_short; break;
+                        default: ++totals.volume_fits; break;
+                        }
 
                         if (++done % 4096 == 0 && progress && !progress(done, total))
                             return false;
