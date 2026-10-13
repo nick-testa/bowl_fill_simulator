@@ -22,7 +22,7 @@ namespace {
 
 namespace space = theme::space;
 
-enum Column { kBrand, kRaw, kMapsTo, kKind, kPiece, kSlope, kColumns };
+enum Column { kBrand, kRaw, kMapsTo, kKind, kPiece, kSlope, kRoll, kColumns };
 enum Show { kAll, kMapped, kUnmapped };
 
 /// Cell widgets fill their cell edge to edge; this insets one so rows breathe.
@@ -58,6 +58,7 @@ QString capitalised(QString s)
 
 MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                              const PieceHeights &pieces, const MoundSlopes &slopes,
+                             const RollOffAngles &rolls, const QString &brand,
                              QWidget *parent)
     : QDialog(parent)
 {
@@ -79,7 +80,9 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
         "name; set <i>Kind</i> only to correct a wrong guess. Give a <i>Piece height</i> "
         "only to chunky ingredients that stand proud of the food; everything else smears. "
         "A <i>Mound slope</i> sets how steeply an ingredient piles when mounding is "
-        "shown; leave it on <i>Default</i> to use the slope under Advanced.");
+        "shown; leave it on <i>Default</i> to use the default slope in Settings \u2192 Mounding & chunks. "
+        "Give chunky pieces that roll off a mound a <i>Roll-off</i> angle: they roll down "
+        "anything steeper and ring the mound's foot instead of piling on top.");
     blurb->setObjectName("lead");
     blurb->setWordWrap(true);
     v->addWidget(blurb);
@@ -116,7 +119,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 
     table_ = new QTableWidget(static_cast<int>(rows_.size()), kColumns);
     table_->setHorizontalHeaderLabels(
-        {"Brand", "Name in menu", "Maps to", "Kind", "Piece height", "Mound slope"});
+        {"Brand", "Name in menu", "Maps to", "Kind", "Piece height", "Mound slope", "Roll-off"});
     table_->setShowGrid(false);
     table_->verticalHeader()->setVisible(false);
     table_->verticalHeader()->setDefaultSectionSize(40);
@@ -131,12 +134,14 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     h->setSectionResizeMode(kKind, QHeaderView::Fixed);
     h->setSectionResizeMode(kPiece, QHeaderView::Fixed);
     h->setSectionResizeMode(kSlope, QHeaderView::Fixed);
+    h->setSectionResizeMode(kRoll, QHeaderView::Fixed);
     table_->setColumnWidth(kMapsTo, 280);
     table_->setColumnWidth(kKind, 170);
     table_->setColumnWidth(kPiece, 170);
     table_->setColumnWidth(kSlope, 130);
+    table_->setColumnWidth(kRoll, 110);
     v->addWidget(table_, 1);
-    populate(current, pieces, slopes);
+    populate(current, pieces, slopes, rolls);
 
     // ---- footer -----------------------------------------------------------
     auto *foot = new QHBoxLayout;
@@ -162,6 +167,9 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 
     connect(show_, &QComboBox::currentIndexChanged, this, &MappingDialog::apply_filter);
     connect(brand_, &QComboBox::currentIndexChanged, this, &MappingDialog::apply_filter);
+    // Opens on the brand being worked on; "All brands" is one click away.
+    if (const int i = brand_->findData(brand); !brand.isEmpty() && i >= 0)
+        brand_->setCurrentIndex(i);
     connect(search_, &QLineEdit::textChanged, this, &MappingDialog::apply_filter);
     connect(exp, &QPushButton::clicked, this, &MappingDialog::export_csv);
     connect(imp, &QPushButton::clicked, this, &MappingDialog::import_csv);
@@ -172,7 +180,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 }
 
 void MappingDialog::populate(const NameMappings &current, const PieceHeights &pieces,
-                             const MoundSlopes &slopes)
+                             const MoundSlopes &slopes, const RollOffAngles &rolls)
 {
     std::set<std::pair<QString, QString>> listed;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
@@ -234,6 +242,19 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
                           "to the same name.");
         table_->setCellWidget(r, kSlope, in_cell(slope));
 
+        // Roll-off, likewise; the lowest value is "None": it stays where it lands.
+        auto *roll = new QDoubleSpinBox;
+        roll->setRange(-1, 80);
+        roll->setDecimals(0);
+        roll->setSuffix("\u00B0");
+        roll->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        roll->setSpecialValueText("None");
+        roll->setToolTip("For chunky pieces that roll: they roll down any food steeper "
+                         "than this and pile where it flattens out, usually round the "
+                         "foot of the mound. None: it stays where it lands. Shared by "
+                         "every row that maps to the same name.");
+        table_->setCellWidget(r, kRoll, in_cell(roll));
+
         auto it = current.find({row.brand, row.raw});
         set_row(r, it != current.end() ? it->second : NameMapping{});
         auto pit = pieces.find(name_at(r));
@@ -249,6 +270,13 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         }
         connect(slope, &QDoubleSpinBox::valueChanged, this,
                 [this, r] { sync_shared(r, kSlope); });
+        auto rit = rolls.find(name_at(r));
+        {
+            const QSignalBlocker block(roll);
+            roll->setValue(rit != rolls.end() ? rit->second : -1);
+        }
+        connect(roll, &QDoubleSpinBox::valueChanged, this,
+                [this, r] { sync_shared(r, kRoll); });
 
         connect(maps, &QComboBox::currentTextChanged, this, &MappingDialog::refresh_state);
         connect(kind, &QComboBox::currentIndexChanged, this, &MappingDialog::refresh_state);
@@ -266,6 +294,12 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
             used = name_at(r) == name;
         if (!used) stale_slopes_[name] = deg;
+    }
+    for (const auto &[name, deg] : rolls) {
+        bool used = false;
+        for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
+            used = name_at(r) == name;
+        if (!used) stale_rolls_[name] = deg;
     }
 }
 
@@ -293,6 +327,15 @@ void MappingDialog::sync_shared(int row, int column)
                 const QSignalBlocker block(sp);
                 sp->setValue(source->value());
             }
+}
+
+RollOffAngles MappingDialog::rolls() const
+{
+    RollOffAngles out = stale_rolls_;
+    for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
+        if (QDoubleSpinBox *sp = spin_in(table_, r, kRoll); sp && sp->value() >= 0)
+            out[name_at(r)] = sp->value();
+    return out;
 }
 
 MoundSlopes MappingDialog::slopes() const

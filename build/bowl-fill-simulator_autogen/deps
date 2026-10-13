@@ -1,7 +1,7 @@
 bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/CMakeLists.txt \
-	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeCXXCompiler.cmake \
-	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/3.31.8/CMakeSystem.cmake \
+	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/4.4.4/CMakeCXXCompiler.cmake \
+	/home/ntesta/Projects/bowl_fill_simulator/build/CMakeFiles/4.4.4/CMakeSystem.cmake \
 	/home/ntesta/Projects/bowl_fill_simulator/build/bowl-fill-simulator_autogen/moc_predefs.h \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/adaptive.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/core/bowl_data.hh \
@@ -14,6 +14,8 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/bowl_fill_simulator/src/main.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/bowl_diagram.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/bowl_diagram.hh \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/chip_picker.cc \
+	/home/ntesta/Projects/bowl_fill_simulator/src/ui/chip_picker.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/curve_chart.cc \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/curve_chart.hh \
 	/home/ntesta/Projects/bowl_fill_simulator/src/ui/main_window.cc \
@@ -44,48 +46,6 @@ bowl-fill-simulator_autogen/timestamp: \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/stdarg.h \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/stdbool.h \
 	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/lib/clang/21/include/stddef.h \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCXXInformation.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeCommonLanguageInclude.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeFindDependencyMacro.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeGenericSystem.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeInitializeConfigs.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeLanguageInformation.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeSystemSpecificInformation.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CMakeSystemSpecificInitialize.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CheckCXXCompilerFlag.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CheckCXXSourceCompiles.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CheckIncludeFileCXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/CheckLibraryExists.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Compiler/CMakeCommonCompilerMacros.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Compiler/Clang-CXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Compiler/Clang.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Compiler/GNU.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/FindOpenGL.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/FindPackageHandleStandardArgs.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/FindPackageMessage.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/FindThreads.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/FindVulkan.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/GNUInstallDirs.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Internal/CMakeCXXLinkerInformation.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Internal/CMakeCommonLinkerInformation.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Internal/CheckCompilerFlag.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Internal/CheckFlagCommonConfig.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Internal/CheckSourceCompiles.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Linker/GNU.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Linker/LLD-CXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Linker/LLD.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/MacroAddFileDependencies.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linker/GNU.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linker/Linux-GNU.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linker/Linux-LLD-CXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linker/Linux-LLD.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linux-Clang-CXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linux-GNU-CXX.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linux-GNU.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linux-Initialize.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/Linux.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/share/cmake-3.31/Modules/Platform/UnixPaths.cmake \
 	/usr/include/alloca.h \
 	/usr/include/asm-generic/bitsperlong.h \
 	/usr/include/asm-generic/errno-base.h \
@@ -188,6 +148,7 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/bits/charconv.h \
 	/usr/include/c++/16/bits/chrono.h \
 	/usr/include/c++/16/bits/chrono_io.h \
+	/usr/include/c++/16/bits/codecvt.h \
 	/usr/include/c++/16/bits/concept_check.h \
 	/usr/include/c++/16/bits/cpp_type_traits.h \
 	/usr/include/c++/16/bits/cxxabi_forced.h \
@@ -197,6 +158,7 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/bits/exception.h \
 	/usr/include/c++/16/bits/exception_defines.h \
 	/usr/include/c++/16/bits/exception_ptr.h \
+	/usr/include/c++/16/bits/formatfwd.h \
 	/usr/include/c++/16/bits/functexcept.h \
 	/usr/include/c++/16/bits/functional_hash.h \
 	/usr/include/c++/16/bits/hash_bytes.h \
@@ -210,12 +172,16 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/bits/list.tcc \
 	/usr/include/c++/16/bits/locale_classes.h \
 	/usr/include/c++/16/bits/locale_classes.tcc \
+	/usr/include/c++/16/bits/locale_conv.h \
 	/usr/include/c++/16/bits/locale_facets.h \
 	/usr/include/c++/16/bits/locale_facets.tcc \
+	/usr/include/c++/16/bits/locale_facets_nonio.h \
+	/usr/include/c++/16/bits/locale_facets_nonio.tcc \
 	/usr/include/c++/16/bits/localefwd.h \
 	/usr/include/c++/16/bits/max_size_type.h \
 	/usr/include/c++/16/bits/memory_resource.h \
 	/usr/include/c++/16/bits/memoryfwd.h \
+	/usr/include/c++/16/bits/monostate.h \
 	/usr/include/c++/16/bits/move.h \
 	/usr/include/c++/16/bits/nested_exception.h \
 	/usr/include/c++/16/bits/new_allocator.h \
@@ -276,6 +242,8 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/bits/streambuf_iterator.h \
 	/usr/include/c++/16/bits/string_view.tcc \
 	/usr/include/c++/16/bits/stringfwd.h \
+	/usr/include/c++/16/bits/unicode-data.h \
+	/usr/include/c++/16/bits/unicode.h \
 	/usr/include/c++/16/bits/uniform_int_dist.h \
 	/usr/include/c++/16/bits/unique_ptr.h \
 	/usr/include/c++/16/bits/unordered_map.h \
@@ -322,17 +290,23 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/iterator \
 	/usr/include/c++/16/limits \
 	/usr/include/c++/16/list \
+	/usr/include/c++/16/locale \
 	/usr/include/c++/16/map \
 	/usr/include/c++/16/memory \
 	/usr/include/c++/16/new \
+	/usr/include/c++/16/numbers \
 	/usr/include/c++/16/numeric \
 	/usr/include/c++/16/optional \
 	/usr/include/c++/16/ostream \
 	/usr/include/c++/16/pstl/execution_defs.h \
+	/usr/include/c++/16/pstl/glue_algorithm_defs.h \
+	/usr/include/c++/16/pstl/glue_memory_defs.h \
 	/usr/include/c++/16/pstl/glue_numeric_defs.h \
 	/usr/include/c++/16/pstl/pstl_config.h \
+	/usr/include/c++/16/ranges \
 	/usr/include/c++/16/ratio \
 	/usr/include/c++/16/set \
+	/usr/include/c++/16/span \
 	/usr/include/c++/16/sstream \
 	/usr/include/c++/16/stdexcept \
 	/usr/include/c++/16/streambuf \
@@ -370,7 +344,9 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/error_constants.h \
 	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/gthr-default.h \
 	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/gthr.h \
+	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/messages_members.h \
 	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/os_defines.h \
+	/usr/include/c++/16/x86_64-pc-linux-gnu/bits/time_members.h \
 	/usr/include/ctype.h \
 	/usr/include/endian.h \
 	/usr/include/errno.h \
@@ -378,6 +354,7 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/features.h \
 	/usr/include/gnu/stubs-64.h \
 	/usr/include/gnu/stubs.h \
+	/usr/include/libintl.h \
 	/usr/include/limits.h \
 	/usr/include/linux/errno.h \
 	/usr/include/linux/limits.h \
@@ -518,6 +495,8 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/include/qt6/QtCore/qversiontagging.h \
 	/usr/include/qt6/QtCore/qxptype_traits.h \
 	/usr/include/qt6/QtCore/qyieldcpu.h \
+	/usr/include/qt6/QtGui/QColor \
+	/usr/include/qt6/QtGui/QImage \
 	/usr/include/qt6/QtGui/qaction.h \
 	/usr/include/qt6/QtGui/qbitmap.h \
 	/usr/include/qt6/QtGui/qbrush.h \
@@ -958,4 +937,111 @@ bowl-fill-simulator_autogen/timestamp: \
 	/usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsTargets.cmake \
 	/usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsTargetsPrecheck.cmake \
 	/usr/lib/cmake/Qt6WidgetsTools/Qt6WidgetsToolsVersionlessTargets.cmake \
-	/home/ntesta/Projects/lab37/.toolchain/b8ea756439110746394beff712fd97a5d108acd220cb0484d52cd45c52901d7f/sysroot/bin/cmake
+	/usr/share/cmake/Modules/CMakeCXXCompiler.cmake.in \
+	/usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp \
+	/usr/share/cmake/Modules/CMakeCXXInformation.cmake \
+	/usr/share/cmake/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake \
+	/usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake \
+	/usr/share/cmake/Modules/CMakeCompilerIdDetection.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineCompiler.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineCompilerSupport.cmake \
+	/usr/share/cmake/Modules/CMakeDetermineSystem.cmake \
+	/usr/share/cmake/Modules/CMakeFindBinUtils.cmake \
+	/usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake \
+	/usr/share/cmake/Modules/CMakeGenericSystem.cmake \
+	/usr/share/cmake/Modules/CMakeInitializeConfigs.cmake \
+	/usr/share/cmake/Modules/CMakeLanguageInformation.cmake \
+	/usr/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake \
+	/usr/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake \
+	/usr/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake \
+	/usr/share/cmake/Modules/CMakeSystem.cmake.in \
+	/usr/share/cmake/Modules/CMakeSystemSpecificInformation.cmake \
+	/usr/share/cmake/Modules/CMakeSystemSpecificInitialize.cmake \
+	/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake \
+	/usr/share/cmake/Modules/CMakeTestCompilerCommon.cmake \
+	/usr/share/cmake/Modules/CheckCXXCompilerFlag.cmake \
+	/usr/share/cmake/Modules/CheckCXXSourceCompiles.cmake \
+	/usr/share/cmake/Modules/CheckIncludeFileCXX.cmake \
+	/usr/share/cmake/Modules/CheckLibraryExists.cmake \
+	/usr/share/cmake/Modules/Compiler/ADSP-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/ARMCC-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/ARMClang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/AppleClang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Borland-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/CMakeCommonCompilerMacros.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang-CXX-CXXImportStd.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang-CXX.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang-DetermineCompilerInternal.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang-FindBinUtils.cmake \
+	/usr/share/cmake/Modules/Compiler/Clang.cmake \
+	/usr/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/GHS-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/GNU.cmake \
+	/usr/share/cmake/Modules/Compiler/HP-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/IAR-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake \
+	/usr/share/cmake/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Intel-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/MSVC-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/NVHPC-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/NVIDIA-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/PellesC-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/TI-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/TIClang-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Tasking-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/Watcom-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/XL-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake \
+	/usr/share/cmake/Modules/FindOpenGL.cmake \
+	/usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake \
+	/usr/share/cmake/Modules/FindPackageMessage.cmake \
+	/usr/share/cmake/Modules/FindThreads.cmake \
+	/usr/share/cmake/Modules/FindVulkan.cmake \
+	/usr/share/cmake/Modules/GNUInstallDirs.cmake \
+	/usr/share/cmake/Modules/Internal/CMakeCXXLinkerInformation.cmake \
+	/usr/share/cmake/Modules/Internal/CMakeCommonLinkerInformation.cmake \
+	/usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake \
+	/usr/share/cmake/Modules/Internal/CMakeInspectCXXLinker.cmake \
+	/usr/share/cmake/Modules/Internal/CheckCommon.cmake \
+	/usr/share/cmake/Modules/Internal/CheckCompilerFlag.cmake \
+	/usr/share/cmake/Modules/Internal/CheckFlagCommonConfig.cmake \
+	/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake \
+	/usr/share/cmake/Modules/Internal/FeatureTesting.cmake \
+	/usr/share/cmake/Modules/Linker/GNU.cmake \
+	/usr/share/cmake/Modules/Linker/LLD-CXX.cmake \
+	/usr/share/cmake/Modules/Linker/LLD.cmake \
+	/usr/share/cmake/Modules/MacroAddFileDependencies.cmake \
+	/usr/share/cmake/Modules/Platform/Linker/GNU.cmake \
+	/usr/share/cmake/Modules/Platform/Linker/Linux-GNU.cmake \
+	/usr/share/cmake/Modules/Platform/Linker/Linux-LLD-CXX.cmake \
+	/usr/share/cmake/Modules/Platform/Linker/Linux-LLD.cmake \
+	/usr/share/cmake/Modules/Platform/Linux-Clang-CXX.cmake \
+	/usr/share/cmake/Modules/Platform/Linux-Determine-CXX.cmake \
+	/usr/share/cmake/Modules/Platform/Linux-GNU-CXX.cmake \
+	/usr/share/cmake/Modules/Platform/Linux-GNU.cmake \
+	/usr/share/cmake/Modules/Platform/Linux-Initialize.cmake \
+	/usr/share/cmake/Modules/Platform/Linux.cmake \
+	/usr/share/cmake/Modules/Platform/UnixPaths.cmake \
+	/usr/bin/cmake

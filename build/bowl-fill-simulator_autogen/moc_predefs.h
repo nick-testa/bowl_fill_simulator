@@ -1,4 +1,5 @@
 #define ABI_ID "ELF"
+#define ARCHITECTURE_ID "x86_64"
 #define BOWLFILL_ASSET_DIR "/home/ntesta/Projects/bowl_fill_simulator"
 #define QT_CORE_LIB 1
 #define QT_GUI_LIB 1

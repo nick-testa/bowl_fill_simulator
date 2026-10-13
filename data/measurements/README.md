@@ -1,7 +1,7 @@
 # Measurements
 
 Every `.csv` file in this folder is loaded each time the simulator starts, and
-again when you press **Reload** (Advanced → Mass → volume data). This folder is
+again when you press **Reload** (Settings → Measurements). This folder is
 the only source of measured data, so what is here is what the curves are fitted to.
 
 - **Add data:** use Upload CSV… or Upload bowl data… in the app (the file is copied
@@ -17,7 +17,7 @@ in the app and skipped; the rest still load.
 
 **Camera zero.** Bowl sheets are camera scans, and the camera reads an empty bowl at
 about -5 ml. Every scanned volume is corrected by the **Empty-bowl reading** setting
-(Advanced, default -5 ml) before curves are fitted, so a raw -3 ml counts as 2 ml.
+(Settings → Measurements, default -5 ml) before curves are fitted, so a raw -3 ml counts as 2 ml.
 The files themselves keep the raw readings. Curve-row files (`ingredient, g, ml`)
 are taken as given, since they may come from other methods.
 

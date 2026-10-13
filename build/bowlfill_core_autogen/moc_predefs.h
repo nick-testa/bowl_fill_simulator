@@ -1,4 +1,5 @@
 #define ABI_ID "ELF"
+#define ARCHITECTURE_ID "x86_64"
 #define QT_CORE_LIB 1
 #define QT_NO_DEBUG 1
 #define SIZEOF_DPTR (sizeof(void*))

@@ -25,6 +25,7 @@ class MappingDialog : public QDialog {
 public:
     MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                   const PieceHeights &pieces, const MoundSlopes &slopes,
+                  const RollOffAngles &rolls, const QString &brand = {},
                   QWidget *parent = nullptr);
 
     /// What to save: only rows that differ from the automatic name or set a kind,
@@ -35,6 +36,8 @@ public:
     PieceHeights pieces() const;
     /// Mound slopes by name in use, kept the same way as piece heights.
     MoundSlopes slopes() const;
+    /// Roll-off angles by name in use, likewise.
+    RollOffAngles rolls() const;
 
 private:
     struct Row {
@@ -42,7 +45,7 @@ private:
     };
 
     void populate(const NameMappings &current, const PieceHeights &pieces,
-                  const MoundSlopes &slopes);
+                  const MoundSlopes &slopes, const RollOffAngles &rolls);
     double piece_at(int row) const;   ///< -1 for "default"
     void sync_piece(int row);
     void sync_shared(int row, int column);
@@ -60,6 +63,7 @@ private:
     NameMappings stale_;   ///< saved rows for spellings no menu uses any more
     PieceHeights stale_pieces_;
     MoundSlopes stale_slopes_;
+    RollOffAngles stale_rolls_;
     QStringList names_;    ///< every name in use, offered by the "Maps to" boxes
 
     QComboBox *show_ = nullptr;

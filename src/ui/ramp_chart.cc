@@ -118,22 +118,32 @@ void RampChart::paintEvent(QPaintEvent *)
                                       ? std::max(f.ounces, f.ounces_uncompressed)
                                       : f.ounces);
     oz_max *= 1.14;
+    // The axis starts a little below the bowl as ordered, not at zero: the ramp adds
+    // a tenth or two to a bowl, which from zero would read as a flat line.
+    double oz_lo = frames.front().ounces;
+    for (const Frame &f : frames) oz_lo = std::min(oz_lo, f.ounces);
+    oz_lo = std::max(0.0, std::min(oz_lo, cap) * 0.8);
 
     const double pw = width() - kLeft - kRight;
     const double ph = height() - kTop - kBottom;
     if (pw <= 0 || ph <= 0) return;
     auto X = [&](double g) { return kLeft + (g - g_min) / (g_max - g_min) * pw; };
-    auto Y = [&](double oz) { return kTop + ph - oz / oz_max * ph; };
+    auto Y = [&](double oz) { return kTop + ph - (oz - oz_lo) / (oz_max - oz_lo) * ph; };
 
-    // The region above the bowl's capacity, tinted so overflow reads at a glance.
+    // The region above the bowl's capacity, lightly tinted so overflow reads at a
+    // glance without the warning colour dominating the chart.
     const double cap_y = Y(cap);
-    if (cap_y > kTop)
-        p.fillRect(QRectF(kLeft, kTop, pw, cap_y - kTop), pal.over_soft);
+    if (cap_y > kTop) {
+        QColor zone = pal.over_soft;
+        zone.setAlphaF(0.55);
+        p.fillRect(QRectF(kLeft, kTop, pw, cap_y - kTop), zone);
+    }
 
     // Ticks are chosen in the displayed unit so they land on round numbers there,
     // then mapped back to canonical ounces for positioning.
     p.setFont(theme::font(theme::Text::Caption));
-    for (double shown : span_ticks(0, units::from_oz(oz_max), 5)) {
+    for (double shown : span_ticks(units::from_oz(oz_lo), units::from_oz(oz_max), 5)) {
+        if (units::to_oz(shown) < oz_lo - 1e-9) continue;
         const double y = Y(units::to_oz(shown));
         p.setPen(pal.rule);
         p.drawLine(QPointF(kLeft, y), QPointF(kLeft + pw, y));

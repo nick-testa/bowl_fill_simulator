@@ -822,14 +822,39 @@ int main()
                         return v;
                     }(),
                     600e3, 600e3 * 0.002);
+        // Roll-off: chunks that roll off anything steeper than 10 degrees leave a 15
+        // degree couscous mound's top bare and ring its foot instead.
+        {
+            const std::vector<MoundLayer> stays = {{400e3, 15, -1}, {150e3, 40, -1}};
+            const std::vector<MoundLayer> rolls = {{400e3, 15, -1}, {150e3, 40, 10}};
+            const auto s_stay = mound_surfaces(g, stays), s_roll = mound_surfaces(g, rolls);
+            const auto base = mound_surfaces(g, {{400e3, 15, -1}});
+            expect_near("rolled chunks leave the centre bare", s_roll.back()[0], base.back()[0],
+                        1e-9);
+            expect_true("chunks that stay pile on the centre", s_stay.back()[0] > base.back()[0] + 5);
+            // Somewhere off-centre the rolled layer is thicker than the one that stayed.
+            bool ridge = false;
+            for (size_t i = rings.size() / 2; i < rings.size(); ++i)
+                ridge |= s_roll.back()[i] > s_stay.back()[i] + 2;
+            expect_true("and pile in a ridge round its foot", ridge);
+            double v = 0, dr = rings[1] - rings[0];
+            for (size_t i = 0; i < rings.size(); ++i)
+                v += 2 * M_PI * rings[i] * dr * (s_roll.back()[i] - base.back()[i]);
+            expect_near("a rolled layer keeps its volume", v, 150e3, 150e3 * 0.003);
+            expect_near("on an empty, flat floor nothing rolls",
+                        mound_peak_mm(g, {{300e3, 30, 5}}), mound_peak_mm(g, {{300e3, 30, -1}}),
+                        1e-9);
+        }
         BowlItem steep, flat_item;
         steep.mound_slope_deg = 40;
+        steep.roll_off_deg = 12;
         BowlGeometry deflt = g;
         deflt.mound_slope_deg = 15;
         const std::vector<MoundLayer> ml =
             mound_layers({flat_item, steep}, {10.0, 5.0}, deflt, 2.0);
         expect_true("unset slopes take the default, set ones their own, volumes scale",
                     ml.size() == 2 && ml[0].slope_deg == 15 && ml[1].slope_deg == 40
+                        && ml[0].roll_off_deg < 0 && ml[1].roll_off_deg == 12
                         && std::fabs(ml[1].volume_mm3 - 10.0 * 29.5735295625 * 1000) < 1e-6);
 
         expect_near("the rim, less what pressed cups displace there",

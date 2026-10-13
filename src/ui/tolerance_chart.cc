@@ -73,9 +73,7 @@ void ToleranceChart::paintEvent(QPaintEvent *)
     double y = kTop;
     for (const AdaptiveItem &it : result_.items) {
         const double t = tol.for_kind(it.kind);
-        const QColor colour = it.kind == Kind::Base ? theme::series_colour(it.name)
-                              : it.kind == Kind::Protein ? pal.mass
-                                                         : pal.accent;
+        const QColor colour = theme::food_colour(it.name, static_cast<int>(it.kind));
 
         p.setPen(pal.ink);
         p.setFont(theme::font(theme::Text::Caption));

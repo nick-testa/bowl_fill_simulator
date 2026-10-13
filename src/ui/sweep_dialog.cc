@@ -283,7 +283,7 @@ void SweepDialog::run()
         all.adaptive_short += t.adaptive_short;
     }
     QString summary =
-        QString("%1 bowls in %2.\n\nUnder the legacy ramp: %3 come out right, %4 go over "
+        QString("%1 bowls in %2.\n\nUnder dynamic portioning: %3 come out right, %4 go over "
                 "the bowl, %5 never reach their weight floor.\n\nUnder Adaptive: %6 still "
                 "do not fit. A further %7 fit but cannot be brought down to the fill "
                 "target, and %8 cannot reach it from below.\n\n")

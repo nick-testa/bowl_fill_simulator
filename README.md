@@ -54,7 +54,7 @@ tests/     verify.cc, checked against the HTML simulator's output
 ## Measurements
 
 Every measurement lives as a CSV file in `data/measurements/`, and nothing else
-feeds the curves. Each launch, and the **Reload** button in Advanced, reads every
+feeds the curves. Each launch, and the **Reload** button in Settings → Measurements, reads every
 `.csv` there. Uploading through the app copies the file in, so it persists. To
 correct or drop data, edit or delete the file (or rows in it) and press Reload.
 To set data aside without deleting it, move the file to `data/archive/`.
@@ -156,13 +156,13 @@ monotonicity, and that solving for volume ignores price.
 
 ## Two dispense models
 
-The **Legacy ramp / Adaptive** switch at the top of the settings panel chooses which
-algorithm runs. They are different shapes of thing, not two tunings of one.
+The **Dynamic portioning / Adaptive fill** switch at the top of the window chooses
+which algorithm runs. They are different shapes of thing, not two tunings of one.
 
 For a plain-language explanation aimed at non-experts, with a worked example, see
 [docs/HOW_FILLING_WORKS.md](docs/HOW_FILLING_WORKS.md).
 
-**Legacy ramp** is what `dynamic_portion_algorithm.cc` does today: add a flat
+**Dynamic portioning** (the legacy ramp) is what `dynamic_portion_algorithm.cc` does today: add a flat
 `step_increment_g` to every ingredient, pass after pass, until a *mass* floor is
 cleared. It has no volume term at all.
 
@@ -197,7 +197,7 @@ Three outcomes, matching the Day in the Life scenarios:
 report both *food fill* and *with sauce cups*.
 
 **The bowl, lid and cups were measured on 2026-10-12** and are the defaults under
-*Advanced → Bowl, lid and cups*:
+*Settings → Bowl & lid*:
 
 | | measured | works out to |
 | --- | --- | --- |

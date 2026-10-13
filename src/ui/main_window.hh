@@ -6,8 +6,11 @@
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 
+#include <QColor>
 #include <QHash>
+#include <QImage>
 #include <QMainWindow>
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -17,6 +20,7 @@ class QDoubleSpinBox;
 class QGridLayout;
 class QLabel;
 class QPushButton;
+class QStackedWidget;
 class QTableWidget;
 class QToolButton;
 class QVBoxLayout;
@@ -28,6 +32,7 @@ class CurveChart;
 class BowlDiagram;
 class ToleranceChart;
 class PhotoLabel;
+class ChipPicker;
 
 /// Per-ingredient edits the user has made, keyed by ingredient name. Absent fields
 /// fall back to the recipe's pinned weight, then the menu's configuration. Kept
@@ -36,6 +41,40 @@ struct Override {
     std::optional<double> start_g, step_g, max_g;
     std::optional<double> rate;          ///< oz/100 g, for an ingredient with no curve
     std::optional<double> curve_scale;   ///< multiplier on the curve, for one with a curve
+};
+
+/// The portion fields a chef edits in the finished-bowl table.
+enum class Field { None, Start, Step, Max, Rate };
+
+/// One cell of the finished-bowl table.
+struct TableCell {
+    QString text;
+    Field field = Field::None;   ///< editable unless None
+    double value = 0.0;          ///< in the unit the column shows
+    bool edited = false;         ///< differs from the menu by the user's hand
+};
+
+/// One row of the finished-bowl table.
+struct BreakdownRow {
+    QString key;                ///< the ingredient's name, for edits
+    QString name, kind;
+    QColor swatch;              ///< the ingredient's band in the bowl diagram
+    QColor colour;              ///< text colour; invalid means the default ink
+    std::vector<TableCell> cells;
+    bool edited = false;        ///< any field edited: the row offers a reset
+};
+
+/// A recipe as someone set it up: the bowl's picks and every edit, saved by name so
+/// it can be brought back. Stored one per file in data/scenarios.
+struct Scenario {
+    QString name, brand, recipe;   ///< recipe empty for build-your-own
+    bool adaptive = false;
+    QString base1, base2;
+    QStringList proteins, toppings, sauces;
+    bool split = true;
+    std::optional<double> floor_g;
+    std::map<QString, Override> overrides;
+    QString file;                  ///< where it was read from
 };
 
 class MainWindow : public QMainWindow {
@@ -47,6 +86,8 @@ public:
     /// Preselects a brand and, optionally, one of its recipes by name.
     void select(const QString &brand, const QString &recipe = {});
     void select_adaptive() { set_mode(true); }
+    /// Writes the recipe spec of the bowl on screen to a PDF; false if it cannot.
+    bool write_spec(const QString &path);
 
 public slots:
     void set_mode(bool adaptive);
@@ -85,6 +126,7 @@ private:
     void update_curve_note();
     QString pieces_path() const;
     QString mounds_path() const;
+    QString rolloff_path() const;
     /// An ingredient's own mound slope, or -1 to take the default.
     double mound_slope_for(const QString &name) const;
     BowlGeometry geometry() const;
@@ -93,10 +135,27 @@ private:
     void update_geometry_note(double capacity_oz, const SauceCups &sauce,
                               const BowlGeometry &g, double chunk_mm);
     void rebuild_ingredient_pickers();
-    void rebuild_override_rows();
-    /// Shows the volume per 100 g an ingredient is using now (its curve, scaled by any
-    /// edit, at its start weight; or its flat rate) and whether it has been edited.
-    void refresh_rate_field(const QString &name);
+    QWidget *build_settings();
+    void open_settings(bool open);
+    /// Marks the drawer's pages whose settings differ from their defaults.
+    void mark_settings();
+    void reset_settings(int page);
+    /// The volume per 100 g an ingredient is using now (its curve, scaled by any edit,
+    /// at its start weight; or its flat rate), whether it has been edited, and why.
+    struct RateInfo {
+        double oz_per_100g = 0.0;
+        bool edited = false;
+        QString tip;
+    };
+    RateInfo rate_info(const QString &name) const;
+    TableCell portion_cell(const QString &name, Field field, double grams) const;
+    TableCell rate_cell(const QString &name) const;
+    bool row_edited(const QString &name) const;
+    QString ingredient_tip(const BowlItem &it) const;
+    void on_portion_edited(int row, int column, double value);
+    /// Refills the finished-bowl table, keeping an open editor where it was.
+    void fill_portion_table(const std::vector<BreakdownRow> &rows, const QStringList &headers,
+                            const std::map<int, QString> &tips);
     /// The finished-bowl note's mounding line, empty with mounding off.
     QString mound_line(const SimResult &r) const;
     /// Takes an edited rate: scales the curve to match it, or sets the flat rate.
@@ -125,11 +184,45 @@ private:
     QStringList load_warnings_;
 
     std::map<QString, Override> overrides_;
-    struct RateField {
-        QDoubleSpinBox *spin = nullptr;
-        QToolButton *reset = nullptr;
+
+    // The settings drawer.
+    QStackedWidget *body_ = nullptr;   ///< the bowl view, or the settings
+    QLabel *settings_summary_ = nullptr;   ///< the current bowl, in one line
+    void update_settings_summary(const FillUncertainty &u);
+    // Saved scenarios.
+    QString scenarios_dir() const;
+    std::vector<Scenario> scenarios_;     ///< this brand's, by name
+    QComboBox *scenario_ = nullptr;
+    QPushButton *scenario_delete_ = nullptr;
+    void reload_scenarios(const QString &select = {});
+    void save_scenario();
+    void apply_scenario(const Scenario &s);
+    void delete_scenario();
+    /// A one-page PDF of the bowl on screen, for handing to culinary.
+    void export_spec();
+    bool row_edited_any() const;
+    QImage spec_image_;   ///< the diagram, held while the spec document is drawn
+    /// Opens the settings on one of its pages.
+    void show_settings_page(int page);
+    /// What the current bowl's numbers rest on that is not measured: the header
+    /// button lists them, each leading to where it is set.
+    struct Estimate {
+        QString text;
+        std::function<void()> go;   ///< empty when there is nowhere in the app to fix it
     };
-    std::map<QString, RateField> rate_fields_;   ///< the rows of the ramp grid
+    std::vector<Estimate> estimates_list_;
+    QPushButton *estimates_ = nullptr;
+    void update_estimates(const std::vector<BowlItem> &items, const AdaptiveResult *ar);
+    QPushButton *settings_ = nullptr;
+    std::vector<QPushButton *> settings_nav_;
+    std::vector<QPushButton *> settings_resets_;   ///< one per page
+    struct TrackedSetting {
+        int page;
+        std::function<bool()> changed;
+        std::function<void()> restore;
+    };
+    std::vector<TrackedSetting> settings_tracked_;
+    QPushButton *reset_edits_ = nullptr;
     /// Start weights the selected recipe pins, by ingredient. Replaced on every
     /// recipe change, unlike overrides_, which only a brand change clears.
     std::map<QString, double> pins_;
@@ -167,20 +260,19 @@ private:
     QDoubleSpinBox *tol_topping_ = nullptr;
     QDoubleSpinBox *menu_price_ = nullptr;
     QDoubleSpinBox *cogs_target_ = nullptr;
-    QLabel *adaptive_note_ = nullptr;
     QWidget *ramp_panel_ = nullptr;
     QWidget *tol_panel_ = nullptr;
     ToleranceChart *tol_chart_ = nullptr;
     QPushButton *unit_oz_ = nullptr;
     QPushButton *unit_ml_ = nullptr;
     QLabel *capacity_label_ = nullptr;
-    QLabel *rate_header_ = nullptr;
     QPushButton *about_ = nullptr;
     QPushButton *issues_ = nullptr;   ///< shown only when the menus carry data issues
     QStringList menu_issues_;
     NameMappings name_maps_;           ///< data/ingredient_aliases.csv
     PieceHeights pieces_;              ///< data/ingredient_pieces.csv
     MoundSlopes mound_slopes_;         ///< data/ingredient_mounds.csv
+    RollOffAngles roll_off_;           ///< data/ingredient_rolloff.csv
     QCheckBox *heights_ = nullptr;     ///< judge fit by height under the lid
     QPushButton *cups_pressed_ = nullptr;
     QPushButton *cups_resting_ = nullptr;
@@ -206,16 +298,9 @@ private:
     QLabel *geometry_note_ = nullptr;
     QLabel *mapping_note_ = nullptr;
 
-    QWidget *protein_picks_ = nullptr;
-    QWidget *topping_picks_ = nullptr;
-    QWidget *sauce_picks_ = nullptr;
-    QWidget *override_table_ = nullptr;   ///< grid of per-ingredient ramp fields
-    QGridLayout *base_card_layout_[2] = {nullptr, nullptr};
-    QDoubleSpinBox *base_start_[2] = {nullptr, nullptr};
-    QDoubleSpinBox *base_step_[2] = {nullptr, nullptr};
-    QDoubleSpinBox *base_max_[2] = {nullptr, nullptr};
-    QLabel *base_fit_[2] = {nullptr, nullptr};
-    QWidget *base_card_[2] = {nullptr, nullptr};
+    ChipPicker *protein_chips_ = nullptr;
+    ChipPicker *topping_chips_ = nullptr;
+    ChipPicker *sauce_chips_ = nullptr;
 
     // Readouts
     QLabel *brand_note_ = nullptr;
@@ -223,7 +308,6 @@ private:
     QLabel *floor_note_ = nullptr;
     QPushButton *floor_reset_ = nullptr;
     QLabel *method_note_ = nullptr;
-    QLabel *split_note_ = nullptr;
     QLabel *compress_note_ = nullptr;
     QLabel *curve_note_ = nullptr;
     QLabel *verdict_head_ = nullptr;

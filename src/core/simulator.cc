@@ -141,12 +141,24 @@ std::vector<std::vector<double>> mound_surfaces(const BowlGeometry &g,
         const std::vector<double> &below = out.back();
         const double slope =
             std::tan(std::clamp(layer.slope_deg, 0.0, 80.0) * M_PI / 180.0);
-        // Volume this layer adds with its cone's peak at h: each ring of the bowl
-        // rises to the cone where the cone is higher than what is already there.
+        // Where it comes to rest: the centre, unless it rolls. A rolling layer runs
+        // outward while the ground falls away more steeply than its roll-off angle.
+        double rest = 0.0;
+        if (layer.roll_off_deg >= 0) {
+            const double roll = std::tan(std::clamp(layer.roll_off_deg, 0.0, 80.0) * M_PI / 180.0);
+            size_t i = 0;
+            while (i + 1 < r.size() && (below[i] - below[i + 1]) / dr > roll + 1e-9) ++i;
+            rest = r[i];
+        }
+        // Its pile: a cone from where it rests, a ridge round the bowl when that is
+        // off-centre.
+        auto pile = [&](double h, size_t i) { return h - slope * std::fabs(r[i] - rest); };
+        // Volume this layer adds with its pile's top at h: each ring of the bowl rises
+        // to the pile where the pile is higher than what is already there.
         auto added = [&](double h) {
             double v = 0.0;
             for (size_t i = 0; i < r.size(); ++i)
-                v += 2.0 * M_PI * r[i] * dr * std::max(0.0, h - slope * r[i] - below[i]);
+                v += 2.0 * M_PI * r[i] * dr * std::max(0.0, pile(h, i) - below[i]);
             return v;
         };
         double lo = 0.0, hi = std::max(1.0, below.front() + g.depth_mm);
@@ -157,7 +169,7 @@ std::vector<std::vector<double>> mound_surfaces(const BowlGeometry &g,
         }
         const double h = (lo + hi) / 2.0;
         std::vector<double> next(r.size());
-        for (size_t i = 0; i < r.size(); ++i) next[i] = std::max(below[i], h - slope * r[i]);
+        for (size_t i = 0; i < r.size(); ++i) next[i] = std::max(below[i], pile(h, i));
         out.push_back(std::move(next));
     }
     return out;
@@ -172,14 +184,27 @@ std::vector<MoundLayer> mound_layers(const std::vector<BowlItem> &items,
         if (item_oz[i] <= 0.005) continue;
         const double slope =
             items[i].mound_slope_deg >= 0 ? items[i].mound_slope_deg : g.mound_slope_deg;
-        out.push_back({item_oz[i] * scale * kMlPerOz * 1000.0, slope});
+        out.push_back({item_oz[i] * scale * kMlPerOz * 1000.0, slope, items[i].roll_off_deg});
     }
     return out;
 }
 
 double mound_peak_mm(const BowlGeometry &g, const std::vector<MoundLayer> &layers)
 {
-    return layers.empty() ? 0.0 : mound_surfaces(g, layers).back().front();
+    return layers.empty() ? 0.0 : highest_food_mm(mound_surfaces(g, layers));
+}
+
+double highest_food_mm(const std::vector<std::vector<double>> &surfaces)
+{
+    if (surfaces.empty()) return 0.0;
+    // Where there is food: the top stands above the empty bowl (the first surface),
+    // whose walls are not food however high they reach. A ridge of rolled chunks can
+    // stand above the centre, so this is the highest such ring, not the middle.
+    const std::vector<double> &floor = surfaces.front(), &top = surfaces.back();
+    double high = 0.0;
+    for (size_t i = 0; i < top.size() && i < floor.size(); ++i)
+        if (top[i] > floor[i] + 1e-9) high = std::max(high, top[i]);
+    return high;
 }
 
 double BowlGeometry::cup_volume_below_mm3(double height_mm) const

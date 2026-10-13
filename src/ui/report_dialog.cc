@@ -89,8 +89,8 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     table_->setColumnCount(9);
     table_->setHorizontalHeaderLabels(
         {"Recipe", "Kind", "Pins", "As written (g)",
-         QString("As written (%1)").arg(units::suffix()), "Legacy ramp", "Legacy P(over)",
-         "Adaptive", "Adaptive P(over)"});
+         QString("As written (%1)").arg(units::suffix()), "Dynamic portioning", "Dynamic P(over)",
+         "Adaptive fill", "Adaptive P(over)"});
     if (QTableWidgetItem *h = table_->horizontalHeaderItem(6))
         h->setToolTip("Chance a real bowl overfills the food room (the bowl less cups and "
                       "chunk clearance), from ingredient scatter, curve uncertainty and "
@@ -212,10 +212,10 @@ void ReportDialog::show_detail(int row)
     const theme::Palette &pal = theme::palette();
     QString html = QString("<b style='color:%1'>%2</b><br>")
                        .arg(severity_colour(r).name(), r.recipe.toHtmlEscaped());
-    html += QString("<span style='color:%1'>Legacy ramp — %2</span><br>")
+    html += QString("<span style='color:%1'>Dynamic portioning — %2</span><br>")
                 .arg(pal.ink.name(), r.legacy_summary().toHtmlEscaped());
     if (!r.customer_built)
-        html += QString("<span style='color:%1'>Adaptive — %2</span>")
+        html += QString("<span style='color:%1'>Adaptive fill — %2</span>")
                     .arg(pal.ink_soft.name(), r.adaptive_summary().toHtmlEscaped());
     if (!r.customer_built && !r.complete_bowl)
         html += QString("<br><span style='color:%1'>Pins only %2 ingredient%3, so this is "

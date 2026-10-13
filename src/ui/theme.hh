@@ -57,6 +57,14 @@ constexpr int xs = 4, sm = 8, md = 12, lg = 16, xl = 24;
 /// without an assigned hue.
 QColor series_colour(const QString &ingredient);
 
+///
+/// Roughly what an ingredient looks like in the bowl, from words in its name: romaine
+/// green, Mexican rice orange, black beans near-black, feta white. The bowl diagram and
+/// its table use it so a chef can match a band to the food at a glance. `kind` picks a
+/// fallback for names with no match: 0 base, 1 protein, 2 topping.
+///
+QColor food_colour(const QString &ingredient, int kind);
+
 /// A Qt stylesheet for the whole window, rebuilt whenever the palette changes.
 QString stylesheet();
 

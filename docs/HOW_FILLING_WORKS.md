@@ -20,7 +20,7 @@ two methods below handle it very differently.
 
 ## Method 1: Dynamic portioning (what runs today)
 
-*In the app this is called the **Legacy ramp**.*
+*In the app: **Dynamic portioning**, at the top of the window.*
 
 ### The idea
 
@@ -72,7 +72,7 @@ weight, the robot tops everything up a little at a time until it clears the floo
 
 ## Method 2: Adaptive fill (the proposed replacement)
 
-*In the app this is called **Adaptive**.*
+*In the app: **Adaptive fill**, at the top of the window.*
 
 ### The idea
 
@@ -204,8 +204,10 @@ peak stands relative to the lid. The lidder presses the mound down to seal, so
 mounding doesn't change whether a bowl *fits* (that's still a question of volume),
 but it shows how much flattening the lidder has to do. Each ingredient piles on top
 of the ones below it at its own steepness (chunky beef stands steeper than couscous),
-set per ingredient in the *Ingredients* dialog; anything left on *Default* uses the
-slope under *Advanced*. The slopes are placeholders until they're measured from
+set per ingredient under *Settings → Ingredients & menu*; anything left on *Default*
+uses the slope on the *Mounding & chunks* page. Chunky pieces that roll off a mound (beef
+cubes on couscous) can be given a *roll-off* angle in the same place: they roll down
+anything steeper than it and ring the foot of the mound instead of piling on top. The slopes are placeholders until they're measured from
 side-on photos.
 
 ### Ranges, not single numbers
@@ -243,10 +245,18 @@ measured, the tighter the ranges get. Unmeasured ingredients are flagged in the 
 so it's clear which numbers are estimates.
 
 **Where are these settings in the app?**
-- The **Legacy ramp / Adaptive** switch is at the top of the window.
-- The target fill, the "leave alone" threshold and the ±% allowances are in the
-  left-hand panel in Adaptive mode.
-- The bowl, lid, cup sizes and dispense variation are under **Advanced**.
+- The **Dynamic portioning / Adaptive fill** switch is at the top of the window.
+- Portions (start, step and max weight for each ingredient) are edited right in the
+  finished-bowl table: click a shaded number and type.
+- The weight floor, or Adaptive fill's target, "leave alone" threshold and ±%
+  allowances, are in the left-hand panel under the recipe.
+- The bowl, lid and cup sizes, dispense variation, mounding, compression and
+  measurement data are in **⚙ Settings**, top right.
+- **Saved scenario** (under the recipe) keeps a named set-up of a bowl, with its
+  ingredients and edits, in `data/scenarios`; **Export spec…** on the finished bowl
+  saves a one-page PDF of it for hand-off.
+- **ⓘ estimates** in the header lists everything the numbers rest on that hasn't
+  been measured yet.
 
 ---
 

@@ -73,6 +73,8 @@ struct BowlItem {
     double piece_height_mm = 0.0;
     /// How steeply it piles when mounding is on; below 0 takes the bowl's default.
     double mound_slope_deg = -1.0;
+    /// Rolls off food steeper than this when it lands; below 0, stays where it lands.
+    double roll_off_deg = -1.0;
 
     /// Bowl-to-bowl scatter around the curve, and the uncertainty of the curve
     /// itself, each as a share of volume (see kAssumedRelSd and friends).
@@ -192,11 +194,17 @@ double food_surface_mm(const SauceCups &sauce, const BowlGeometry &geometry, dou
 /// Mounding, layer by layer. Each ingredient lands at the centre and piles at its own
 /// slope on top of everything already in the bowl: its surface is the higher of the
 /// pile below and a cone of its slope, cut off by the walls. A steep ingredient on a
-/// flat one makes a peak; a flat one on a steep one fills in round its flanks.
+/// flat one makes a peak; a flat one on a steep one fills in round its flanks. One with
+/// a roll-off angle first rolls outward until the ground is no steeper than that, and
+/// piles there instead: a ridge round the foot of the mound rather than a cone on top.
 ///
 struct MoundLayer {
     double volume_mm3 = 0.0;
     double slope_deg = 0.0;
+    /// A chunky layer rolls outward from the centre over anything steeper than this,
+    /// and piles where it comes to rest: a ring at the foot of the mound. Below 0 it
+    /// stays where it lands.
+    double roll_off_deg = -1.0;
 };
 
 /// The radii, in mm from the centre out to the rim, at which mound surfaces are given.
@@ -214,7 +222,11 @@ std::vector<MoundLayer> mound_layers(const std::vector<BowlItem> &items,
                                      const std::vector<double> &item_oz,
                                      const BowlGeometry &geometry, double scale = 1.0);
 
-/// Height of the bowl's peak once every layer is in.
+/// The highest point of food among mound_surfaces(): a ridge can stand above the
+/// centre, and the bowl's own walls do not count.
+double highest_food_mm(const std::vector<std::vector<double>> &surfaces);
+
+/// Height of the bowl's highest point of food once every layer is in.
 double mound_peak_mm(const BowlGeometry &geometry, const std::vector<MoundLayer> &layers);
 
 /// Height of the tallest chunk in a bowl, from the items with any mass in it.

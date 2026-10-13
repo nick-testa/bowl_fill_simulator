@@ -180,6 +180,17 @@ bool load_mound_slopes(const QString &path, MoundSlopes &out, QString *error = n
 bool save_mound_slopes(const QString &path, const MoundSlopes &slopes,
                        QString *error = nullptr);
 
+///
+/// Roll-off angles (degrees) of chunky ingredients that roll off a slope steeper than
+/// this even though a pile of them alone stands steeper: beef cubes rolling off a
+/// couscous mound. Stored in data/ingredient_rolloff.csv as ingredient,roll_off_deg;
+/// unlisted ingredients stay where they land, as before.
+///
+using RollOffAngles = std::map<QString, double>;
+
+bool load_roll_off(const QString &path, RollOffAngles &out, QString *error = nullptr);
+bool save_roll_off(const QString &path, const RollOffAngles &angles, QString *error = nullptr);
+
 /// The name a menu spelling is offered under, with prep and version words dropped:
 /// "White Jasmine Rice retherm v11" -> "White Jasmine Rice". The same cleaning the
 /// loader applies, for data typed straight from station or menu labels.

@@ -53,6 +53,7 @@ target_compile_options(bowlfill_core PRIVATE -Wall -Wextra -Wpedantic)
 qt_add_executable(bowl-fill-simulator
   src/main.cc
   src/ui/main_window.cc
+  src/ui/chip_picker.cc
   src/ui/report_dialog.cc
   src/ui/mapping_dialog.cc
   src/ui/sweep_dialog.cc

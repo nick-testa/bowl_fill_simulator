@@ -856,6 +856,16 @@ bool save_mound_slopes(const QString &path, const MoundSlopes &slopes, QString *
     return save_named_numbers(path, "mound_slope_deg", slopes, error);
 }
 
+bool load_roll_off(const QString &path, RollOffAngles &out, QString *error)
+{
+    return load_named_numbers(path, "roll_off_deg", "an angle in degrees", out, error);
+}
+
+bool save_roll_off(const QString &path, const RollOffAngles &angles, QString *error)
+{
+    return save_named_numbers(path, "roll_off_deg", angles, error);
+}
+
 bool save_name_mappings(const QString &path, const NameMappings &mappings, QString *error)
 {
     QFile file(path);

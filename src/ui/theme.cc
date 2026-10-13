@@ -102,6 +102,46 @@ QFont mono(Text role)
     return f;
 }
 
+QColor food_colour(const QString &ingredient, int kind)
+{
+    // Most specific first: "Mexican Rice" before "rice", "Chicken Salad" before
+    // "chicken". Colours are the food's, nudged only where two would be invisible on
+    // the panel (white rice and feta are a warm off-white, not pure white).
+    static const std::pair<const char *, const char *> kFoods[] = {
+        {"mexican rice", "#d9823b"}, {"spanish rice", "#d9823b"}, {"red rice", "#c8603a"},
+        {"green rice", "#8fb35a"},   {"cilantro rice", "#9cbd66"},
+        {"brown rice", "#a07c56"},   {"lentil", "#9a7552"},
+        {"rice", "#ebe3cf"},         {"quinoa", "#d6c296"},     {"farro", "#a8805a"},
+        {"lemon couscous", "#ead27e"}, {"couscous", "#e2c98a"}, {"orzo", "#e6d49c"},
+        {"pasta", "#e8cb7c"},        {"tabbouleh", "#b5c47a"},
+        {"romaine", "#6dbb45"},      {"kale", "#2f6b3a"},       {"spinach", "#3d7a3b"},
+        {"arugula", "#5b8f3d"},      {"lettuce", "#86c45e"},    {"greens", "#6aa84f"},
+        {"chicken salad", "#e4d09e"},
+        {"tex-mex", "#c9733a"},      {"al pastor", "#d0663a"},  {"guajillo", "#b8532f"},
+        {"chipotle", "#7a3f2c"},     {"shawarma", "#9a5a36"},   {"carnitas", "#b07445"},
+        {"suadero", "#7d4a32"},      {"beef", "#7a4a33"},       {"steak", "#7a4a33"},
+        {"pork", "#b8845a"},         {"chicken", "#d6a86a"},    {"tofu", "#e6dcc2"},
+        {"falafel", "#9c6b36"},      {"salmon", "#e8896a"},     {"shrimp", "#ee9a7a"},
+        {"black bean", "#3b2f40"},   {"pinto", "#8c5e4a"},      {"bean salad", "#a87650"},
+        {"green bean", "#5f9e46"},   {"bean", "#8c5e4a"},       {"edamame", "#8dbf5a"},
+        {"pickled onion", "#c4477e"}, {"red onion", "#a8467a"}, {"onion", "#e5dbd8"},
+        {"pineapple", "#ead25a"},    {"corn", "#f2cc45"},       {"cucumber", "#a8d18f"},
+        {"broccoli", "#4f8f3a"},     {"peas", "#7db343"},       {"cauliflower", "#e6d7aa"},
+        {"sweet potato", "#e07a2e"}, {"carrot", "#e8892f"},     {"slaw", "#a47ab8"},
+        {"cabbage", "#9b6fb0"},      {"pico", "#d65a45"},       {"salsa", "#cf4a3c"},
+        {"tomato", "#d8443a"},       {"pepper", "#d9503f"},     {"jalape", "#4f8f3a"},
+        {"avocado", "#8db04a"},      {"guac", "#8db04a"},       {"mushroom", "#9a8573"},
+        {"olive", "#5a5a3a"},        {"hummus", "#d6b78a"},     {"seed", "#b89b6a"},
+        {"feta", "#f2eee2"},         {"cotija", "#efe7d4"},     {"parmesan", "#e9d8a4"},
+        {"cheese", "#f2b83b"},       {"cheddar", "#f2a83b"},    {"asian salad", "#9cc46b"},
+    };
+    const QString name = ingredient.toLower();
+    for (const auto &[word, colour] : kFoods)
+        if (name.contains(QLatin1String(word))) return QColor(colour);
+    static const char *kFallback[] = {"#d6c296", "#b07a4a", "#9cb86a"};
+    return QColor(kFallback[std::clamp(kind, 0, 2)]);
+}
+
 QColor series_colour(const QString &ingredient)
 {
     const Palette &p = palette();
@@ -155,7 +195,8 @@ QLabel#lead     { color: @inkSoft; }
 QFrame#stat      { background: transparent; border: none; border-left: 1px solid @rule; }
 QFrame#statFirst { background: transparent; border: none; }
 QLabel#statKey   { font-size: @captionpx; color: @inkSoft; }
-QLabel#statValue { font-size: @displaypx; font-weight: 600; }
+QLabel#statValue { font-size: @headingpx; font-weight: 600; }
+QFrame#statRow   { background: transparent; border: none; border-top: 1px solid @rule; }
 
 /* ---- inputs ----------------------------------------------------------------- */
 QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox {
@@ -189,6 +230,8 @@ QPushButton#quiet { background: transparent; border-color: transparent; color: @
 QPushButton#quiet:hover { color: @ink; background: @sunk; }
 QPushButton#issues { background: @overSoft; border-color: @over; color: @over;
                      font-weight: 600; }
+QPushButton#estimates { background: transparent; border-color: @ruleStrong; color: @inkSoft; }
+QPushButton#estimates:hover { color: @ink; border-color: @accent; }
 
 /* Segmented control: a row of checkable buttons sharing one outline. */
 QFrame#segment { background: @sunk; border: 1px solid @rule; border-radius: 7px; }
@@ -206,6 +249,35 @@ QToolButton#disclosure {
     font-size: @captionpx; font-weight: 600; color: @inkFaint; text-align: left;
 }
 QToolButton#disclosure:hover { color: @ink; }
+
+/* Ingredient chips: what is in the bowl, each removable, then an add button. */
+QWidget#chip { background: @sunk; border: 1px solid @rule; border-radius: 13px; }
+QWidget#chip QLabel { background: transparent; }
+QToolButton#chipRemove {
+    background: transparent; border: none; border-radius: 9px; min-height: 18px;
+    min-width: 18px; padding: 0px; color: @inkSoft; font-size: @captionpx;
+}
+QToolButton#chipRemove:hover { background: @rule; color: @ink; }
+QPushButton#chipAdd {
+    background: transparent; border: 1px dashed @ruleStrong; border-radius: 13px;
+    min-height: 26px; padding: 0px 12px; color: @inkSoft;
+}
+QPushButton#chipAdd:hover { color: @ink; border-color: @accent; }
+QPushButton#chipAdd:disabled { color: @inkFaint; border-color: @rule; }
+QMenu { background: @panel; color: @ink; border: 1px solid @ruleStrong; padding: 4px; }
+QMenu::item { padding: 6px 16px; border-radius: 4px; }
+QMenu::item:selected { background: @accentSoft; }
+
+/* Settings drawer navigation: a quiet list, the open page raised, and a page whose
+   settings differ from the defaults marked in the accent. */
+QPushButton#nav {
+    background: transparent; border: none; border-radius: 6px; text-align: left;
+    padding: 0px 10px; color: @inkSoft;
+}
+QPushButton#nav:hover { color: @ink; background: @sunk; }
+QPushButton#nav:checked { background: @sunk; color: @ink; font-weight: 600; }
+QPushButton#nav[modified="true"] { color: @accent; }
+QPushButton#nav[modified="true"]:checked { color: @accent; }
 
 QCheckBox { spacing: 8px; padding: 4px 0px; }
 QCheckBox:disabled { color: @inkFaint; }
@@ -235,6 +307,7 @@ QScrollBar::handle:horizontal { background: @ruleStrong; border-radius: 3px; min
 QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 QSplitter::handle { background: transparent; width: 12px; }
+QScrollArea#drawerPage, QScrollArea#drawerPage > QWidget { background: transparent; }
 )";
     // Longest keys first so @inkSoft is not clipped by @ink.
     QList<std::pair<QString, QString>> ordered;

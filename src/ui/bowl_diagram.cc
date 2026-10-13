@@ -43,21 +43,6 @@ Proportions proportions(const BowlGeometry &g)
     return out;
 }
 
-///
-/// Distinct fills for ingredients with no assigned series hue. Bases keep their
-/// series colour so the diagram, the breakdown table and the curve chart agree;
-/// everything else walks lightness around a per-kind anchor, because rotating hue
-/// would collide with the base series.
-///
-QColor band_colour(const BowlItem &item, int index_within_kind)
-{
-    if (item.kind == Kind::Base) return theme::series_colour(item.name);
-    const theme::Palette &pal = theme::palette();
-    const QColor anchor = item.kind == Kind::Protein ? pal.mass : pal.accent;
-    static const int steps[] = {100, 132, 76, 116, 88, 148};
-    return anchor.lighter(steps[index_within_kind % 6]);
-}
-
 /// Room either side of the bowl for the level markers: the fill line's label on the
 /// left, the 80% bracket and its label on the right.
 struct Gutters {
@@ -116,7 +101,7 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     const std::vector<std::vector<double>> surfaces =
         mound ? mound_surfaces(g, mound_layers(result_.items, result_.last().per_item_oz, g))
               : std::vector<std::vector<double>>{};
-    const double peak_mm = mound ? surfaces.back().front() : food_mm;
+    const double peak_mm = mound ? highest_food_mm(surfaces) : food_mm;
     const double top_mm = std::max(food_mm, peak_mm);
     const double rim_oz = set.rim_oz();
     const bool over_rim = total > rim_oz;
@@ -260,6 +245,16 @@ void BowlDiagram::paintEvent(QPaintEvent *)
         } else {
             p.drawRect(QRectF(cx - rim_hw - 4, s.y_top, rim_w + 8, s.y_bottom - s.y_top + 0.5));
         }
+    }
+    // A fine seam between layers, so neighbours of a similar colour still read apart.
+    QColor seam = Qt::black;
+    seam.setAlphaF(0.28);
+    p.setPen(QPen(seam, 1.0));
+    p.setBrush(Qt::NoBrush);
+    for (size_t k = 0; k + 1 < slices.size(); ++k) {
+        if (mound) p.drawPolyline(profile(surfaces[k + 1], false));
+        else p.drawLine(QPointF(cx - rim_hw - 4, slices[k].y_top),
+                        QPointF(cx + rim_hw + 4, slices[k].y_top));
     }
     p.restore();
 
@@ -448,14 +443,25 @@ std::vector<QColor> BowlDiagram::item_colours() const
 {
     std::vector<QColor> out(result_.items.size());
     if (result_.frames.empty()) return out;
-    int base_i = 0, protein_i = 0, topping_i = 0;
+    // Each band takes its food's colour. Two neighbours that would read as one (two
+    // greens, two off-whites) are pulled apart in lightness, alternating so a run of
+    // similar foods stays distinguishable.
+    QColor previous;
+    bool lifted = false;
     for (size_t i = 0; i < result_.items.size(); ++i) {
         if (result_.last().per_item_oz[i] <= 0.005) continue;
         const BowlItem &it = result_.items[i];
-        int &counter = it.kind == Kind::Base      ? base_i
-                       : it.kind == Kind::Protein ? protein_i
-                                                  : topping_i;
-        out[i] = band_colour(it, counter++);
+        QColor c = theme::food_colour(it.name, static_cast<int>(it.kind));
+        if (previous.isValid()) {
+            const double dr = c.redF() - previous.redF(), dg = c.greenF() - previous.greenF(),
+                         db = c.blueF() - previous.blueF();
+            if (std::sqrt(dr * dr + dg * dg + db * db) < 0.16) {
+                lifted = !lifted;
+                c = lifted ? c.lighter(122) : c.darker(122);
+            }
+        }
+        out[i] = c;
+        previous = c;
     }
     return out;
 }
