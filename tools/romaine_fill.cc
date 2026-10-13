@@ -35,6 +35,8 @@
 #include <map>
 #include <optional>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace bowlfill;
 

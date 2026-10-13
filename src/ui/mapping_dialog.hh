@@ -4,6 +4,8 @@
 
 #include <QDialog>
 
+#include <vector>
+
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;

@@ -61,8 +61,12 @@
 #include <QTimer>
 
 #include <algorithm>
-#include <numeric>
 #include <cmath>
+#include <initializer_list>
+#include <iterator>
+#include <numeric>
+#include <optional>
+#include <utility>
 
 namespace bowlfill {
 namespace {

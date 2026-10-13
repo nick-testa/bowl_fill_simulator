@@ -16,6 +16,9 @@
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace bowlfill {
 namespace {

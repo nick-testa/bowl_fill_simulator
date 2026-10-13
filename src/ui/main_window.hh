@@ -12,6 +12,7 @@
 #include <QMainWindow>
 #include <functional>
 #include <map>
+#include <optional>
 #include <vector>
 
 class QCheckBox;

@@ -14,6 +14,8 @@
 #include <QSettings>
 #include <QTimer>
 
+#include <vector>
+
 namespace {
 
 /// The menus as the window would load them: with the saved name mappings and piece

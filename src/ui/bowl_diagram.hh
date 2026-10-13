@@ -4,6 +4,8 @@
 
 #include <QWidget>
 
+#include <vector>
+
 namespace bowlfill {
 
 ///

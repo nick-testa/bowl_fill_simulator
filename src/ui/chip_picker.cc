@@ -9,6 +9,9 @@
 #include <QStyle>
 #include <QToolButton>
 
+#include <algorithm>
+#include <utility>
+
 namespace bowlfill {
 namespace {
 

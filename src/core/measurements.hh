@@ -5,6 +5,7 @@
 
 #include <QString>
 #include <map>
+#include <utility>
 #include <vector>
 
 namespace bowlfill {

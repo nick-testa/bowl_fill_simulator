@@ -11,6 +11,8 @@
 
 #include <algorithm>
 #include <map>
+#include <utility>
+#include <vector>
 
 namespace bowlfill {
 namespace {

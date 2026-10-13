@@ -14,6 +14,8 @@
 #include <QTextStream>
 #include <QVBoxLayout>
 
+#include <cmath>
+
 namespace bowlfill {
 namespace {
 
