@@ -1,3 +1,4 @@
 
 # ignore all csv reports/files
 reports/
+build/
