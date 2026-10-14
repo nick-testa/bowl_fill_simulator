@@ -1,6 +1,8 @@
 #include "theme.hh"
 
+#include <QAbstractSpinBox>
 #include <QApplication>
+#include <QLineEdit>
 #include <QFontDatabase>
 #include <QPalette>
 
@@ -151,6 +153,18 @@ QColor series_colour(const QString &ingredient)
     return p.accent;
 }
 
+void inset_spin(QAbstractSpinBox *spin)
+{
+    if (auto *edit = spin->findChild<QLineEdit *>()) edit->setTextMargins(8, 0, 8, 0);
+}
+
+void bare_spin(QAbstractSpinBox *spin)
+{
+    spin->setProperty("bare", true);
+    spin->setButtonSymbols(QAbstractSpinBox::UpDownArrows);
+    inset_spin(spin);
+}
+
 QString stylesheet()
 {
     const Palette &p = palette();
@@ -211,6 +225,10 @@ QDoubleSpinBox:focus, QSpinBox:focus, QComboBox:focus, QLineEdit:focus {
     border-color: @accent;
 }
 QComboBox, QLineEdit { min-height: 30px; }
+/* theme::bare_spin: arrows kept for layout (see theme.hh), drawn zero-wide. */
+QAbstractSpinBox[bare="true"]::up-button, QAbstractSpinBox[bare="true"]::down-button {
+    width: 0px; border: none; image: none;
+}
 QComboBox::drop-down { border: none; width: 24px; }
 QComboBox QAbstractItemView {
     background: @panel; color: @ink; border: 1px solid @ruleStrong; outline: none;

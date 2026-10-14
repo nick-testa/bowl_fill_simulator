@@ -1,4 +1,5 @@
 #include "mapping_dialog.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 
 #include <QComboBox>
@@ -97,7 +98,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     show_->addItems({"All names", "Mapped", "Not mapped"});
     brand_ = new QComboBox;
     brand_->addItem("All brands", QString());
-    for (const Menu &m : menus) brand_->addItem(m.brand, m.brand);
+    for (const Menu &m : menus) brand_->addItem(qs(m.brand), qs(m.brand));
     search_ = new QLineEdit;
     search_->setPlaceholderText("Search names");
     search_->setClearButtonEnabled(true);
@@ -109,13 +110,13 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     // ---- the table --------------------------------------------------------
     for (const Menu &m : menus)
         for (const MenuName &n : m.names)
-            rows_.push_back({m.brand, n.raw, n.automatic, n.guessed_kind, n.kind});
+            rows_.push_back({qs(m.brand), qs(n.raw), qs(n.automatic), qs(n.guessed_kind), qs(n.kind)});
 
     QSet<QString> names;
     for (const Menu &m : menus)
-        for (const MenuName &n : m.names) names << n.name << n.automatic;
+        for (const MenuName &n : m.names) names << qs(n.name) << qs(n.automatic);
     for (const auto &[key, mapping] : current)
-        if (!mapping.name.isEmpty()) names << mapping.name;
+        if (!mapping.name.empty()) names << qs(mapping.name);
     names_ = QStringList(names.begin(), names.end());
     std::sort(names_.begin(), names_.end(),
               [](const QString &a, const QString &b) { return a.compare(b, Qt::CaseInsensitive) < 0; });
@@ -185,10 +186,10 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 void MappingDialog::populate(const NameMappings &current, const PieceHeights &pieces,
                              const MoundSlopes &slopes, const RollOffAngles &rolls)
 {
-    std::set<std::pair<QString, QString>> listed;
+    std::set<std::pair<std::string, std::string>> listed;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
         const Row &row = rows_[r];
-        listed.insert({row.brand, row.raw});
+        listed.insert({ss(row.brand), ss(row.raw)});
 
         auto *brand = new QTableWidgetItem(row.brand);
         brand->setForeground(theme::palette().ink_soft);
@@ -212,7 +213,7 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
 
         auto *kind = new QComboBox;
         kind->addItem(QString("Guess: %1").arg(row.guessed_kind), QString());
-        for (const QString &k : kMappingKinds) kind->addItem(capitalised(k), k);
+        for (const std::string &k : kMappingKinds) kind->addItem(capitalised(qs(k)), qs(k));
         kind->setToolTip("Sauce keeps an ingredient out of the topping pool; the simulator "
                          "counts sauce as cups.");
         table_->setCellWidget(r, kKind, in_cell(kind));
@@ -223,7 +224,7 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         piece->setRange(-1, 200);
         piece->setDecimals(0);
         piece->setSuffix(" mm");
-        piece->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        theme::bare_spin(piece);
         piece->setSpecialValueText(
             row.kind == "protein"
                 ? QString("%1 mm (placeholder)").arg(kPlaceholderProteinPieceMm, 0, 'f', 0)
@@ -238,7 +239,7 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         slope->setRange(-1, 80);
         slope->setDecimals(0);
         slope->setSuffix("\u00B0");
-        slope->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        theme::bare_spin(slope);
         slope->setSpecialValueText("Default");
         slope->setToolTip("How steeply it piles when mounding is shown (its angle of "
                           "repose). 0\u00B0 levels out flat. Shared by every row that maps "
@@ -250,7 +251,7 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         roll->setRange(-1, 80);
         roll->setDecimals(0);
         roll->setSuffix("\u00B0");
-        roll->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        theme::bare_spin(roll);
         roll->setSpecialValueText("None");
         roll->setToolTip("For chunky pieces that roll: they roll down any food steeper "
                          "than this and pile where it flattens out, usually round the "
@@ -258,22 +259,22 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
                          "every row that maps to the same name.");
         table_->setCellWidget(r, kRoll, in_cell(roll));
 
-        auto it = current.find({row.brand, row.raw});
+        auto it = current.find({ss(row.brand), ss(row.raw)});
         set_row(r, it != current.end() ? it->second : NameMapping{});
-        auto pit = pieces.find(name_at(r));
+        auto pit = pieces.find(ss(name_at(r)));
         {
             const QSignalBlocker block(piece);
             piece->setValue(pit != pieces.end() ? pit->second : -1);
         }
         connect(piece, &QDoubleSpinBox::valueChanged, this, [this, r] { sync_piece(r); });
-        auto sit = slopes.find(name_at(r));
+        auto sit = slopes.find(ss(name_at(r)));
         {
             const QSignalBlocker block(slope);
             slope->setValue(sit != slopes.end() ? sit->second : -1);
         }
         connect(slope, &QDoubleSpinBox::valueChanged, this,
                 [this, r] { sync_shared(r, kSlope); });
-        auto rit = rolls.find(name_at(r));
+        auto rit = rolls.find(ss(name_at(r)));
         {
             const QSignalBlocker block(roll);
             roll->setValue(rit != rolls.end() ? rit->second : -1);
@@ -289,19 +290,19 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
     for (const auto &[name, mm] : pieces) {
         bool used = false;
         for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
-            used = name_at(r) == name;
+            used = ss(name_at(r)) == name;
         if (!used) stale_pieces_[name] = mm;
     }
     for (const auto &[name, deg] : slopes) {
         bool used = false;
         for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
-            used = name_at(r) == name;
+            used = ss(name_at(r)) == name;
         if (!used) stale_slopes_[name] = deg;
     }
     for (const auto &[name, deg] : rolls) {
         bool used = false;
         for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
-            used = name_at(r) == name;
+            used = ss(name_at(r)) == name;
         if (!used) stale_rolls_[name] = deg;
     }
 }
@@ -337,7 +338,7 @@ RollOffAngles MappingDialog::rolls() const
     RollOffAngles out = stale_rolls_;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
         if (QDoubleSpinBox *sp = spin_in(table_, r, kRoll); sp && sp->value() >= 0)
-            out[name_at(r)] = sp->value();
+            out[ss(name_at(r))] = sp->value();
     return out;
 }
 
@@ -346,7 +347,7 @@ MoundSlopes MappingDialog::slopes() const
     MoundSlopes out = stale_slopes_;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
         if (QDoubleSpinBox *sp = spin_in(table_, r, kSlope); sp && sp->value() >= 0)
-            out[name_at(r)] = sp->value();
+            out[ss(name_at(r))] = sp->value();
     return out;
 }
 
@@ -354,7 +355,7 @@ PieceHeights MappingDialog::pieces() const
 {
     PieceHeights out = stale_pieces_;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
-        if (piece_at(r) >= 0) out[name_at(r)] = piece_at(r);
+        if (piece_at(r) >= 0) out[ss(name_at(r))] = piece_at(r);
     return out;
 }
 
@@ -375,11 +376,11 @@ void MappingDialog::set_row(int row, const NameMapping &m)
 {
     if (auto *maps = combo_in(table_, row, kMapsTo)) {
         const QSignalBlocker block(maps);
-        maps->setCurrentText(m.name.isEmpty() ? rows_[row].automatic : m.name);
+        maps->setCurrentText(m.name.empty() ? rows_[row].automatic : qs(m.name));
     }
     if (auto *kind = combo_in(table_, row, kKind)) {
         const QSignalBlocker block(kind);
-        const int i = kind->findData(m.kind);
+        const int i = kind->findData(qs(m.kind));
         kind->setCurrentIndex(i >= 0 ? i : 0);
     }
 }
@@ -428,11 +429,11 @@ NameMappings MappingDialog::mappings() const
 {
     NameMappings out = stale_;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
-        const auto key = std::make_pair(rows_[r].brand, rows_[r].raw);
+        const auto key = std::make_pair(ss(rows_[r].brand), ss(rows_[r].raw));
         out.erase(key);
         if (!is_mapped(r)) continue;
         const QString name = name_at(r);
-        out[key] = {name == rows_[r].automatic ? QString() : name, kind_at(r)};
+        out[key] = {name == rows_[r].automatic ? std::string() : ss(name), ss(kind_at(r))};
     }
     return out;
 }
@@ -445,10 +446,10 @@ void MappingDialog::export_csv()
     // Every row, with the name in use filled in, so the sheet can be edited in place.
     NameMappings all = stale_;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
-        all[{rows_[r].brand, rows_[r].raw}] = {name_at(r), kind_at(r)};
-    QString err;
-    if (!save_name_mappings(path, all, &err))
-        QMessageBox::warning(this, "Could not export", err);
+        all[{ss(rows_[r].brand), ss(rows_[r].raw)}] = {ss(name_at(r)), ss(kind_at(r))};
+    std::string err;
+    if (!save_name_mappings(ss(path), all, &err))
+        QMessageBox::warning(this, "Could not export", qs(err));
 }
 
 void MappingDialog::import_csv()
@@ -457,15 +458,15 @@ void MappingDialog::import_csv()
                                                       "CSV (*.csv);;All files (*)");
     if (path.isEmpty()) return;
     NameMappings read;
-    QString err;
-    if (!load_name_mappings(path, read, &err)) {
-        QMessageBox::warning(this, "Could not import", err);
+    std::string err;
+    if (!load_name_mappings(ss(path), read, &err)) {
+        QMessageBox::warning(this, "Could not import", qs(err));
         return;
     }
     int applied = 0;
-    std::set<std::pair<QString, QString>> matched;
+    std::set<std::pair<std::string, std::string>> matched;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
-        auto it = read.find({rows_[r].brand, rows_[r].raw});
+        auto it = read.find({ss(rows_[r].brand), ss(rows_[r].raw)});
         if (it == read.end()) continue;
         set_row(r, it->second);
         matched.insert(it->first);

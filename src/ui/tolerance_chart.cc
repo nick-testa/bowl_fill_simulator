@@ -1,4 +1,5 @@
 #include "tolerance_chart.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 #include "units.hh"
 
@@ -73,13 +74,13 @@ void ToleranceChart::paintEvent(QPaintEvent *)
     double y = kTop;
     for (const AdaptiveItem &it : result_.items) {
         const double t = tol.for_kind(it.kind);
-        const QColor colour = theme::food_colour(it.name, static_cast<int>(it.kind));
+        const QColor colour = theme::food_colour(qs(it.name), static_cast<int>(it.kind));
 
         p.setPen(pal.ink);
         p.setFont(theme::font(theme::Text::Caption));
         const QFontMetricsF fm(p.font());
         p.drawText(QRectF(8, y, kNameW - 16, kRowH), Qt::AlignLeft | Qt::AlignVCenter,
-                   fm.elidedText(it.name, Qt::ElideRight, kNameW - 20));
+                   fm.elidedText(qs(it.name), Qt::ElideRight, kNameW - 20));
 
         // The band this ingredient is allowed to move within.
         QColor band = colour;

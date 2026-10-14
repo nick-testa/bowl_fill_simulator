@@ -5,11 +5,12 @@
 #include "curves.hh"
 #include "menu_model.hh"
 
-#include <QString>
 #include <optional>
+#include <string>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// One ingredient as it enters the bowl. Dispense order is also stacking order:
@@ -38,26 +39,28 @@ constexpr double kBorrowedExtraRelSd = 0.10;
 /// sauces, packaging, test items and failed dispenses left out. Two ingredients with
 /// a target or calibration problem are left out too, as they would swamp the rest:
 /// spinach (base, -45% bias) and frozen peas (topping, 70% SD).
-struct DispenseVariation {
-    double base = 0.10;      ///< ex-spinach 10.3%; rice alone is ~4-7%
-    double protein = 0.12;   ///< 12.2%
-    double topping = 0.19;   ///< ex-peas 19.4%
+struct DispenseVariation
+{
+    double base = 0.10;    ///< ex-spinach 10.3%; rice alone is ~4-7%
+    double protein = 0.12; ///< 12.2%
+    double topping = 0.19; ///< ex-peas 19.4%
 
     /// The average miss, as a share of the target: the robot runs slightly heavy, so
     /// real bowls are centred a little above what was asked for. Same data, means.
-    double base_bias = 0.025;     ///< ex-spinach +2.5%
-    double protein_bias = 0.032;  ///< +3.2%
-    double topping_bias = 0.05;   ///< ex-peas +5.0%
+    double base_bias = 0.025;    ///< ex-spinach +2.5%
+    double protein_bias = 0.032; ///< +3.2%
+    double topping_bias = 0.05;  ///< ex-peas +5.0%
 
     double for_kind(Kind kind) const;
     double bias_for(Kind kind) const;
 };
 
-struct BowlItem {
-    QString name;
+struct BowlItem
+{
+    std::string name;
     Kind kind = Kind::Topping;
     double start_g = 0.0;
-    double final_g = 0.0;  ///< filled in by simulate()
+    double final_g = 0.0; ///< filled in by simulate()
     double step_g = 0.0;
     double max_g = 0.0;
 
@@ -85,7 +88,8 @@ struct BowlItem {
     double marginal_oz_per_100g(double grams) const;
 };
 
-struct Frame {
+struct Frame
+{
     double grams = 0.0;
     double ounces = 0.0;
     double ounces_uncompressed = 0.0;
@@ -97,7 +101,8 @@ struct Frame {
 /// Sauce rides in a cup inside the bowl and takes real space, so it comes off the
 /// capacity available to food. Every bowl carries one; the second is an upcharge.
 ///
-struct SauceCups {
+struct SauceCups
+{
     static constexpr int kMax = 2;
 
     /// Two is the common order: one comes with the bowl, the second is an upcharge.
@@ -124,22 +129,31 @@ struct SauceCups {
 /// functional fill (the bowl capacity, 32 oz) is a fill line below the rim: 946 ml
 /// reaches 41.6 mm.
 ///
-struct BowlGeometry {
-    bool enabled = false;          ///< off: the volume-only model, cups at their contents
-    double depth_mm = 46.0;              ///< inside, to the rim
-    double top_diameter_mm = 181.0;      ///< inside, at the rim
-    double bottom_diameter_mm = 161.0;   ///< inside, at the floor
-    double lid_headroom_mm = 5.0;        ///< how far the lid's centre rises over the rim
-    double lid_plateau_diameter_mm = 160.0;   ///< across that raised centre
+struct BowlGeometry
+{
+    bool enabled = false;                   ///< off: the volume-only model, cups at their contents
+    double depth_mm = 46.0;                 ///< inside, to the rim
+    double top_diameter_mm = 181.0;         ///< inside, at the rim
+    double bottom_diameter_mm = 161.0;      ///< inside, at the floor
+    double lid_headroom_mm = 5.0;           ///< how far the lid's centre rises over the rim
+    double lid_plateau_diameter_mm = 160.0; ///< across that raised centre
 
     /// Volume below a level surface `height_mm` above the floor, in mm³: the tapered
     /// bowl to the rim, then the lid's plateau above it.
     double volume_below_mm3(double height_mm) const;
     /// The height a volume reaches; the inverse of volume_below_mm3.
     double height_of_mm3(double volume_mm3) const;
-    double rim_ml() const { return volume_below_mm3(depth_mm) / 1000.0; }
+
+    double rim_ml() const
+    {
+        return volume_below_mm3(depth_mm) / 1000.0;
+    }
+
     /// The lid's inside at its centre, measured from the floor.
-    double lid_mm() const { return depth_mm + std::max(0.0, lid_headroom_mm); }
+    double lid_mm() const
+    {
+        return depth_mm + std::max(0.0, lid_headroom_mm);
+    }
 
     /// Pressed in, the robot pushes each cup down and the food flows round it, so a
     /// cup costs only what it displaces. Resting, cups sit on the food as dispensed,
@@ -147,9 +161,9 @@ struct BowlGeometry {
     bool cups_pressed = true;
     /// The cup is a frustum, wide at the lid and narrow at the base. The diameters
     /// only matter when cups are pressed in. Measured 2026-10-12.
-    double cup_height_mm = 30.0;          ///< lidded
-    double cup_diameter_mm = 65.0;        ///< across the lid
-    double cup_base_diameter_mm = 45.0;   ///< across the base
+    double cup_height_mm = 30.0;        ///< lidded
+    double cup_diameter_mm = 65.0;      ///< across the lid
+    double cup_base_diameter_mm = 45.0; ///< across the base
 
     /// Volume of the bottom `height_mm` of a cup, in mm³: what a pressed-in cup
     /// displaces when the food surface sits that far above its base.
@@ -165,9 +179,8 @@ struct BowlGeometry {
     /// looks and how high it peaks, not whether it fits: the lidder presses a mound
     /// down to seal, so fit is still judged on volume.
     bool mound = false;
-    double mound_slope_deg = 25.0;   ///< the default; ingredients may set their own
+    double mound_slope_deg = 25.0; ///< the default; ingredients may set their own
     static constexpr double kPlaceholderMoundSlope = 25.0;
-
 
     /// Placeholder, until chunks are measured; the UI flags this value.
     static constexpr double kPlaceholderChunkProud = 0.5;
@@ -177,8 +190,10 @@ struct BowlGeometry {
 /// contents. With it on, food may rise to the fill line the capacity reaches, unless
 /// the tallest chunk or the cups need it lower to clear the lid, less what pressed-in
 /// cups displace.
-double food_capacity_oz(double bowl_capacity_oz, const SauceCups &sauce,
-                        const BowlGeometry &geometry, double chunk_height_mm);
+double food_capacity_oz(double bowl_capacity_oz,
+                        const SauceCups &sauce,
+                        const BowlGeometry &geometry,
+                        double chunk_height_mm);
 
 /// Food that brings the surface to the rim, in oz: the bowl to its rim less the cups
 /// (what pressed-in cups displace with geometry on, their contents with it off).
@@ -198,7 +213,8 @@ double food_surface_mm(const SauceCups &sauce, const BowlGeometry &geometry, dou
 /// a roll-off angle first rolls outward until the ground is no steeper than that, and
 /// piles there instead: a ridge round the foot of the mound rather than a cone on top.
 ///
-struct MoundLayer {
+struct MoundLayer
+{
     double volume_mm3 = 0.0;
     double slope_deg = 0.0;
     /// A chunky layer rolls outward from the centre over anything steeper than this,
@@ -213,14 +229,14 @@ std::vector<double> mound_radii(const BowlGeometry &geometry);
 /// The surface after each layer, as heights above the floor at mound_radii(). The
 /// first is the empty bowl itself (its floor and walls), so there is one more surface
 /// than layers.
-std::vector<std::vector<double>> mound_surfaces(const BowlGeometry &geometry,
-                                                const std::vector<MoundLayer> &layers);
+std::vector<std::vector<double>> mound_surfaces(const BowlGeometry &geometry, const std::vector<MoundLayer> &layers);
 
 /// The layers of a bowl: each item's volume (`item_oz`, one per item, times `scale`)
 /// at its own slope, or the bowl's default where it has none. Empty items are skipped.
 std::vector<MoundLayer> mound_layers(const std::vector<BowlItem> &items,
                                      const std::vector<double> &item_oz,
-                                     const BowlGeometry &geometry, double scale = 1.0);
+                                     const BowlGeometry &geometry,
+                                     double scale = 1.0);
 
 /// The highest point of food among mound_surfaces(): a ridge can stand above the
 /// centre, and the bowl's own walls do not count.
@@ -232,13 +248,14 @@ double mound_peak_mm(const BowlGeometry &geometry, const std::vector<MoundLayer>
 /// Height of the tallest chunk in a bowl, from the items with any mass in it.
 double tallest_chunk_mm(const std::vector<BowlItem> &items);
 
-struct SimSettings {
+struct SimSettings
+{
     double floor_g = 0.0;
     double bowl_capacity_oz = 32.0;
     SauceCups sauce;
     BowlGeometry geometry;
     bool compress = false;
-    double load_transfer = 1.0;  ///< share of the weight above a base that bears on it
+    double load_transfer = 1.0; ///< share of the weight above a base that bears on it
     DispenseVariation dispense;
 
     /// Tallest chunk in the bowl; simulate() fills this from the items it is given.
@@ -246,14 +263,23 @@ struct SimSettings {
 
     /// What is left for food once the cups are in. The ramp is judged against this.
     double food_capacity_oz() const;
+
     /// Everything that is not food: the cups, and with geometry on, the clearance
     /// the cups and chunks need. capacity = food room + overhead.
-    double overhead_oz() const { return bowl_capacity_oz - food_capacity_oz(); }
+    double overhead_oz() const
+    {
+        return bowl_capacity_oz - food_capacity_oz();
+    }
+
     /// Food that reaches the rim, for the chance of going over it.
-    double rim_oz() const { return rim_food_oz(sauce, geometry); }
+    double rim_oz() const
+    {
+        return rim_food_oz(sauce, geometry);
+    }
 };
 
-enum class Verdict {
+enum class Verdict
+{
     NoFloor,          ///< nothing ramps: no rule matched, or the menu sets no floors
     FitsMassBound,    ///< cleared the floor and stayed inside the bowl
     Saturated,        ///< every ingredient hit its max before the floor
@@ -261,19 +287,20 @@ enum class Verdict {
     OverWhileRamping, ///< crossed the volume limit on the way to the floor
 };
 
-QString to_string(Verdict v);
+std::string to_string(Verdict v);
 
 ///
 /// A predicted bowl as a distribution rather than one number: its median, the range
 /// 80% of real bowls should fall in, and the chance of going over each limit.
 ///
-struct FillUncertainty {
+struct FillUncertainty
+{
     bool valid = false;
     double median_oz = 0.0;
     double sd_oz = 0.0;
-    double p10_oz = 0.0, p90_oz = 0.0;   ///< the 80% range
-    double room_oz = 0.0;                ///< room left for food (cups, chunks)
-    double rim_oz = 0.0;                 ///< the bowl to the rim
+    double p10_oz = 0.0, p90_oz = 0.0; ///< the 80% range
+    double room_oz = 0.0;              ///< room left for food (cups, chunks)
+    double rim_oz = 0.0;               ///< the bowl to the rim
     double p_over_room = 0.0;
     double p_over_rim = 0.0;
 };
@@ -288,23 +315,34 @@ constexpr double kZ80 = 1.2815515655446004;
 /// The sum of independent items is taken as normal.
 ///
 FillUncertainty fill_uncertainty(const std::vector<BowlItem> &items,
-                                 const std::vector<double> &item_oz, double room_oz,
-                                 double rim_oz, const DispenseVariation *dispense);
+                                 const std::vector<double> &item_oz,
+                                 double room_oz,
+                                 double rim_oz,
+                                 const DispenseVariation *dispense);
 
-struct SimResult {
-    std::vector<BowlItem> items;   ///< each carries start_g and final_g
-    std::vector<Frame> frames;     ///< one per pass, frames.front() is as-ordered
+struct SimResult
+{
+    std::vector<BowlItem> items; ///< each carries start_g and final_g
+    std::vector<Frame> frames;   ///< one per pass, frames.front() is as-ordered
     SimSettings settings;
     Verdict verdict = Verdict::NoFloor;
 
     int passes = 0;
-    std::optional<double> crossed_at_g;    ///< mass where volume first exceeded the cap
+    std::optional<double> crossed_at_g; ///< mass where volume first exceeded the cap
     std::optional<double> highest_safe_floor_g;
     bool saturated = false;
-    FillUncertainty fill;   ///< the final bowl as a distribution
+    FillUncertainty fill; ///< the final bowl as a distribution
 
-    const Frame &first() const { return frames.front(); }
-    const Frame &last() const { return frames.back(); }
+    const Frame &first() const
+    {
+        return frames.front();
+    }
+
+    const Frame &last() const
+    {
+        return frames.back();
+    }
+
     double grams_per_pass() const;
     double base_share_of_step() const;
     double squeezed_oz() const;
@@ -319,8 +357,7 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings);
 
 /// The bowl's volume with each item at `grams` (one per item): what simulate() and
 /// volume_fill() both measure, compression included when the settings ask for it.
-Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &grams,
-                 const SimSettings &settings);
+Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &grams, const SimSettings &settings);
 
 ///
 /// Volume Fill: the dynamic ramp made to respect the bowl. It works in the same
@@ -334,29 +371,31 @@ Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &
 ///     `min_share` of its recipe portion. An ingredient with no step_g is fixed.
 /// "Fits" means within `fit_share` of the food room.
 ///
-struct VolumeFillSettings {
-    double fit_share = 1.0;   ///< of the food room
-    double min_share = 0.7;   ///< of each base's and topping's recipe portion
+struct VolumeFillSettings
+{
+    double fit_share = 1.0; ///< of the food room
+    double min_share = 0.7; ///< of each base's and topping's recipe portion
 };
 
-enum class VolumeFillStatus {
-    FilledToLimit,    ///< topped up until the next pass would not fit
-    AtMax,            ///< everything at its max and still under the limit
-    SteppedDown,      ///< over as written, stepped down until it fits
-    StillOver,        ///< over even with bases and toppings at their lowest
+enum class VolumeFillStatus
+{
+    FilledToLimit, ///< topped up until the next pass would not fit
+    AtMax,         ///< everything at its max and still under the limit
+    SteppedDown,   ///< over as written, stepped down until it fits
+    StillOver,     ///< over even with bases and toppings at their lowest
 };
 
-QString to_string(VolumeFillStatus s);
+std::string to_string(VolumeFillStatus s);
 
-struct VolumeFillResult {
-    SimResult sim;            ///< frames run as-written, then each pass taken
+struct VolumeFillResult
+{
+    SimResult sim; ///< frames run as-written, then each pass taken
     VolumeFillStatus status = VolumeFillStatus::FilledToLimit;
-    double limit_oz = 0.0;    ///< the volume it had to fit
+    double limit_oz = 0.0; ///< the volume it had to fit
     int passes_up = 0, passes_down = 0;
 };
 
-VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &settings,
-                             const VolumeFillSettings &vf);
+VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &settings, const VolumeFillSettings &vf);
 
 ///
 /// apply_proportional_reduction_to_product: halve each base, then floor at its
@@ -379,18 +418,25 @@ constexpr double kFlatToppingRate = 4.5;
 ///              Al Pastor and Suadero Beef rather than a flat rate
 ///   Flat       nothing measured to lean on: the flat per-100 g rate
 ///
-enum class CurveSource { Own, Family, Composite, Flat };
+enum class CurveSource
+{
+    Own,
+    Family,
+    Composite,
+    Flat
+};
 
-struct CurveChoice {
+struct CurveChoice
+{
     CurveSource source = CurveSource::Flat;
     double K = 0.0, p = 1.0;
-    QStringList from;   ///< the curve borrowed, or the composite's members
-    double rel_sd = kFlatRateRelSd;   ///< bowl-to-bowl scatter, as a share of volume
-    double rel_se = 0.0;              ///< uncertainty of the curve itself
+    std::vector<std::string> from;  ///< the curve borrowed, or the composite's members
+    double rel_sd = kFlatRateRelSd; ///< bowl-to-bowl scatter, as a share of volume
+    double rel_se = 0.0;            ///< uncertainty of the curve itself
 };
 
 /// The curve to use for `name`, of kind `kind` (see CurveSource).
-CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves, Method method);
+CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &curves, Method method);
 
 ///
 /// The average curve of every measured ingredient of `kind`, each counted once
@@ -398,15 +444,16 @@ CurveChoice choose_curve(const QString &name, Kind kind, const CurveSet &curves,
 /// span. Curves named "test ..." are calibration references, not food, and bases
 /// never get a composite. Invalid when nothing of that kind is measured.
 ///
-Fit composite_curve(Kind kind, const CurveSet &curves, Method method,
-                    QStringList *members = nullptr);
+Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vector<std::string> *members = nullptr);
 
 /// One line for the UI: "own curve", "composite of A, B", ...
-QString describe(const CurveChoice &choice);
+std::string describe(const CurveChoice &choice);
 
 /// Builds a bowl item from menu configuration plus the fitted curves.
-BowlItem make_item(const Ingredient &ingredient, const CurveSet &curves, Method method,
+BowlItem make_item(const Ingredient &ingredient,
+                   const CurveSet &curves,
+                   Method method,
                    double flat_protein_rate = kFlatProteinRate,
                    double flat_topping_rate = kFlatToppingRate);
 
-}  // namespace bowlfill
+} // namespace bowlfill

@@ -3,12 +3,13 @@
 #include "bowl_data.hh"
 #include "curves.hh"
 
-#include <QString>
 #include <map>
+#include <string>
 #include <utility>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// The measurement store: every .csv in data/measurements/, loaded at start-up.
@@ -24,12 +25,13 @@ namespace bowlfill {
 ///     scanned bowl (bowl_data_format_help). Single-ingredient rows extend the
 ///     curves; mixed rows feed the squash fit.
 ///
-struct MeasurementFile {
-    QString name;          ///< file name within the folder
+struct MeasurementFile
+{
+    std::string name; ///< file name within the folder
     bool bowl_sheet = false;
-    int rows = 0;          ///< usable rows read
-    QString problem;       ///< why it could not be read, or rows it skipped
-    bool failed = false;   ///< nothing usable came from this file
+    int rows = 0;        ///< usable rows read
+    std::string problem; ///< why it could not be read, or rows it skipped
+    bool failed = false; ///< nothing usable came from this file
 };
 
 ///
@@ -41,12 +43,13 @@ struct MeasurementFile {
 /// reference's deepest reading, where it is 1; readings above the reference's range
 /// are left alone rather than extrapolated.
 ///
-struct Backfill {
+struct Backfill
+{
     bool valid = false;
-    QString reference;     ///< the ingredient(s) used, e.g. "test beans"
+    std::string reference; ///< the ingredient(s) used, e.g. "test beans"
     int points = 0;
     double K = 0.0, p = 1.0;
-    double top_oz = 0.0;   ///< the reference fit at its heaviest reading
+    double top_oz = 0.0; ///< the reference fit at its heaviest reading
 
     double corrected_oz(double reading_oz) const;
     /// Multiplier applied to a reading of `ml` millilitres.
@@ -61,24 +64,26 @@ constexpr int kMinReferencePoints = 5;
 constexpr double kSolidDensityGPerMl = 1.05;
 
 /// Calibration references are named "test ...": they are measured, but are not food.
-bool is_reference_name(const QString &ingredient);
+bool is_reference_name(const std::string &ingredient);
 
-struct MeasurementOptions {
-    double empty_bowl_ml = 0.0;    ///< the camera's zero error, applied to scans
-    bool backfill = false;         ///< correct scans by the calibration reference
-    bool drop_impossible = false;  ///< leave readings below solid volume out of fits
+struct MeasurementOptions
+{
+    double empty_bowl_ml = 0.0;   ///< the camera's zero error, applied to scans
+    bool backfill = false;        ///< correct scans by the calibration reference
+    bool drop_impossible = false; ///< leave readings below solid volume out of fits
 };
 
-struct MeasurementSet {
-    QString dir;
+struct MeasurementSet
+{
+    std::string dir;
     std::vector<MeasurementFile> files;
-    BowlSheet bowls;       ///< every bowl-sheet row, merged across files
+    BowlSheet bowls; ///< every bowl-sheet row, merged across files
     bool folder_missing = false;
 
-    Backfill backfill;             ///< valid when backfill was asked for and possible
+    Backfill backfill; ///< valid when backfill was asked for and possible
     bool backfill_requested = false;
     /// Readings left out as impossible, by ingredient ("mixed bowl" for mixed rows).
-    std::map<QString, int> dropped;
+    std::map<std::string, int> dropped;
 
     int failed_files() const;
     int dropped_total() const;
@@ -90,12 +95,10 @@ constexpr const char *kMeasurementsDir = "/data/measurements";
 /// and lock files skipped) and refits. The options apply to bowl sheets (camera
 /// scans) only; curve-row files are taken as given, since they may come from other
 /// methods. Nothing on disk is changed: turning an option off restores every reading.
-MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
-                                 const MeasurementOptions &options = {});
+MeasurementSet load_measurements(const std::string &dir, CurveSet &curves, const MeasurementOptions &options = {});
 
 /// Fits the camera's distortion from reference readings (grams, scanned ounces).
-Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference,
-                      const QString &name);
+Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference, const std::string &name);
 
 /// The volume-vision rig reads about -5 ml for an empty bowl (-4 to -8 when in
 /// calibration); the app's default for the setting above.
@@ -103,7 +106,7 @@ constexpr double kDefaultEmptyBowlMl = -5.0;
 
 /// True when the file's header names an `ingredient` column: curve rows rather than
 /// a bowl sheet.
-bool is_curve_csv(const QString &path);
+bool is_curve_csv(const std::string &path);
 
 ///
 /// Copies `source` into `dir` so it is loaded from then on. A file already in `dir`
@@ -111,7 +114,6 @@ bool is_curve_csv(const QString &path);
 /// is added; if it is taken by an identical file, nothing is copied. Returns the
 /// stored path, or an empty string with `error` set.
 ///
-QString store_measurement_file(const QString &source, const QString &dir,
-                               QString *error = nullptr);
+std::string store_measurement_file(const std::string &source, const std::string &dir, std::string *error = nullptr);
 
-}  // namespace bowlfill
+} // namespace bowlfill

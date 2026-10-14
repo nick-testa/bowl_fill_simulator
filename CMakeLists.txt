@@ -34,9 +34,22 @@ if(NOT _wayland_plugin AND DEFINED ENV{WAYLAND_DISPLAY})
     "system Qt instead.")
 endif()
 
-# Simulation core. Depends on Qt6::Core only for QString/QJson, so it stays
-# linkable from a headless tool as well as the GUI.
+# nlohmann/json reads the menu dumps. lab37 builds against 3.12; use an installed
+# copy when there is one, otherwise fetch the release.
+find_package(nlohmann_json 3.11 QUIET)
+if(NOT nlohmann_json_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+    URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
+    DOWNLOAD_EXTRACT_TIMESTAMP ON)
+  FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# Simulation core: plain C++20 and the standard library, no Qt, so it can move into
+# lab37 as it is. nlohmann/json is private to the menu loader.
 add_library(bowlfill_core STATIC
+  src/core/text.cc
   src/core/menu_loader.cc
   src/core/manual_entry.cc
   src/core/curves.cc
@@ -44,11 +57,12 @@ add_library(bowlfill_core STATIC
   src/core/adaptive.cc
   src/core/feasibility.cc
   src/core/sweep.cc
+  src/core/step_table.cc
   src/core/bowl_data.cc
   src/core/measurements.cc
 )
 target_include_directories(bowlfill_core PUBLIC src)
-target_link_libraries(bowlfill_core PUBLIC Qt6::Core)
+target_link_libraries(bowlfill_core PRIVATE nlohmann_json::nlohmann_json)
 target_compile_options(bowlfill_core PRIVATE -Wall -Wextra -Wpedantic)
 
 qt_add_executable(bowl-fill-simulator
@@ -64,6 +78,7 @@ qt_add_executable(bowl-fill-simulator
   src/ui/theme.cc
   src/ui/tolerance_chart.cc
   src/ui/units.cc
+  src/ui/manual_entry_settings.cc
 )
 target_link_libraries(bowl-fill-simulator PRIVATE bowlfill_core Qt6::Widgets)
 target_compile_options(bowl-fill-simulator PRIVATE -Wall -Wextra)
@@ -74,8 +89,44 @@ target_compile_definitions(bowl-fill-simulator PRIVATE
   BOWLFILL_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+# On macOS, build a double-clickable "Bowl Fill Simulator.app" that carries its own
+# copy of menus/, data/ and photos/. main.cc copies them to Application Support on
+# first launch (and again when the stamp changes), since the bundle is read-only.
+# macdeployqt then copies Qt in; see .github/workflows/mac-app.yml.
+if(APPLE)
+  set_target_properties(bowl-fill-simulator PROPERTIES
+    MACOSX_BUNDLE ON
+    OUTPUT_NAME "Bowl Fill Simulator"
+    MACOSX_BUNDLE_BUNDLE_NAME "Bowl Fill Simulator"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "us.lab37.bowl-fill-simulator"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+  )
+  # Identifies this build's assets, so a newer app replaces the menus it copied out.
+  execute_process(
+    COMMAND git describe --tags --always --dirty
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE _asset_stamp OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+  string(TIMESTAMP _built "%Y-%m-%dT%H:%M:%S")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/asset_stamp" "${_asset_stamp} ${_built}\n")
+  set(_assets "$<TARGET_BUNDLE_CONTENT_DIR:bowl-fill-simulator>/Resources/assets")
+  add_custom_command(TARGET bowl-fill-simulator POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${_assets}"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/menus" "${_assets}/menus"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/data" "${_assets}/data"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/photos" "${_assets}/photos"
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_CURRENT_BINARY_DIR}/asset_stamp" "${_assets}/.stamp"
+    VERBATIM)
+endif()
+
+# Plain C++ like the core it checks: no Qt.
 add_executable(bowlfill-verify tests/verify.cc)
 target_link_libraries(bowlfill-verify PRIVATE bowlfill_core)
+target_compile_options(bowlfill-verify PRIVATE -Wall -Wextra)
 target_compile_definitions(bowlfill-verify PRIVATE
   BOWLFILL_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -85,7 +136,8 @@ add_test(NAME verify COMMAND bowlfill-verify)
 
 # Headless romaine fill sweep: solves romaine to a fill target per menu combination.
 add_executable(romaine-fill tools/romaine_fill.cc)
-target_link_libraries(romaine-fill PRIVATE bowlfill_core)
+# Reads the window's saved settings, so it keeps Qt for those and its command line.
+target_link_libraries(romaine-fill PRIVATE bowlfill_core Qt6::Core)
 target_compile_options(romaine-fill PRIVATE -Wall -Wextra)
 target_compile_definitions(romaine-fill PRIVATE
   BOWLFILL_ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}"

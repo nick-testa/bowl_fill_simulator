@@ -1,24 +1,30 @@
 #include "manual_entry.hh"
 
-#include <QSettings>
-
 #include <algorithm>
 #include <map>
 #include <utility>
 
-namespace bowlfill {
-namespace {
+namespace bowlfill
+{
+namespace
+{
 
-bool is_manual(const Menu &m) { return m.brand == kManualEntryBrand; }
+bool is_manual(const Menu &m)
+{
+    return m.brand == kManualEntryBrand;
+}
 
-Kind kind_from(const QString &kind)
+Kind kind_from(const std::string &kind)
 {
     return kind == "base" ? Kind::Base : kind == "protein" ? Kind::Protein : Kind::Topping;
 }
 
 double median(std::vector<double> v)
 {
-    if (v.empty()) return 0.0;
+    if (v.empty())
+    {
+        return 0.0;
+    }
     std::sort(v.begin(), v.end());
     const size_t n = v.size();
     return n % 2 ? v[n / 2] : (v[n / 2 - 1] + v[n / 2]) / 2;
@@ -31,12 +37,18 @@ double median(std::vector<double> v)
 Ingredient typical(const std::vector<Menu> &menus, Kind kind)
 {
     std::vector<double> portion, step, max, minimum;
-    for (const Menu &m : menus) {
-        if (is_manual(m)) continue;
-        for (const auto &[name, ing] : m.ingredients) {
-            if (ing.kind != kind || ing.source > WeightSource::Template
-                || ing.full_portion() <= 0)
+    for (const Menu &m : menus)
+    {
+        if (is_manual(m))
+        {
+            continue;
+        }
+        for (const auto &[name, ing] : m.ingredients)
+        {
+            if (ing.kind != kind || ing.source > WeightSource::Template || ing.full_portion() <= 0)
+            {
                 continue;
+            }
             portion.push_back(ing.full_portion());
             step.push_back(ing.step_increment_g);
             max.push_back(ing.max_dispense_weight_g);
@@ -56,90 +68,77 @@ Ingredient typical(const std::vector<Menu> &menus, Kind kind)
     return out;
 }
 
-}  // namespace
+} // namespace
 
 bool ManualEntry::empty() const
 {
-    return sauces.isEmpty()
-           && std::none_of(stations.begin(), stations.end(),
-                           [](const ManualStation &s) { return !s.name.isEmpty(); });
+    return sauces.empty() &&
+           std::none_of(stations.begin(), stations.end(), [](const ManualStation &s) { return !s.name.empty(); });
 }
 
-ManualEntry load_manual_entry()
+std::vector<std::string> ingredient_catalog(const std::vector<Menu> &menus)
 {
-    QSettings prefs;
-    ManualEntry entry;
-    const int n = prefs.beginReadArray("manual/stations");
-    for (int i = 0; i < std::min(n, ManualEntry::kStations); ++i) {
-        prefs.setArrayIndex(i);
-        entry.stations[i].name = prefs.value("name").toString().trimmed();
-        entry.stations[i].kind = prefs.value("kind").toString();
-        if (!kMappingKinds.contains(entry.stations[i].kind))
-            entry.stations[i].kind = entry.stations[i].name.isEmpty() ? QString() : "topping";
-    }
-    prefs.endArray();
-    entry.sauces = prefs.value("manual/sauces").toStringList();
-    entry.floor_g = prefs.value("manual/floor_g", 0.0).toDouble();
-    return entry;
-}
-
-void save_manual_entry(const ManualEntry &entry)
-{
-    QSettings prefs;
-    prefs.remove("manual/stations");
-    prefs.beginWriteArray("manual/stations", ManualEntry::kStations);
-    for (int i = 0; i < ManualEntry::kStations; ++i) {
-        prefs.setArrayIndex(i);
-        const ManualStation s = i < static_cast<int>(entry.stations.size())
-                                    ? entry.stations[i] : ManualStation{};
-        prefs.setValue("name", s.name);
-        prefs.setValue("kind", s.kind);
-    }
-    prefs.endArray();
-    prefs.setValue("manual/sauces", entry.sauces);
-    prefs.setValue("manual/floor_g", entry.floor_g);
-}
-
-QStringList ingredient_catalog(const std::vector<Menu> &menus)
-{
-    QStringList out;
-    for (const Menu &m : menus) {
-        if (is_manual(m)) continue;
-        for (const auto &[name, ing] : m.ingredients) out << name;
-        out << m.sauces;
-    }
-    out.removeDuplicates();
-    out.sort(Qt::CaseInsensitive);
-    return out;
-}
-
-QStringList sauce_catalog(const std::vector<Menu> &menus)
-{
-    QStringList out;
+    std::vector<std::string> out;
     for (const Menu &m : menus)
-        if (!is_manual(m)) out << m.sauces;
-    out.removeDuplicates();
-    out.sort(Qt::CaseInsensitive);
+    {
+        if (is_manual(m))
+        {
+            continue;
+        }
+        for (const auto &[name, ing] : m.ingredients)
+        {
+            out.push_back(name);
+        }
+        out.insert(out.end(), m.sauces.begin(), m.sauces.end());
+    }
+    remove_duplicates(out);
+    sort_case_insensitive(out);
     return out;
 }
 
-QString catalog_kind(const std::vector<Menu> &menus, const QString &name)
+std::vector<std::string> sauce_catalog(const std::vector<Menu> &menus)
 {
-    std::map<QString, int> votes;
-    for (const Menu &m : menus) {
-        if (is_manual(m)) continue;
-        if (m.is_sauce(name)) ++votes["sauce"];
-        else if (const Ingredient *ing = m.find(name)) ++votes[to_string(ing->kind).toLower()];
+    std::vector<std::string> out;
+    for (const Menu &m : menus)
+    {
+        if (!is_manual(m))
+        {
+            out.insert(out.end(), m.sauces.begin(), m.sauces.end());
+        }
+    }
+    remove_duplicates(out);
+    sort_case_insensitive(out);
+    return out;
+}
+
+std::string catalog_kind(const std::vector<Menu> &menus, const std::string &name)
+{
+    std::map<std::string, int> votes;
+    for (const Menu &m : menus)
+    {
+        if (is_manual(m))
+        {
+            continue;
+        }
+        if (m.is_sauce(name))
+        {
+            ++votes["sauce"];
+        }
+        else if (const Ingredient *ing = m.find(name))
+        {
+            ++votes[to_lower(to_string(ing->kind))];
+        }
     }
     if (votes.empty())
-        return is_sauce_name(name) ? QString("sauce") : to_string(guess_kind(name)).toLower();
-    return std::max_element(votes.begin(), votes.end(),
-                            [](const auto &a, const auto &b) { return a.second < b.second; })
+    {
+        return is_sauce_name(name) ? std::string("sauce") : to_lower(to_string(guess_kind(name)));
+    }
+    return std::max_element(
+               votes.begin(), votes.end(), [](const auto &a, const auto &b) { return a.second < b.second; })
         ->first;
 }
 
-Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
-                       const PieceHeights *pieces)
+Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry, const PieceHeights *pieces)
 {
     Menu menu;
     menu.brand = kManualEntryBrand;
@@ -148,12 +147,17 @@ Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
     menu.has_split_rule = true;
 
     std::map<Kind, Ingredient> typical_of;
-    for (const ManualStation &s : entry.stations) {
-        const QString name = s.name.trimmed();
-        if (name.isEmpty() || menu.order.contains(name) || menu.sauces.contains(name)) continue;
-        const QString kind = kMappingKinds.contains(s.kind) ? s.kind : catalog_kind(menus, name);
-        if (kind == "sauce") {
-            menu.sauces << name;
+    for (const ManualStation &s : entry.stations)
+    {
+        const std::string name = trim(s.name);
+        if (name.empty() || contains(menu.order, name) || contains(menu.sauces, name))
+        {
+            continue;
+        }
+        const std::string kind = contains(kMappingKinds, s.kind) ? s.kind : catalog_kind(menus, name);
+        if (kind == "sauce")
+        {
+            menu.sauces.push_back(name);
             continue;
         }
 
@@ -165,21 +169,32 @@ Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
         };
         const Ingredient *best = nullptr;
         for (const Menu &m : menus)
-            if (const Ingredient *ing = m.find(name); ing && !is_manual(m)
-                && (!best || rank(ing) < rank(best)))
+        {
+            if (const Ingredient *ing = m.find(name); ing && !is_manual(m) && (!best || rank(ing) < rank(best)))
+            {
                 best = ing;
+            }
+        }
 
         Ingredient ing;
-        if (best) {
+        if (best)
+        {
             ing = *best;
-        } else {
+        }
+        else
+        {
             const Kind k = kind_from(kind);
-            if (!typical_of.count(k)) typical_of[k] = typical(menus, k);
+            if (!typical_of.count(k))
+            {
+                typical_of[k] = typical(menus, k);
+            }
             ing = typical_of[k];
-            if (auto it = pieces ? pieces->find(name) : PieceHeights::const_iterator{};
-                pieces && it != pieces->end()) {
+            if (auto it = pieces ? pieces->find(name) : PieceHeights::const_iterator{}; pieces && it != pieces->end())
+            {
                 ing.piece_height_mm = std::max(0.0, it->second);
-            } else if (k == Kind::Protein) {
+            }
+            else if (k == Kind::Protein)
+            {
                 ing.piece_height_mm = kPlaceholderProteinPieceMm;
                 ing.piece_height_placeholder = true;
             }
@@ -187,15 +202,20 @@ Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
         ing.name = name;
         ing.kind = kind_from(kind);
         menu.ingredients[name] = ing;
-        menu.order << name;
+        menu.order.push_back(name);
     }
-    for (const QString &raw : entry.sauces) {
-        const QString name = raw.trimmed();
-        if (!name.isEmpty() && !menu.sauces.contains(name)) menu.sauces << name;
+    for (const std::string &raw : entry.sauces)
+    {
+        const std::string name = trim(raw);
+        if (!name.empty())
+        {
+            append_unique(menu.sauces, name);
+        }
     }
 
-    if (entry.floor_g > 0) {
-        FloorRule all;   // no must-have: every bowl
+    if (entry.floor_g > 0)
+    {
+        FloorRule all; // no must-have: every bowl
         all.minimum_product_weight_g = entry.floor_g;
         menu.floors.push_back(all);
     }
@@ -209,4 +229,4 @@ Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
     return menu;
 }
 
-}  // namespace bowlfill
+} // namespace bowlfill

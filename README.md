@@ -15,8 +15,18 @@ cmake --build build
 ./build/bowl-fill-simulator
 ```
 
-Needs Qt 6.3 or newer (Core + Widgets) and a C++20 compiler. Nothing else — JSON
-parsing is `QJsonDocument`, and the curve fitting is a few dozen lines of OLS.
+Needs Qt 6.3 or newer (Core + Widgets) for the app, a C++20 compiler, and
+nlohmann/json 3.11 or newer for reading the menus. An installed nlohmann/json is used
+when CMake finds one (lab37's toolchain has 3.12); otherwise configure downloads the
+3.12.0 release. The curve fitting is a few dozen lines of OLS.
+
+### macOS app for people who don't build from source
+
+`.github/workflows/mac-app.yml` builds a self-contained `Bowl Fill Simulator.app`.
+Run it from the Actions tab, or push a `v*` tag to also attach the zip to a release.
+The app carries its own copy of `menus/`, `data/` and `photos/`, which it lays out in
+`~/Library/Application Support/Lab37/Bowl Fill Simulator` and reads from there, so
+only committed files ship. Send `docs/MAC_INSTALL.md` along with the zip.
 
 ### If the text looks soft
 
@@ -44,12 +54,16 @@ data/      measurements/ — every mass→volume measurement, loaded at startup
            ingredient_costs.csv — placeholder prices for the COGS readout
            ingredient_aliases.csv, ingredient_pieces.csv — the Ingredients dialog
 photos/    reference photographs of known masses in a bowl
-src/core/  simulation, the adaptive solver, curve fitting and menu parsing (no widgets)
+src/core/  simulation, the adaptive solver, curve fitting and menu parsing (plain C++, no Qt)
 src/ui/    Qt widgets, charts drawn with QPainter
-tests/     verify.cc, checked against the HTML simulator's output
+tests/     verify.cc, checked against the HTML simulator's output (plain C++, no Qt)
 ```
 
-`src/core` links only `Qt6::Core`, so the model is usable from a headless tool.
+`src/core` is plain C++20 on the standard library, with nlohmann/json kept private
+to the menu loader. It has no Qt, so it can be built into lab37 as it is. Strings in
+the core are UTF-8 `std::string`; the UI converts at the boundary with the helpers in
+`src/ui/qt_text.hh`. The Manual Entry stations are saved in the app's `QSettings`,
+so their load and save live in `src/ui/manual_entry_settings.hh`, not in the core.
 
 ## Measurements
 
@@ -102,6 +116,27 @@ A known ingredient takes its step, max and portion from a brand that ramps it. A
 written-in one borrows the median settings for its kind and shows as an estimate.
 The stations are kept in the app's settings (`manual/*`), so `--audit "Manual Entry"`
 and `--sweep "Manual Entry"` use the same list.
+
+## Volume per gram (choosing step_g)
+
+**Settings → Volume per gram** lists, for the brand on screen, how many ml a gram of
+each ingredient takes and how many grams make an ml. It also shows what the configured
+`step_g` adds, and the step that would add a chosen volume ("Volume per step").
+
+Equal gram steps grow a bowl unevenly. With today's Farmstand settings a 3.5 g step adds
+about 17 ml of romaine but under 7 ml of rice. The last column gives a volume-proportional
+step: every ingredient's step adds the same volume.
+
+Everything is read at the menu portion, where the ramp starts, with nothing pressing on
+the food. The curves bend, so a gram is worth a little less further up the ramp. Rows
+whose curve is borrowed, composite or flat are estimates, and their numbers will move as
+measurements come in.
+
+The same table is available as CSV from the page, or from the command line:
+
+```
+./build/bowl-fill-simulator --steps Farmstand --step-ml 10 > farmstand-steps.csv
+```
 
 ## Adding mass-to-volume measurements
 

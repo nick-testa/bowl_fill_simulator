@@ -1,44 +1,87 @@
 #include "measurements.hh"
 
-#include <QCryptographicHash>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QTextStream>
+#include "text.hh"
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iterator>
 
-namespace bowlfill {
-namespace {
-
-QByteArray digest(const QString &path)
+namespace bowlfill
 {
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return {};
-    QCryptographicHash h(QCryptographicHash::Sha256);
-    h.addData(&f);
-    return h.result();
+namespace
+{
+
+namespace fs = std::filesystem;
+
+/// The whole file, byte for byte; empty when it cannot be read.
+std::string contents(const std::string &path)
+{
+    std::ifstream f(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()};
 }
 
-}  // namespace
+bool same_contents(const std::string &a, const std::string &b)
+{
+    std::error_code ec;
+    if (fs::file_size(a, ec) != fs::file_size(b, ec) || ec)
+    {
+        return false;
+    }
+    return contents(a) == contents(b);
+}
+
+/// Regular, visible .csv files in `dir`, any case, sorted by name.
+std::vector<std::string> csv_files(const std::string &dir)
+{
+    std::vector<std::string> out;
+    std::error_code ec;
+    for (const fs::directory_entry &e : fs::directory_iterator(dir, ec))
+    {
+        const std::string name = e.path().filename().string();
+        if (name.starts_with('.') || !e.is_regular_file(ec))
+        {
+            continue;
+        }
+        if (iequals(e.path().extension().string(), ".csv"))
+        {
+            out.push_back(name);
+        }
+    }
+    std::sort(out.begin(), out.end());
+    return out;
+}
+
+} // namespace
 
 int MeasurementSet::failed_files() const
 {
     int n = 0;
-    for (const MeasurementFile &f : files) n += f.failed;
+    for (const MeasurementFile &f : files)
+    {
+        n += f.failed;
+    }
     return n;
 }
 
-bool is_curve_csv(const QString &path)
+bool is_curve_csv(const std::string &path)
 {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return false;
-    QString header = QTextStream(&file).readLine();
-    if (!header.isEmpty() && header[0] == QChar(0xFEFF)) header.remove(0, 1);
-    for (const QString &h : header.split(',')) {
-        const QString n = h.trimmed().remove('"').toLower();
-        if (n == "ingredient" || n == "name") return true;
+    std::vector<std::string> lines;
+    if (!read_lines(path, lines) || lines.empty())
+    {
+        return false;
+    }
+    for (const std::string &h : split(lines.front(), ','))
+    {
+        std::string n = trim(h);
+        std::erase(n, '"');
+        n = to_lower(n);
+        if (n == "ingredient" || n == "name")
+        {
+            return true;
+        }
     }
     return false;
 }
@@ -46,18 +89,24 @@ bool is_curve_csv(const QString &path)
 int MeasurementSet::dropped_total() const
 {
     int n = 0;
-    for (const auto &[name, count] : dropped) n += count;
+    for (const auto &[name, count] : dropped)
+    {
+        n += count;
+    }
     return n;
 }
 
-bool is_reference_name(const QString &ingredient)
+bool is_reference_name(const std::string &ingredient)
 {
-    return ingredient.trimmed().startsWith("test", Qt::CaseInsensitive);
+    return istarts_with(trim(ingredient), "test");
 }
 
 double Backfill::corrected_oz(double reading_oz) const
 {
-    if (!valid || reading_oz <= 0 || reading_oz >= top_oz) return reading_oz;
+    if (!valid || reading_oz <= 0 || reading_oz >= top_oz)
+    {
+        return reading_oz;
+    }
     // The reading is what the reference curve gives at some mass; the true volume is
     // that mass at the reference's own density, which the anchor fixes at top_oz.
     return top_oz * std::pow(reading_oz / top_oz, 1.0 / p);
@@ -69,22 +118,28 @@ double Backfill::factor_at_ml(double ml) const
     return oz > 0 ? corrected_oz(oz) / oz : 1.0;
 }
 
-Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference,
-                      const QString &name)
+Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference, const std::string &name)
 {
     Backfill b;
     b.reference = name;
     b.points = static_cast<int>(reference.size());
-    if (b.points < kMinReferencePoints) return b;
-    CurveSet c;   // fitted on the volume itself, like every other curve
+    if (b.points < kMinReferencePoints)
+    {
+        return b;
+    }
+    CurveSet c; // fitted on the volume itself, like every other curve
     double g_max = 0;
-    for (const auto &[g, oz] : reference) {
+    for (const auto &[g, oz] : reference)
+    {
         c.add({"reference", Method::Robot, g, oz});
         g_max = std::max(g_max, g);
     }
     c.refit();
     const Fit *f = c.fit("reference", Method::Robot);
-    if (!f) return b;
+    if (!f)
+    {
+        return b;
+    }
     b.K = f->K;
     b.p = f->p;
     b.top_oz = f->volume_oz(g_max);
@@ -92,51 +147,61 @@ Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference,
     return b;
 }
 
-MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
-                                 const MeasurementOptions &options)
+MeasurementSet load_measurements(const std::string &dir, CurveSet &curves, const MeasurementOptions &options)
 {
     MeasurementSet set;
     set.dir = dir;
     set.backfill_requested = options.backfill;
     curves.clear();
 
-    const QDir d(dir);
-    if (!d.exists()) {
+    std::error_code ec;
+    if (!fs::is_directory(dir, ec))
+    {
         set.folder_missing = true;
         return set;
     }
     // Read everything first: the backfill is learned from the reference readings,
     // which may sit in any file, before it is applied to the others.
-    std::vector<std::pair<size_t, BowlSheet>> sheets;   // (index into set.files, sheet)
+    std::vector<std::pair<size_t, BowlSheet>> sheets; // (index into set.files, sheet)
     // Hidden files cover editor droppings such as LibreOffice's ".~lock.x.csv#".
-    const QStringList names = d.entryList({"*.csv", "*.CSV"}, QDir::Files, QDir::Name);
-    for (const QString &name : names) {
+    for (const std::string &name : csv_files(dir))
+    {
         MeasurementFile mf;
         mf.name = name;
-        const QString path = d.filePath(name);
-        QString err;
-        if (is_curve_csv(path)) {
+        const std::string path = (fs::path(dir) / name).string();
+        std::string err;
+        if (is_curve_csv(path))
+        {
             int added = 0;
             const bool ok = curves.load_csv(path, &err, &added);
             mf.rows = added;
             mf.failed = !ok;
             mf.problem = err;
-        } else {
+        }
+        else
+        {
             mf.bowl_sheet = true;
             BowlSheet sheet;
-            if (!load_bowl_csv(path, sheet, &err, options.empty_bowl_ml)) {
+            if (!load_bowl_csv(path, sheet, &err, options.empty_bowl_ml))
+            {
                 mf.failed = true;
                 mf.problem = err;
-            } else {
+            }
+            else
+            {
                 mf.rows = static_cast<int>(sheet.rows.size());
                 if (sheet.skipped)
-                    mf.problem = QString("%1 row%2 skipped (no volume or no weights)")
-                                     .arg(sheet.skipped).arg(sheet.skipped == 1 ? "" : "s");
-                if (sheet.rescaled) {
-                    const QString note = QString("%1 row%2 scaled to scale_g (up to %3 g)")
-                                             .arg(sheet.rescaled).arg(sheet.rescaled == 1 ? "" : "s")
-                                             .arg(sheet.largest_rescale_g, 0, 'f', 1);
-                    mf.problem = mf.problem.isEmpty() ? note : mf.problem + "; " + note;
+                {
+                    mf.problem = std::format(
+                        "{} row{} skipped (no volume or no weights)", sheet.skipped, sheet.skipped == 1 ? "" : "s");
+                }
+                if (sheet.rescaled)
+                {
+                    const std::string note = std::format("{} row{} scaled to scale_g (up to {} g)",
+                                                         sheet.rescaled,
+                                                         sheet.rescaled == 1 ? "" : "s",
+                                                         fixed(sheet.largest_rescale_g, 1));
+                    mf.problem = mf.problem.empty() ? note : mf.problem + "; " + note;
                 }
                 sheets.push_back({set.files.size(), std::move(sheet)});
             }
@@ -147,32 +212,47 @@ MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
     auto is_reference = [](const BowlRow &r) {
         return r.items.size() == 1 && is_reference_name(r.items.front().first);
     };
-    if (options.backfill) {
+    if (options.backfill)
+    {
         std::vector<std::pair<double, double>> ref;
-        QStringList ref_names;
+        std::vector<std::string> ref_names;
         for (const auto &[i, sheet] : sheets)
+        {
             for (const BowlRow &r : sheet.rows)
-                if (is_reference(r) && r.cups == 0) {
+            {
+                if (is_reference(r) && r.cups == 0)
+                {
                     ref.push_back({r.items.front().second, r.ounces});
-                    if (!ref_names.contains(r.items.front().first))
-                        ref_names << r.items.front().first;
+                    append_unique(ref_names, r.items.front().first);
                 }
-        set.backfill = fit_backfill(ref, ref_names.join(", "));
+            }
+        }
+        set.backfill = fit_backfill(ref, join(ref_names, ", "));
     }
 
-    for (auto &[index, sheet] : sheets) {
+    for (auto &[index, sheet] : sheets)
+    {
         std::vector<BowlRow> kept;
         int dropped_here = 0;
-        for (BowlRow r : sheet.rows) {
-            if (!is_reference(r)) {
-                if (set.backfill.valid) r.ounces = set.backfill.corrected_oz(r.ounces);
-                if (options.drop_impossible) {
+        for (BowlRow r : sheet.rows)
+        {
+            if (!is_reference(r))
+            {
+                if (set.backfill.valid)
+                {
+                    r.ounces = set.backfill.corrected_oz(r.ounces);
+                }
+                if (options.drop_impossible)
+                {
                     double grams = 0;
-                    for (const auto &[n, g] : r.items) grams += g;
+                    for (const auto &[n, g] : r.items)
+                    {
+                        grams += g;
+                    }
                     const double solids_oz = grams / kSolidDensityGPerMl / CurveSet::kMlPerFlOz;
-                    if (r.ounces < solids_oz) {
-                        ++set.dropped[r.items.size() == 1 ? r.items.front().first
-                                                          : QStringLiteral("mixed bowl")];
+                    if (r.ounces < solids_oz)
+                    {
+                        ++set.dropped[r.items.size() == 1 ? r.items.front().first : std::string("mixed bowl")];
                         ++dropped_here;
                         continue;
                     }
@@ -181,15 +261,21 @@ MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
             kept.push_back(r);
         }
         sheet.rows = kept;
-        if (dropped_here) {
+        if (dropped_here)
+        {
             MeasurementFile &mf = set.files[index];
-            const QString note = QString("%1 impossible reading%2 ignored")
-                                     .arg(dropped_here).arg(dropped_here == 1 ? "" : "s");
-            mf.problem = mf.problem.isEmpty() ? note : mf.problem + "; " + note;
+            const std::string note =
+                std::format("{} impossible reading{} ignored", dropped_here, dropped_here == 1 ? "" : "s");
+            mf.problem = mf.problem.empty() ? note : mf.problem + "; " + note;
         }
-        for (const Observation &o : single_ingredient_points(sheet)) curves.add(o);
-        for (const QString &n : sheet.ingredients)
-            if (!set.bowls.ingredients.contains(n)) set.bowls.ingredients << n;
+        for (const Observation &o : single_ingredient_points(sheet))
+        {
+            curves.add(o);
+        }
+        for (const std::string &n : sheet.ingredients)
+        {
+            append_unique(set.bowls.ingredients, n);
+        }
         set.bowls.rows.insert(set.bowls.rows.end(), sheet.rows.begin(), sheet.rows.end());
         set.bowls.skipped += sheet.skipped;
     }
@@ -197,28 +283,46 @@ MeasurementSet load_measurements(const QString &dir, CurveSet &curves,
     return set;
 }
 
-QString store_measurement_file(const QString &source, const QString &dir, QString *error)
+std::string store_measurement_file(const std::string &source, const std::string &dir, std::string *error)
 {
-    const QFileInfo src(source);
-    QDir d(dir);
-    if (!d.exists() && !d.mkpath(".")) {
-        if (error) *error = QString("Could not create %1").arg(dir);
+    std::error_code ec;
+    const fs::path src = fs::absolute(source, ec).lexically_normal();
+    const fs::path d = fs::absolute(dir, ec).lexically_normal();
+    if (!fs::is_directory(d, ec) && !fs::create_directories(d, ec))
+    {
+        if (error)
+        {
+            *error = std::format("Could not create {}", dir);
+        }
         return {};
     }
-    if (src.absoluteDir() == QDir(d.absolutePath())) return src.absoluteFilePath();
+    if (fs::equivalent(src.parent_path(), d, ec))
+    {
+        return src.string();
+    }
 
-    const QByteArray mine = digest(source);
-    QString target = d.filePath(src.fileName());
-    for (int n = 2; QFileInfo::exists(target); ++n) {
-        if (digest(target) == mine) return target;   // already stored
-        target = d.filePath(QString("%1_%2.%3").arg(src.completeBaseName()).arg(n)
-                                .arg(src.suffix().isEmpty() ? "csv" : src.suffix()));
+    // A name taken by a different file gets a numbered suffix; one taken by the same
+    // file means it is already stored.
+    const std::string stem = src.stem().string();
+    const std::string suffix = src.has_extension() ? src.extension().string().substr(1) : "csv";
+    fs::path target = d / src.filename();
+    for (int n = 2; fs::exists(target, ec); ++n)
+    {
+        if (same_contents(source, target.string()))
+        {
+            return target.string();
+        }
+        target = d / std::format("{}_{}.{}", stem, n, suffix);
     }
-    if (!QFile::copy(source, target)) {
-        if (error) *error = QString("Could not copy %1 into %2").arg(src.fileName(), dir);
+    if (!fs::copy_file(source, target, ec))
+    {
+        if (error)
+        {
+            *error = std::format("Could not copy {} into {}", src.filename().string(), dir);
+        }
         return {};
     }
-    return target;
+    return target.string();
 }
 
-}  // namespace bowlfill
+} // namespace bowlfill

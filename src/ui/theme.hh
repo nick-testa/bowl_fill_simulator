@@ -4,6 +4,8 @@
 #include <QFont>
 #include <QString>
 
+class QAbstractSpinBox;
+
 namespace bowlfill::theme {
 
 ///
@@ -64,6 +66,17 @@ QColor series_colour(const QString &ingredient);
 /// fallback for names with no match: 0 base, 1 protein, 2 topping.
 ///
 QColor food_colour(const QString &ingredient, int kind);
+
+///
+/// Makes a spin box a plain typed field: no arrow buttons, text inset like a line
+/// edit. Use it rather than setButtonSymbols(NoButtons): Qt 6.12's stylesheet style
+/// gives a NoButtons spin box a 1 px edit field, so it shows nothing. The arrows are
+/// kept but drawn zero-wide (the "bare" rule in stylesheet()).
+///
+void bare_spin(QAbstractSpinBox *spin);
+/// Insets a spin box's text the way the stylesheet's padding does for a line edit,
+/// which Qt 6.12 no longer applies inside a spin box.
+void inset_spin(QAbstractSpinBox *spin);
 
 /// A Qt stylesheet for the whole window, rebuilt whenever the palette changes.
 QString stylesheet();

@@ -1,11 +1,11 @@
 #include "sweep_dialog.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 
 #include <QComboBox>
 #include <QPoint>
 #include <QDialogButtonBox>
 #include <QElapsedTimer>
-#include <QFile>
 #include <QFileDialog>
 #include <QLabel>
 #include <QLocale>
@@ -13,11 +13,12 @@
 #include <QProgressDialog>
 #include <QPushButton>
 #include <QSpinBox>
-#include <QTextStream>
 #include <QVBoxLayout>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <fstream>
 #include <utility>
 #include <vector>
 
@@ -95,6 +96,8 @@ SweepDialog::SweepDialog(SweepContext context, QWidget *parent)
     max_proteins_ = new QSpinBox;
     max_proteins_->setRange(0, 6);
     max_proteins_->setValue(2);
+    theme::inset_spin(max_toppings_);
+    theme::inset_spin(max_proteins_);
     auto labelled = [](const QString &caption, QWidget *w) {
         auto *box = new QWidget;
         box->setObjectName("clear");
@@ -172,7 +175,7 @@ void SweepDialog::update_estimate()
         const SweepPlan p = plan_sweep(*m, l);
         rows += p.rows();
         bytes += p.bytes();
-        table.push_back({p.brand, loc.toString(p.combinations),
+        table.push_back({qs(p.brand), loc.toString(p.combinations),
                          QString::number(p.recipes), loc.toString(p.rows())});
     }
     const QString total = loc.toString(rows);
@@ -232,18 +235,17 @@ void SweepDialog::run()
 
     const QString suggested =
         menus.size() == 1
-            ? QString("%1-full-report.csv").arg(QString(menus.front()->brand).replace(' ', '-').toLower())
+            ? QString("%1-full-report.csv").arg(qs(menus.front()->brand).replace(' ', '-').toLower())
             : QString("all-brands-full-report.csv");
     const QString path =
         QFileDialog::getSaveFileName(this, "Save full report", suggested, "CSV (*.csv)");
     if (path.isEmpty()) return;
 
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    std::ofstream out(path.toStdString(), std::ios::binary | std::ios::trunc);
+    if (!out) {
         QMessageBox::warning(this, "Could not save", QString("Cannot write %1").arg(path));
         return;
     }
-    QTextStream out(&file);
 
     QProgressDialog progress("Running the combinatorial workup…", "Cancel", 0, 1000, this);
     progress.setWindowTitle("Full combinatorial report");
@@ -257,15 +259,14 @@ void SweepDialog::run()
     std::vector<SweepTotals> totals;
     const bool finished = run_sweep(
         menus, *ctx_.curves, ctx_.method, ctx_.legacy, ctx_.adaptive, ctx_.costs, limits(),
-        out, [&](qint64 done, qint64 total) {
+        out, [&](std::int64_t done, std::int64_t total) {
             progress.setLabelText(QString("%1 of %2 bowls…")
                                       .arg(loc.toString(done), loc.toString(total)));
             progress.setValue(total > 0 ? int(done * 1000 / total) : 1000);
             return !progress.wasCanceled();
         },
         &totals, ctx_.volume);
-    out.flush();
-    file.close();
+    out.close();
     progress.close();
 
     if (!finished) {

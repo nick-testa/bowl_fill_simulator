@@ -5,25 +5,29 @@
 #include "menu_model.hh"
 #include "simulator.hh"
 
-#include <QString>
+#include <string>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// Builds the bowl a recipe describes, in dispense order: bases, then proteins, then
 /// toppings. Shared by the UI, the audit and the tests so all three agree on what a
 /// recipe means.
 ///
-std::vector<BowlItem> bowl_from_recipe(const Menu &menu, const Recipe &recipe,
-                                       const CurveSet &curves, Method method,
+std::vector<BowlItem> bowl_from_recipe(const Menu &menu,
+                                       const Recipe &recipe,
+                                       const CurveSet &curves,
+                                       Method method,
                                        double flat_protein_rate = 3.5,
                                        double flat_topping_rate = 4.5);
 
 /// One row of the per-brand feasibility audit.
-struct RecipeAudit {
-    QString recipe;
-    int pinned = 0;            ///< ingredients the template fixes
+struct RecipeAudit
+{
+    std::string recipe;
+    int pinned = 0; ///< ingredients the template fixes
     bool customer_built = false;
     bool complete_bowl = false; ///< pins enough to be judged as a whole bowl
 
@@ -37,16 +41,17 @@ struct RecipeAudit {
     VolumeFillResult volume;
 
     /// A short, plain description of what goes wrong, or that nothing does.
-    QString legacy_summary() const;
-    QString adaptive_summary() const;
-    QString volume_summary() const;
+    std::string legacy_summary() const;
+    std::string adaptive_summary() const;
+    std::string volume_summary() const;
     /// Ordering for the report: worst first.
     int severity() const;
     bool legacy_ok() const;
 };
 
-struct BrandAudit {
-    QString brand;
+struct BrandAudit
+{
+    std::string brand;
     std::vector<RecipeAudit> rows;
     int complete = 0, partial = 0, customer_built = 0;
 
@@ -58,16 +63,21 @@ struct BrandAudit {
     /// and finished bowls that stay under the limit with everything at its max.
     int volume_over = 0, volume_short = 0;
 
-    int legacy_failing() const { return legacy_over + legacy_short; }
+    int legacy_failing() const
+    {
+        return legacy_over + legacy_short;
+    }
 
-    QString headline() const;
-    QString to_csv() const;
+    std::string headline() const;
+    std::string to_csv() const;
 };
 
-BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
+BrandAudit audit_brand(const Menu &menu,
+                       const CurveSet &curves,
+                       Method method,
                        const SimSettings &legacy_settings,
                        const AdaptiveSettings &adaptive_settings,
                        const CostTable *costs = nullptr,
                        const VolumeFillSettings &volume_settings = {});
 
-}  // namespace bowlfill
+} // namespace bowlfill

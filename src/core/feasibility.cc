@@ -1,40 +1,41 @@
 #include "feasibility.hh"
 
+#include "text.hh"
+
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <utility>
 
-namespace bowlfill {
-namespace {
+namespace bowlfill
+{
+namespace
+{
 
 /// A template that pins only a protein is a modifier, not a bowl: the customer adds
 /// the rest. Judging it as a finished bowl would report a dozen false failures.
 constexpr int kCompleteBowlThreshold = 4;
 
-QString csv_escape(const QString &s)
-{
-    return s.contains(',') || s.contains('"')
-               ? "\"" + QString(s).replace("\"", "\"\"") + "\""
-               : s;
-}
+} // namespace
 
-}  // namespace
-
-std::vector<BowlItem> bowl_from_recipe(const Menu &menu, const Recipe &recipe,
-                                       const CurveSet &curves, Method method,
-                                       double flat_protein_rate, double flat_topping_rate)
+std::vector<BowlItem> bowl_from_recipe(const Menu &menu,
+                                       const Recipe &recipe,
+                                       const CurveSet &curves,
+                                       Method method,
+                                       double flat_protein_rate,
+                                       double flat_topping_rate)
 {
     std::vector<BowlItem> bases, proteins, toppings;
-    for (const RecipeItem &ri : recipe.items) {
+    for (const RecipeItem &ri : recipe.items)
+    {
         const Ingredient *ing = menu.find(ri.name);
-        if (!ing) continue;
-        BowlItem item =
-            make_item(*ing, curves, method, flat_protein_rate, flat_topping_rate);
+        if (!ing)
+        {
+            continue;
+        }
+        BowlItem item = make_item(*ing, curves, method, flat_protein_rate, flat_topping_rate);
         item.start_g = ri.grams;
-        (ing->kind == Kind::Base      ? bases
-         : ing->kind == Kind::Protein ? proteins
-                                      : toppings)
-            .push_back(item);
+        (ing->kind == Kind::Base ? bases : ing->kind == Kind::Protein ? proteins : toppings).push_back(item);
     }
     std::vector<BowlItem> all;
     all.insert(all.end(), bases.begin(), bases.end());
@@ -49,18 +50,27 @@ std::vector<BowlItem> bowl_from_recipe(const Menu &menu, const Recipe &recipe,
 
 bool RecipeAudit::legacy_ok() const
 {
-    switch (legacy.verdict) {
-    case Verdict::FitsMassBound: return true;
-    case Verdict::NoFloor: return !legacy.crossed_at_g.has_value();
-    default: return false;
+    switch (legacy.verdict)
+    {
+    case Verdict::FitsMassBound:
+        return true;
+    case Verdict::NoFloor:
+        return !legacy.crossed_at_g.has_value();
+    default:
+        return false;
     }
 }
 
-QString RecipeAudit::legacy_summary() const
+std::string RecipeAudit::legacy_summary() const
 {
     if (customer_built)
+    {
         return "Customer builds this bowl; nothing is dispensed as written.";
-    if (legacy.frames.empty()) return "No ingredients resolve from the menu.";
+    }
+    if (legacy.frames.empty())
+    {
+        return "No ingredients resolve from the menu.";
+    }
 
     // Percentages are of the whole bowl, so the cups belong in the numerator; the
     // verdicts themselves are judged against the space left for food.
@@ -68,106 +78,131 @@ QString RecipeAudit::legacy_summary() const
     const double sauce = legacy.settings.overhead_oz();
     const double last = legacy.last().ounces;
     const auto pct = [&](double oz) { return std::round((oz + sauce) / cap * 100); };
-    switch (legacy.verdict) {
-    case Verdict::OverAtStart: {
+    switch (legacy.verdict)
+    {
+    case Verdict::OverAtStart:
+    {
         const double start = legacy.first().ounces;
-        return QString("Overflows as written — %1 oz at the specified weights, %2% of "
-                       "the bowl, and the ramp takes it to %3 oz.")
-            .arg(start, 0, 'f', 1)
-            .arg(pct(start))
-            .arg(last, 0, 'f', 1);
+        return std::format("Overflows as written — {} oz at the specified weights, {}% of "
+                           "the bowl, and the ramp takes it to {} oz.",
+                           fixed(start, 1),
+                           general(pct(start)),
+                           fixed(last, 1));
     }
     case Verdict::OverWhileRamping:
-        return QString("Fits as written, then the ramp pushes it over: %1 oz at the "
-                       "floor, crossing the limit at %2 g.")
-            .arg(last, 0, 'f', 1)
-            .arg(std::round(*legacy.crossed_at_g));
+        return std::format("Fits as written, then the ramp pushes it over: {} oz at the "
+                           "floor, crossing the limit at {} g.",
+                           fixed(last, 1),
+                           general(std::round(*legacy.crossed_at_g)));
     case Verdict::Saturated:
-        return QString("Never reaches its %1 g floor — everything saturates at %2 g, "
-                       "%3 oz.")
-            .arg(std::round(legacy.settings.floor_g))
-            .arg(std::round(legacy.last().grams))
-            .arg(last, 0, 'f', 1);
+        return std::format("Never reaches its {} g floor — everything saturates at {} g, "
+                           "{} oz.",
+                           general(std::round(legacy.settings.floor_g)),
+                           general(std::round(legacy.last().grams)),
+                           fixed(last, 1));
     case Verdict::NoFloor:
-        return legacy.crossed_at_g
-                   ? QString("No floor matches this bowl, and it is over anyway at "
-                             "%1 oz.").arg(last, 0, 'f', 1)
-                   : QString("No floor matches this bowl, so the ramp never fires. "
-                             "Dispensed as written at %1 oz.").arg(last, 0, 'f', 1);
+        return legacy.crossed_at_g ? std::format("No floor matches this bowl, and it is over anyway at "
+                                                 "{} oz.",
+                                                 fixed(last, 1))
+                                   : std::format("No floor matches this bowl, so the ramp never fires. "
+                                                 "Dispensed as written at {} oz.",
+                                                 fixed(last, 1));
     case Verdict::FitsMassBound:
-        return QString("Fits: clears the floor at %1 g and %2 oz, %3% of the bowl.")
-            .arg(std::round(legacy.last().grams))
-            .arg(last, 0, 'f', 1)
-            .arg(pct(last));
+        return std::format("Fits: clears the floor at {} g and {} oz, {}% of the bowl.",
+                           general(std::round(legacy.last().grams)),
+                           fixed(last, 1),
+                           general(pct(last)));
     }
     return {};
 }
 
-QString RecipeAudit::adaptive_summary() const
+std::string RecipeAudit::adaptive_summary() const
 {
-    if (customer_built) return "—";
-    switch (adaptive.status) {
+    if (customer_built)
+    {
+        return "—";
+    }
+    const std::string fill = general(std::round(adaptive.food_fill() * 100));
+    switch (adaptive.status)
+    {
     case AdaptiveStatus::NoAdjustment:
-        return QString("Already inside the band at %1% — dispensed unchanged.")
-            .arg(std::round(adaptive.food_fill() * 100));
+        return std::format("Already inside the band at {}% — dispensed unchanged.", fill);
     case AdaptiveStatus::Adjusted:
-        return QString("Solved to %1% by moving every ingredient %2% of its band.")
-            .arg(std::round(adaptive.food_fill() * 100))
-            .arg(std::fabs(adaptive.alpha) * 100, 0, 'f', 0);
+        return std::format("Solved to {}% by moving every ingredient {}% of its band.",
+                           fill,
+                           fixed(std::fabs(adaptive.alpha) * 100, 0));
     case AdaptiveStatus::StillOver:
-        return QString("Still over at full reduction: %1% of the food room. Tolerances "
-                       "cannot rescue it; the spec has to change.")
-            .arg(std::round(adaptive.food_fill() * 100));
+        return std::format("Still over at full reduction: {}% of the food room. Tolerances "
+                           "cannot rescue it; the spec has to change.",
+                           fill);
     case AdaptiveStatus::Underfilled:
-        return QString("Cannot reach the target even at full increase — %1%.")
-            .arg(std::round(adaptive.food_fill() * 100));
+        return std::format("Cannot reach the target even at full increase — {}%.", fill);
     case AdaptiveStatus::NoIngredients:
         return "Nothing to dispense.";
     }
     return {};
 }
 
-QString RecipeAudit::volume_summary() const
+std::string RecipeAudit::volume_summary() const
 {
-    if (customer_built) return "\u2014";
-    if (volume.sim.frames.empty()) return "Nothing to dispense.";
+    if (customer_built)
+    {
+        return "\u2014";
+    }
+    if (volume.sim.frames.empty())
+    {
+        return "Nothing to dispense.";
+    }
     const double last = volume.sim.last().ounces;
-    switch (volume.status) {
+    switch (volume.status)
+    {
     case VolumeFillStatus::FilledToLimit:
         return volume.passes_up == 0
-                   ? QString("Fits as written at %1 oz; one more pass would not fit.")
-                         .arg(last, 0, 'f', 1)
-                   : QString("Topped up %1 pass%2 to %3 oz, %4 g; the next pass would not "
-                             "fit.")
-                         .arg(volume.passes_up).arg(volume.passes_up == 1 ? "" : "es")
-                         .arg(last, 0, 'f', 1).arg(std::round(volume.sim.last().grams));
+                   ? std::format("Fits as written at {} oz; one more pass would not fit.", fixed(last, 1))
+                   : std::format("Topped up {} pass{} to {} oz, {} g; the next pass would not "
+                                 "fit.",
+                                 volume.passes_up,
+                                 volume.passes_up == 1 ? "" : "es",
+                                 fixed(last, 1),
+                                 general(std::round(volume.sim.last().grams)));
     case VolumeFillStatus::AtMax:
-        return QString("Everything at its max at %1 oz, %2 oz under the limit.")
-            .arg(last, 0, 'f', 1).arg(volume.limit_oz - last, 0, 'f', 1);
+        return std::format(
+            "Everything at its max at {} oz, {} oz under the limit.", fixed(last, 1), fixed(volume.limit_oz - last, 1));
     case VolumeFillStatus::SteppedDown:
-        return QString("Over as written at %1 oz; %2 pass%3 down bring it to %4 oz, proteins "
-                       "untouched.")
-            .arg(volume.sim.first().ounces, 0, 'f', 1)
-            .arg(volume.passes_down).arg(volume.passes_down == 1 ? "" : "es")
-            .arg(last, 0, 'f', 1);
+        return std::format("Over as written at {} oz; {} pass{} down bring it to {} oz, proteins "
+                           "untouched.",
+                           fixed(volume.sim.first().ounces, 1),
+                           volume.passes_down,
+                           volume.passes_down == 1 ? "" : "es",
+                           fixed(last, 1));
     case VolumeFillStatus::StillOver:
-        return QString("Still over at %1 oz with bases and toppings stepped down as far as "
-                       "allowed; the proteins or the recipe have to change.").arg(last, 0, 'f', 1);
+        return std::format("Still over at {} oz with bases and toppings stepped down as far as "
+                           "allowed; the proteins or the recipe have to change.",
+                           fixed(last, 1));
     }
     return {};
 }
 
 int RecipeAudit::severity() const
 {
-    if (customer_built) return 0;
-    switch (legacy.verdict) {
-    case Verdict::OverAtStart: return 5;
-    case Verdict::OverWhileRamping: return 4;
+    if (customer_built)
+    {
+        return 0;
+    }
+    switch (legacy.verdict)
+    {
+    case Verdict::OverAtStart:
+        return 5;
+    case Verdict::OverWhileRamping:
+        return 4;
     // A template that pins only a protein is meant to fall short: the customer adds
     // the rest. Only a finished bowl failing to fill is a defect.
-    case Verdict::Saturated: return complete_bowl ? 3 : 0;
-    case Verdict::NoFloor: return legacy.crossed_at_g ? 4 : 1;
-    case Verdict::FitsMassBound: return 0;
+    case Verdict::Saturated:
+        return complete_bowl ? 3 : 0;
+    case Verdict::NoFloor:
+        return legacy.crossed_at_g ? 4 : 1;
+    case Verdict::FitsMassBound:
+        return 0;
     }
     return 0;
 }
@@ -176,129 +211,142 @@ int RecipeAudit::severity() const
 // ############################################################################
 //
 
-QString BrandAudit::headline() const
+std::string BrandAudit::headline() const
 {
     if (complete + partial == 0)
-        return QString("%1 defines no dispensable recipes.").arg(brand);
+    {
+        return brand + " defines no dispensable recipes.";
+    }
 
-    QString head;
-    if (legacy_failing() == 0) {
-        head = complete == 1
-                   ? QString("%1: its one finished recipe comes out right as written. ")
-                         .arg(brand)
-                   : QString("%1: all %2 finished recipes come out right as written. ")
-                         .arg(brand)
-                         .arg(complete);
-    } else {
-        QStringList parts;
-        if (legacy_over > 0) parts << QString("%1 over the bowl").arg(legacy_over);
+    std::string head;
+    if (legacy_failing() == 0)
+    {
+        head = complete == 1 ? std::format("{}: its one finished recipe comes out right as written. ", brand)
+                             : std::format("{}: all {} finished recipes come out right as written. ", brand, complete);
+    }
+    else
+    {
+        std::vector<std::string> parts;
+        if (legacy_over > 0)
+        {
+            parts.push_back(std::format("{} over the bowl", legacy_over));
+        }
         if (legacy_short > 0)
-            parts << QString("%1 never reaching the weight floor").arg(legacy_short);
-        head = QString("%1: %2 of %3 finished recipes do not come out right as written — "
-                       "%4. ")
-                   .arg(brand)
-                   .arg(legacy_failing())
-                   .arg(complete)
-                   .arg(parts.join(" and "));
+        {
+            parts.push_back(std::format("{} never reaching the weight floor", legacy_short));
+        }
+        head = std::format("{}: {} of {} finished recipes do not come out right as written — "
+                           "{}. ",
+                           brand,
+                           legacy_failing(),
+                           complete,
+                           join(parts, " and "));
     }
 
     if (legacy_over > 0)
-        head += adaptive_over > 0
-                    ? QString("Adaptive rescues all but %1 of the overfills. ").arg(adaptive_over)
-                    : QString("Adaptive brings every overfill back inside the bowl. ");
+    {
+        head += adaptive_over > 0 ? std::format("Adaptive rescues all but {} of the overfills. ", adaptive_over)
+                                  : std::string("Adaptive brings every overfill back inside the bowl. ");
+    }
     if (adaptive_short > 0)
-        head += QString("%1 cannot reach the fill target on the ingredients specified. ")
-                    .arg(adaptive_short);
+    {
+        head += std::format("{} cannot reach the fill target on the ingredients specified. ", adaptive_short);
+    }
     if (legacy_over > 0)
-        head += volume_over > 0
-                    ? QString("Volume fill leaves %1 over even stepped down. ").arg(volume_over)
-                    : QString("Volume fill brings every overfill back inside the bowl. ");
+    {
+        head += volume_over > 0 ? std::format("Volume fill leaves {} over even stepped down. ", volume_over)
+                                : std::string("Volume fill brings every overfill back inside the bowl. ");
+    }
     if (partial > 0)
-        head += QString("%1 template%2 pin only a protein or two, so %3 judged as a "
-                        "modifier rather than a bowl.")
-                    .arg(partial)
-                    .arg(partial == 1 ? "" : "s")
-                    .arg(partial == 1 ? "it is" : "they are");
-    return head.trimmed();
+    {
+        head += std::format("{} template{} pin only a protein or two, so {} judged as a "
+                            "modifier rather than a bowl.",
+                            partial,
+                            partial == 1 ? "" : "s",
+                            partial == 1 ? "it is" : "they are");
+    }
+    return trim(head);
 }
 
 /// p_over_room,p_over_rim,p10_ml,median_ml,p90_ml, or n/a when there is no bowl.
-static QString fill_csv(const FillUncertainty &u)
+static std::string fill_csv(const FillUncertainty &u)
 {
-    if (!u.valid) return "n/a,n/a,n/a,n/a,n/a";
+    if (!u.valid)
+    {
+        return "n/a,n/a,n/a,n/a,n/a";
+    }
     const double ml = CurveSet::kMlPerFlOz;
-    return QString("%1,%2,%3,%4,%5")
-        .arg(u.p_over_room, 0, 'f', 3).arg(u.p_over_rim, 0, 'f', 3)
-        .arg(u.p10_oz * ml, 0, 'f', 0).arg(u.median_oz * ml, 0, 'f', 0)
-        .arg(u.p90_oz * ml, 0, 'f', 0);
+    return std::format("{},{},{},{},{}",
+                       fixed(u.p_over_room, 3),
+                       fixed(u.p_over_rim, 3),
+                       fixed(u.p10_oz * ml, 0),
+                       fixed(u.median_oz * ml, 0),
+                       fixed(u.p90_oz * ml, 0));
 }
 
-QString BrandAudit::to_csv() const
+std::string BrandAudit::to_csv() const
 {
-    QString out =
-        "brand,recipe,kind,pinned_ingredients,nominal_g,nominal_oz,floor_g,"
-        "legacy_verdict,legacy_final_oz,legacy_fill_pct,legacy_detail,"
-        "adaptive_status,adaptive_fill_pct,adaptive_detail,"
-        // The bowl as a distribution: appended so existing columns keep their places.
-        "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,legacy_p90_ml,"
-        "adaptive_p_over_room,adaptive_p_over_rim,adaptive_p10_ml,adaptive_median_ml,"
-        "adaptive_p90_ml,"
-        // Volume Fill, likewise appended.
-        "volume_status,volume_final_oz,volume_fill_pct,volume_passes,volume_detail,"
-        "volume_p_over_room,volume_p_over_rim,volume_p10_ml,volume_median_ml,volume_p90_ml\n";
-    for (const RecipeAudit &r : rows) {
+    std::string out = "brand,recipe,kind,pinned_ingredients,nominal_g,nominal_oz,floor_g,"
+                      "legacy_verdict,legacy_final_oz,legacy_fill_pct,legacy_detail,"
+                      "adaptive_status,adaptive_fill_pct,adaptive_detail,"
+                      // The bowl as a distribution: appended so existing columns keep their places.
+                      "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,legacy_p90_ml,"
+                      "adaptive_p_over_room,adaptive_p_over_rim,adaptive_p10_ml,adaptive_median_ml,"
+                      "adaptive_p90_ml,"
+                      // Volume Fill, likewise appended.
+                      "volume_status,volume_final_oz,volume_fill_pct,volume_passes,volume_detail,"
+                      "volume_p_over_room,volume_p_over_rim,volume_p10_ml,volume_median_ml,volume_p90_ml\n";
+    for (const RecipeAudit &r : rows)
+    {
         const double cap = r.legacy.settings.bowl_capacity_oz;
         const double sauce = r.legacy.settings.overhead_oz();
         const double final_oz = r.legacy.frames.empty() ? 0.0 : r.legacy.last().ounces;
-        out += QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14\n")
-                   .arg(csv_escape(brand), csv_escape(r.recipe),
-                        r.customer_built ? "customer-built"
-                                         : (r.complete_bowl ? "complete" : "partial"))
-                   .arg(r.pinned)
-                   .arg(r.nominal_g, 0, 'f', 0)
-                   .arg(r.nominal_oz, 0, 'f', 2)
-                   .arg(r.floor_matched ? QString::number(r.floor_g, 'f', 0)
-                                        : QString("none"))
-                   .arg(r.customer_built ? QString("n/a")
-                                         : csv_escape(to_string(r.legacy.verdict)))
-                   .arg(final_oz, 0, 'f', 2)
-                   .arg(r.customer_built || cap <= 0
-                            ? QString("n/a")
-                            : QString::number((final_oz + sauce) / cap * 100, 'f', 0))
-                   .arg(csv_escape(r.legacy_summary()),
-                        r.customer_built ? QString("n/a")
-                                         : csv_escape(to_string(r.adaptive.status)))
-                   .arg(r.customer_built ? 0.0 : r.adaptive.food_fill() * 100, 0, 'f', 0)
-                   .arg(csv_escape(r.adaptive_summary()));
-        out.chop(1);   // the newline; the distribution columns follow
-        out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill) + ','
-               + fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill);
+        out += std::format("{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+                           csv_escape(brand),
+                           csv_escape(r.recipe),
+                           r.customer_built ? "customer-built" : (r.complete_bowl ? "complete" : "partial"),
+                           r.pinned,
+                           fixed(r.nominal_g, 0),
+                           fixed(r.nominal_oz, 2),
+                           r.floor_matched ? fixed(r.floor_g, 0) : std::string("none"),
+                           r.customer_built ? std::string("n/a") : csv_escape(to_string(r.legacy.verdict)),
+                           fixed(final_oz, 2),
+                           r.customer_built || cap <= 0 ? std::string("n/a") : fixed((final_oz + sauce) / cap * 100, 0),
+                           csv_escape(r.legacy_summary()),
+                           r.customer_built ? std::string("n/a") : csv_escape(to_string(r.adaptive.status)),
+                           fixed(r.customer_built ? 0.0 : r.adaptive.food_fill() * 100, 0),
+                           csv_escape(r.adaptive_summary()));
+        // The distribution columns follow.
+        out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill) + ',' +
+               fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill);
         // Volume Fill: status, where it ends, how many passes (+ up, - down), why, odds.
         const bool vf = !r.customer_built && !r.volume.sim.frames.empty();
         const double vf_oz = vf ? r.volume.sim.last().ounces : 0.0;
         const double vf_sauce = vf ? r.volume.sim.settings.overhead_oz() : 0.0;
-        out += QString(",%1,%2,%3,%4,%5,")
-                   .arg(vf ? csv_escape(to_string(r.volume.status)) : QString("n/a"))
-                   .arg(vf ? QString::number(vf_oz, 'f', 2) : QString("n/a"))
-                   .arg(vf && cap > 0 ? QString::number((vf_oz + vf_sauce) / cap * 100, 'f', 0)
-                                      : QString("n/a"))
-                   .arg(vf ? QString::number(r.volume.passes_up - r.volume.passes_down)
-                           : QString("n/a"))
-                   .arg(csv_escape(r.volume_summary()))
-               + fill_csv(vf ? r.volume.sim.fill : FillUncertainty{}) + '\n';
+        out += std::format(",{},{},{},{},{},",
+                           vf ? csv_escape(to_string(r.volume.status)) : "n/a",
+                           vf ? fixed(vf_oz, 2) : "n/a",
+                           vf && cap > 0 ? fixed((vf_oz + vf_sauce) / cap * 100, 0) : "n/a",
+                           vf ? std::to_string(r.volume.passes_up - r.volume.passes_down) : "n/a",
+                           csv_escape(r.volume_summary())) +
+               fill_csv(vf ? r.volume.sim.fill : FillUncertainty{}) + '\n';
     }
     return out;
 }
 
-BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
+BrandAudit audit_brand(const Menu &menu,
+                       const CurveSet &curves,
+                       Method method,
                        const SimSettings &legacy_settings,
-                       const AdaptiveSettings &adaptive_settings, const CostTable *costs,
+                       const AdaptiveSettings &adaptive_settings,
+                       const CostTable *costs,
                        const VolumeFillSettings &volume_settings)
 {
     BrandAudit audit;
     audit.brand = menu.brand;
 
-    for (const Recipe &recipe : menu.recipes) {
+    for (const Recipe &recipe : menu.recipes)
+    {
         RecipeAudit row;
         row.recipe = recipe.name;
         row.customer_built = recipe.customer_built;
@@ -307,69 +355,108 @@ BrandAudit audit_brand(const Menu &menu, const CurveSet &curves, Method method,
 
         std::vector<BowlItem> items = bowl_from_recipe(menu, recipe, curves, method);
 
-        QStringList names;
-        for (const BowlItem &it : items) names << it.name;
-        if (const FloorRule *f = menu.floor_for(names)) {
+        std::vector<std::string> names;
+        for (const BowlItem &it : items)
+        {
+            names.push_back(it.name);
+        }
+        if (const FloorRule *f = menu.floor_for(names))
+        {
             row.floor_g = f->minimum_product_weight_g;
             row.floor_matched = true;
         }
 
         // A recipe that names its sauces is charged exactly those cups; one that names
         // none leaves the cups to the caller's setting, as a customer would choose.
-        const int recipe_cups =
-            std::min(static_cast<int>(menu.sauces_in(recipe).size()), SauceCups::kMax);
+        const int recipe_cups = std::min(static_cast<int>(menu.sauces_in(recipe).size()), SauceCups::kMax);
 
         SimSettings ls = legacy_settings;
         ls.floor_g = row.floor_g;
-        if (recipe_cups > 0) ls.sauce.cups = recipe_cups;
+        if (recipe_cups > 0)
+        {
+            ls.sauce.cups = recipe_cups;
+        }
         row.legacy = simulate(items, ls);
-        if (!row.legacy.frames.empty()) {
+        if (!row.legacy.frames.empty())
+        {
             row.nominal_oz = row.legacy.first().ounces;
             row.nominal_g = row.legacy.first().grams;
         }
 
         AdaptiveSettings as = adaptive_settings;
-        if (recipe_cups > 0) as.sauce.cups = recipe_cups;
+        if (recipe_cups > 0)
+        {
+            as.sauce.cups = recipe_cups;
+        }
         row.adaptive = solve_adaptive(items, as, costs);
         row.volume = volume_fill(items, ls, volume_settings);
 
-        if (recipe.customer_built) ++audit.customer_built;
-        else if (row.complete_bowl) ++audit.complete;
-        else ++audit.partial;
+        if (recipe.customer_built)
+        {
+            ++audit.customer_built;
+        }
+        else if (row.complete_bowl)
+        {
+            ++audit.complete;
+        }
+        else
+        {
+            ++audit.partial;
+        }
 
         // Only a complete bowl is judged. A partial template is scored for overflow --
         // its pinned weights alone busting the bowl is a real finding -- but never for
         // falling short, which is what it is supposed to do.
-        if (!recipe.customer_built) {
-            if (row.legacy.verdict == Verdict::Saturated) {
-                if (row.complete_bowl) ++audit.legacy_short;
-            } else if (!row.legacy_ok()) {
+        if (!recipe.customer_built)
+        {
+            if (row.legacy.verdict == Verdict::Saturated)
+            {
+                if (row.complete_bowl)
+                {
+                    ++audit.legacy_short;
+                }
+            }
+            else if (!row.legacy_ok())
+            {
                 ++audit.legacy_over;
             }
             // "Still over" in the solver means it could not reach the target; only a
             // bowl past its capacity is an overfill the report should claim.
-            if (row.adaptive.occupancy() > 1.0) ++audit.adaptive_over;
+            if (row.adaptive.occupancy() > 1.0)
+            {
+                ++audit.adaptive_over;
+            }
             if (row.adaptive.status == AdaptiveStatus::Underfilled && row.complete_bowl)
+            {
                 ++audit.adaptive_short;
-            if (row.volume.status == VolumeFillStatus::StillOver) ++audit.volume_over;
+            }
+            if (row.volume.status == VolumeFillStatus::StillOver)
+            {
+                ++audit.volume_over;
+            }
             else if (row.volume.status == VolumeFillStatus::AtMax && row.complete_bowl)
+            {
                 ++audit.volume_short;
+            }
         }
         audit.rows.push_back(std::move(row));
     }
 
     // Worst first, so the report opens on what needs fixing; below that, finished bowls
     // before the modifier templates and empty shells that nobody has to act on.
-    auto rank = [](const RecipeAudit &r) {
-        return r.customer_built ? 2 : r.complete_bowl ? 0 : 1;
-    };
-    std::stable_sort(audit.rows.begin(), audit.rows.end(),
-                     [&rank](const RecipeAudit &a, const RecipeAudit &b) {
-                         if (a.severity() != b.severity()) return a.severity() > b.severity();
-                         if (rank(a) != rank(b)) return rank(a) < rank(b);
-                         return a.nominal_oz > b.nominal_oz;
-                     });
+    auto rank = [](const RecipeAudit &r) { return r.customer_built ? 2 : r.complete_bowl ? 0 : 1; };
+    std::stable_sort(audit.rows.begin(), audit.rows.end(), [&rank](const RecipeAudit &a, const RecipeAudit &b) {
+        if (a.severity() != b.severity())
+        {
+            return a.severity() > b.severity();
+        }
+        if (rank(a) != rank(b))
+        {
+            return rank(a) < rank(b);
+        }
+        return a.nominal_oz > b.nominal_oz;
+    });
     return audit;
 }
 
-}  // namespace bowlfill
+} // namespace bowlfill

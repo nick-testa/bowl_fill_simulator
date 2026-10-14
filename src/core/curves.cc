@@ -1,56 +1,54 @@
 #include "curves.hh"
 
-#include <QFile>
-#include <QRegularExpression>
-#include <QTextStream>
+#include "text.hh"
 
 #include <algorithm>
 #include <cmath>
+#include <format>
+#include <regex>
 
-namespace bowlfill {
-namespace {
-
-QString normalise(QString s) { return s.trimmed().toLower(); }
-
-Method method_from(const QString &raw)
+namespace bowlfill
 {
-    const QString s = normalise(raw);
-    if (s.startsWith("hand")) return Method::Hand;
+namespace
+{
+
+std::string normalise(const std::string &s)
+{
+    return to_lower(trim(s));
+}
+
+Method method_from(const std::string &raw)
+{
+    const std::string s = normalise(raw);
+    if (s.starts_with("hand"))
+    {
+        return Method::Hand;
+    }
     return Method::Robot;
 }
 
 /// Canonical spellings for the three ingredients the built-in set covers, so a CSV
 /// saying "kale" or "Massaged Kale" lands in the same bucket.
-QString canonical_ingredient(const QString &raw)
+std::string canonical_ingredient(const std::string &raw)
 {
-    const QString s = normalise(raw);
-    if (s == "kale" || s == "massaged kale") return "Massaged Kale";
-    if (s == "romaine" || s == "romaine base") return "Romaine Base";
-    if (s == "mexican rice" || s == "mexicanrice") return "Mexican Rice";
-    QString out = raw.trimmed();
-    if (!out.isEmpty()) out[0] = out[0].toUpper();
-    return out;
-}
-
-/// Splits a CSV line, honouring double quotes so a quoted ingredient name
-/// containing a comma survives.
-QStringList split_csv(const QString &line)
-{
-    QStringList out;
-    QString cur;
-    bool quoted = false;
-    for (int i = 0; i < line.size(); ++i) {
-        const QChar c = line[i];
-        if (c == '"') {
-            if (quoted && i + 1 < line.size() && line[i + 1] == '"') { cur += '"'; ++i; }
-            else quoted = !quoted;
-        } else if (c == ',' && !quoted) {
-            out << cur; cur.clear();
-        } else {
-            cur += c;
-        }
+    const std::string s = normalise(raw);
+    if (s == "kale" || s == "massaged kale")
+    {
+        return "Massaged Kale";
     }
-    out << cur;
+    if (s == "romaine" || s == "romaine base")
+    {
+        return "Romaine Base";
+    }
+    if (s == "mexican rice" || s == "mexicanrice")
+    {
+        return "Mexican Rice";
+    }
+    std::string out = trim(raw);
+    if (!out.empty() && out[0] >= 'a' && out[0] <= 'z')
+    {
+        out[0] = static_cast<char>(out[0] - 'a' + 'A');
+    }
     return out;
 }
 
@@ -59,76 +57,118 @@ Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
 {
     Fit f;
     f.n = static_cast<int>(pts.size());
-    if (f.n < 2) return f;
+    if (f.n < 2)
+    {
+        return f;
+    }
     for (const Observation *o : pts)
-        if (o->grams <= 0 || o->ounces <= 0) return f;
+    {
+        if (o->grams <= 0 || o->ounces <= 0)
+        {
+            return f;
+        }
+    }
     auto [lo, hi] = std::minmax_element(
-        pts.begin(), pts.end(),
-        [](const Observation *a, const Observation *b) { return a->grams < b->grams; });
-    if ((*hi)->grams <= (*lo)->grams) return f;   // every point at the same mass
+        pts.begin(), pts.end(), [](const Observation *a, const Observation *b) { return a->grams < b->grams; });
+    if ((*hi)->grams <= (*lo)->grams)
+    {
+        return f; // every point at the same mass
+    }
 
-    if (space == FitSpace::Log) {
+    if (space == FitSpace::Log)
+    {
         // OLS of log(oz) on log(g).
         double sx = 0, sy = 0;
-        for (const Observation *o : pts) {
+        for (const Observation *o : pts)
+        {
             sx += std::log(o->grams);
             sy += std::log(o->ounces);
         }
         const double mx = sx / f.n, my = sy / f.n;
         double sxx = 0, sxy = 0;
-        for (const Observation *o : pts) {
+        for (const Observation *o : pts)
+        {
             const double dx = std::log(o->grams) - mx;
             sxx += dx * dx;
             sxy += dx * (std::log(o->ounces) - my);
         }
         f.p = sxy / sxx;
         f.K = std::exp(my - f.p * mx);
-    } else {
+    }
+    else
+    {
         // Least squares on the volume. For a given p the best K is closed-form,
         // K = sum(v g^p) / sum(g^2p), leaving a one-dimensional search over p for
         // the smallest squared error, sum(v^2) - sum(v g^p)^2 / sum(g^2p).
         // Masses are scaled by the largest so the powers stay well conditioned.
         const double gmax = (*hi)->grams;
         double svv = 0;
-        for (const Observation *o : pts) svv += o->ounces * o->ounces;
+        for (const Observation *o : pts)
+        {
+            svv += o->ounces * o->ounces;
+        }
         auto sse = [&](double p, double *k) {
             double svg = 0, sgg = 0;
-            for (const Observation *o : pts) {
+            for (const Observation *o : pts)
+            {
                 const double gp = std::pow(o->grams / gmax, p);
                 svg += o->ounces * gp;
                 sgg += gp * gp;
             }
-            if (k) *k = svg / sgg;
+            if (k)
+            {
+                *k = svg / sgg;
+            }
             return svv - svg * svg / sgg;
         };
         constexpr double kLo = 0.2, kHi = 3.0;
         double best_p = 1.0, best = sse(1.0, nullptr);
-        for (double p = kLo; p <= kHi + 1e-9; p += 0.01) {
+        for (double p = kLo; p <= kHi + 1e-9; p += 0.01)
+        {
             const double e = sse(p, nullptr);
-            if (e < best) { best = e; best_p = p; }
+            if (e < best)
+            {
+                best = e;
+                best_p = p;
+            }
         }
         // Golden-section search inside the best grid cell.
         double a = std::max(kLo, best_p - 0.01), b = std::min(kHi, best_p + 0.01);
         const double r = (std::sqrt(5.0) - 1) / 2;
         double c = b - r * (b - a), d = a + r * (b - a);
-        for (int i = 0; i < 60; ++i) {
-            if (sse(c, nullptr) < sse(d, nullptr)) b = d; else a = c;
+        for (int i = 0; i < 60; ++i)
+        {
+            if (sse(c, nullptr) < sse(d, nullptr))
+            {
+                b = d;
+            }
+            else
+            {
+                a = c;
+            }
             c = b - r * (b - a);
             d = a + r * (b - a);
         }
         f.p = (a + b) / 2;
         double k_scaled = 0;
         sse(f.p, &k_scaled);
-        if (k_scaled <= 0) return f;
-        f.K = k_scaled / std::pow(gmax, f.p);   // back to unscaled grams
+        if (k_scaled <= 0)
+        {
+            return f;
+        }
+        f.K = k_scaled / std::pow(gmax, f.p); // back to unscaled grams
     }
 
     // R^2 reported on the ounces scale, not the log scale, so it means what a
     // reader expects when comparing against the linear alternative.
     double ss_tot = 0, ss_res = 0, mean_oz = 0;
-    for (const Observation *o : pts) mean_oz += o->ounces;
+    for (const Observation *o : pts)
+    {
+        mean_oz += o->ounces;
+    }
     mean_oz /= f.n;
-    for (const Observation *o : pts) {
+    for (const Observation *o : pts)
+    {
         const double pred = f.K * std::pow(o->grams, f.p);
         ss_tot += (o->ounces - mean_oz) * (o->ounces - mean_oz);
         ss_res += (o->ounces - pred) * (o->ounces - pred);
@@ -137,9 +177,11 @@ Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
     // Scatter as a share of the prediction: spread grows with portion size, so a
     // relative figure carries from 50 g to 200 g where an absolute one would not.
     // Two parameters are fitted, so n - 2 degrees of freedom remain.
-    if (f.n > 2) {
+    if (f.n > 2)
+    {
         double ss_rel = 0;
-        for (const Observation *o : pts) {
+        for (const Observation *o : pts)
+        {
             const double r = o->ounces / (f.K * std::pow(o->grams, f.p)) - 1.0;
             ss_rel += r * r;
         }
@@ -151,14 +193,18 @@ Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
     return f;
 }
 
-}  // namespace
+} // namespace
 
-QString to_string(Method method)
+std::string to_string(Method method)
 {
-    switch (method) {
-    case Method::Robot: return "robot";
-    case Method::Hand: return "hand";
-    case Method::Pooled: return "pooled";
+    switch (method)
+    {
+    case Method::Robot:
+        return "robot";
+    case Method::Hand:
+        return "hand";
+    case Method::Pooled:
+        return "pooled";
     }
     return {};
 }
@@ -173,132 +219,203 @@ double Fit::marginal_oz_per_100g(double grams) const
     return (!valid || grams <= 0) ? 0.0 : K * p * std::pow(grams, p - 1.0) * 100.0;
 }
 
-QStringList CurveSet::required_columns() { return {"ingredient", "g", "oz"}; }
-// 1 US fluid ounce, exact by definition.
-const double CurveSet::kMlPerFlOz = 29.5735295625;
-QStringList CurveSet::optional_columns() { return {"method"}; }
-
-QString CurveSet::format_help()
+std::vector<std::string> CurveSet::required_columns()
 {
-    return QStringLiteral(
-        "<b>Mass-to-volume CSV</b><br><br>"
-        "A header row naming these columns, in any order and any case:<br>"
-        "&nbsp;&nbsp;<code>ingredient</code> &mdash; e.g. Massaged Kale, Romaine Base<br>"
-        "&nbsp;&nbsp;<code>g</code> &mdash; mass in grams (also accepts "
-        "<code>mass</code>, <code>grams</code>, <code>mass_g</code>)<br>"
-        "&nbsp;&nbsp;<code>oz</code> &mdash; volume in fluid ounces (also accepts "
-        "<code>volume</code>, <code>ounces</code>, <code>volume_oz</code>)<br>"
-        "&nbsp;&nbsp;<code>ml</code> &mdash; <i>or</i> volume in millilitres (also "
-        "<code>millilitres</code>, <code>volume_ml</code>, <code>cc</code>), converted "
-        "on import<br>"
-        "&nbsp;&nbsp;<code>method</code> &mdash; <i>optional</i>: "
-        "<code>robot</code> or <code>hand</code>, defaults to robot<br><br>"
-        "<pre>method,ingredient,g,oz\n"
-        "robot,romaine,86,20\n"
-        "robot,kale,73,25\n"
-        "hand,mexican rice,150,11</pre>"
-        "Rows are <b>added</b> to the built-in 36 bowls and the affected curves are "
-        "refitted. An ingredient not seen before gets a curve of its own once it has "
-        "at least two points at different masses.<br><br>"
-        "Names are matched loosely: <i>kale</i>, <i>Kale</i> and <i>Massaged Kale</i> "
-        "all land in the same bucket.");
+    return {"ingredient", "g", "oz"};
 }
 
-void CurveSet::add(const Observation &obs) { obs_.push_back(obs); }
+// 1 US fluid ounce, exact by definition.
+const double CurveSet::kMlPerFlOz = 29.5735295625;
 
-bool CurveSet::load_csv(const QString &path, QString *error, int *rows_added,
-                        QStringList *new_ingredients)
+std::vector<std::string> CurveSet::optional_columns()
 {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        if (error) *error = QString("Could not open %1").arg(path);
+    return {"method"};
+}
+
+std::string CurveSet::format_help()
+{
+    return std::string("<b>Mass-to-volume CSV</b><br><br>"
+                       "A header row naming these columns, in any order and any case:<br>"
+                       "&nbsp;&nbsp;<code>ingredient</code> &mdash; e.g. Massaged Kale, Romaine Base<br>"
+                       "&nbsp;&nbsp;<code>g</code> &mdash; mass in grams (also accepts "
+                       "<code>mass</code>, <code>grams</code>, <code>mass_g</code>)<br>"
+                       "&nbsp;&nbsp;<code>oz</code> &mdash; volume in fluid ounces (also accepts "
+                       "<code>volume</code>, <code>ounces</code>, <code>volume_oz</code>)<br>"
+                       "&nbsp;&nbsp;<code>ml</code> &mdash; <i>or</i> volume in millilitres (also "
+                       "<code>millilitres</code>, <code>volume_ml</code>, <code>cc</code>), converted "
+                       "on import<br>"
+                       "&nbsp;&nbsp;<code>method</code> &mdash; <i>optional</i>: "
+                       "<code>robot</code> or <code>hand</code>, defaults to robot<br><br>"
+                       "<pre>method,ingredient,g,oz\n"
+                       "robot,romaine,86,20\n"
+                       "robot,kale,73,25\n"
+                       "hand,mexican rice,150,11</pre>"
+                       "Rows are <b>added</b> to the built-in 36 bowls and the affected curves are "
+                       "refitted. An ingredient not seen before gets a curve of its own once it has "
+                       "at least two points at different masses.<br><br>"
+                       "Names are matched loosely: <i>kale</i>, <i>Kale</i> and <i>Massaged Kale</i> "
+                       "all land in the same bucket.");
+}
+
+void CurveSet::add(const Observation &obs)
+{
+    obs_.push_back(obs);
+}
+
+bool CurveSet::load_csv(const std::string &path,
+                        std::string *error,
+                        int *rows_added,
+                        std::vector<std::string> *new_ingredients)
+{
+    std::vector<std::string> lines;
+    if (!read_lines(path, lines))
+    {
+        if (error)
+        {
+            *error = std::format("Could not open {}", path);
+        }
         return false;
     }
-    QTextStream in(&file);
-
-    QString header = in.readLine();
-    if (header.isNull()) {
-        if (error) *error = "The file is empty.";
+    if (lines.empty())
+    {
+        if (error)
+        {
+            *error = "The file is empty.";
+        }
         return false;
     }
-    // Tolerate a UTF-8 BOM, which spreadsheet exports often leave in place.
-    if (!header.isEmpty() && header[0] == QChar(0xFEFF)) header.remove(0, 1);
 
-    std::map<QString, int> col;
-    const QStringList heads = split_csv(header);
-    for (int i = 0; i < heads.size(); ++i) {
-        const QString h = normalise(heads[i]);
-        if (h == "ingredient" || h == "name") col["ingredient"] = i;
-        else if (h == "g" || h == "mass" || h == "grams" || h == "mass_g") col["g"] = i;
-        else if (h == "oz" || h == "volume" || h == "ounces" || h == "volume_oz"
-                 || h == "fl_oz") col["oz"] = i;
+    std::map<std::string, int> col;
+    const std::vector<std::string> heads = split_csv(lines.front());
+    for (int i = 0; i < static_cast<int>(heads.size()); ++i)
+    {
+        const std::string h = normalise(heads[i]);
+        if (h == "ingredient" || h == "name")
+        {
+            col["ingredient"] = i;
+        }
+        else if (h == "g" || h == "mass" || h == "grams" || h == "mass_g")
+        {
+            col["g"] = i;
+        }
+        else if (h == "oz" || h == "volume" || h == "ounces" || h == "volume_oz" || h == "fl_oz")
+        {
+            col["oz"] = i;
+        }
         // A metric sheet is the same measurement in another unit, so take it and
         // convert on the way in; the model stays canonical in fluid ounces.
-        else if (h == "ml" || h == "millilitres" || h == "milliliters"
-                 || h == "volume_ml" || h == "cc") col["ml"] = i;
-        else if (h == "method" || h == "fill" || h == "source") col["method"] = i;
+        else if (h == "ml" || h == "millilitres" || h == "milliliters" || h == "volume_ml" || h == "cc")
+        {
+            col["ml"] = i;
+        }
+        else if (h == "method" || h == "fill" || h == "source")
+        {
+            col["method"] = i;
+        }
     }
     const bool metric_input = !col.count("oz") && col.count("ml");
-    if (metric_input) col["oz"] = col.at("ml");
+    if (metric_input)
+    {
+        col["oz"] = col.at("ml");
+    }
 
-    QStringList missing;
-    for (const QString &need : required_columns())
-        if (!col.count(need)) missing << need;
-    if (!missing.isEmpty()) {
+    std::vector<std::string> missing;
+    for (const std::string &need : required_columns())
+    {
+        if (!col.count(need))
+        {
+            missing.push_back(need);
+        }
+    }
+    if (!missing.empty())
+    {
         if (error)
-            *error = QString("Missing required column%1: %2 (or ml).\nFound: %3")
-                         .arg(missing.size() > 1 ? "s" : "", missing.join(", "),
-                              heads.join(", "));
+        {
+            *error = std::format("Missing required column{}: {} (or ml).\nFound: {}",
+                                 missing.size() > 1 ? "s" : "",
+                                 join(missing, ", "),
+                                 join(heads, ", "));
+        }
         return false;
     }
 
-    const QStringList before = ingredients();
+    const std::vector<std::string> before = ingredients();
     std::vector<Observation> staged;
     int skipped = 0;
-    while (!in.atEnd()) {
-        const QString line = in.readLine();
-        if (line.trimmed().isEmpty()) continue;
-        const QStringList cells = split_csv(line);
+    for (size_t l = 1; l < lines.size(); ++l)
+    {
+        const std::string &line = lines[l];
+        if (trim(line).empty())
+        {
+            continue;
+        }
+        const std::vector<std::string> cells = split_csv(line);
         const int need = std::max({col.at("ingredient"), col.at("g"), col.at("oz")});
-        if (cells.size() <= need) { ++skipped; continue; }
+        if (static_cast<int>(cells.size()) <= need)
+        {
+            ++skipped;
+            continue;
+        }
 
-        bool ok_g = false, ok_oz = false;
         Observation o;
         o.ingredient = canonical_ingredient(cells[col.at("ingredient")]);
-        o.grams = cells[col.at("g")].trimmed().toDouble(&ok_g);
-        o.ounces = cells[col.at("oz")].trimmed().toDouble(&ok_oz);
-        if (metric_input) o.ounces /= kMlPerFlOz;
+        const std::optional<double> g = parse_double(cells[col.at("g")]);
+        const std::optional<double> oz = parse_double(cells[col.at("oz")]);
+        o.grams = g.value_or(0.0);
+        o.ounces = oz.value_or(0.0);
+        if (metric_input)
+        {
+            o.ounces /= kMlPerFlOz;
+        }
         // method is optional, and a ragged row may simply stop before it.
-        o.method = (col.count("method") && col.at("method") < cells.size())
+        o.method = (col.count("method") && col.at("method") < static_cast<int>(cells.size()))
                        ? method_from(cells[col.at("method")])
                        : Method::Robot;
 
-        if (!ok_g || !ok_oz || o.grams <= 0 || o.ounces <= 0 || o.ingredient.isEmpty()) {
+        if (!g || !oz || o.grams <= 0 || o.ounces <= 0 || o.ingredient.empty())
+        {
             ++skipped;
             continue;
         }
         staged.push_back(o);
     }
 
-    if (staged.empty()) {
+    if (staged.empty())
+    {
         if (error)
-            *error = QString("No usable rows. %1 row%2 had a missing or non-positive "
-                             "mass or volume.")
-                         .arg(skipped).arg(skipped == 1 ? "" : "s");
+        {
+            *error = std::format("No usable rows. {} row{} had a missing or non-positive "
+                                 "mass or volume.",
+                                 skipped,
+                                 skipped == 1 ? "" : "s");
+        }
         return false;
     }
 
-    for (const Observation &o : staged) obs_.push_back(o);
+    for (const Observation &o : staged)
+    {
+        obs_.push_back(o);
+    }
     refit();
 
-    if (rows_added) *rows_added = static_cast<int>(staged.size());
-    if (new_ingredients) {
-        for (const QString &n : ingredients())
-            if (!before.contains(n)) *new_ingredients << n;
+    if (rows_added)
+    {
+        *rows_added = static_cast<int>(staged.size());
+    }
+    if (new_ingredients)
+    {
+        for (const std::string &n : ingredients())
+        {
+            if (!contains(before, n))
+            {
+                new_ingredients->push_back(n);
+            }
+        }
     }
     if (error && skipped > 0)
-        *error = QString("%1 row%2 skipped as unusable.")
-                     .arg(skipped).arg(skipped == 1 ? " was" : "s were");
+    {
+        *error = std::format("{} row{} skipped as unusable.", skipped, skipped == 1 ? " was" : "s were");
+    }
     return true;
 }
 
@@ -306,22 +423,29 @@ void CurveSet::refit()
 {
     fits_.clear();
     display_.clear();
-    std::map<QString, std::map<Method, std::vector<const Observation *>>> buckets;
-    for (const Observation &o : obs_) {
+    std::map<std::string, std::map<Method, std::vector<const Observation *>>> buckets;
+    for (const Observation &o : obs_)
+    {
         // The first spelling seen names the curve; later ones in other cases join it.
-        const QString &name = display_.try_emplace(o.ingredient.toLower(), o.ingredient)
-                                  .first->second;
+        const std::string &name = display_.try_emplace(to_lower(o.ingredient), o.ingredient).first->second;
         buckets[name][o.method].push_back(&o);
         buckets[name][Method::Pooled].push_back(&o);
     }
     for (const auto &[ingredient, by_method] : buckets)
+    {
         for (const auto &[method, pts] : by_method)
+        {
             fits_[ingredient][method] = fit_power_law(pts, space_);
+        }
+    }
 }
 
 void CurveSet::set_fit_space(FitSpace space)
 {
-    if (space == space_) return;
+    if (space == space_)
+    {
+        return;
+    }
     space_ = space;
     refit();
 }
@@ -333,62 +457,94 @@ void CurveSet::clear()
     display_.clear();
 }
 
-void CurveSet::reset_to_builtin(const QString &builtin_csv_path)
+void CurveSet::reset_to_builtin(const std::string &builtin_csv_path)
 {
     clear();
-    QString ignored;
+    std::string ignored;
     load_csv(builtin_csv_path, &ignored);
 }
 
-const Fit *CurveSet::fit(const QString &ingredient, Method method) const
+const Fit *CurveSet::fit(const std::string &ingredient, Method method) const
 {
-    auto d = display_.find(ingredient.toLower());
-    if (d == display_.end()) return nullptr;
+    auto d = display_.find(to_lower(ingredient));
+    if (d == display_.end())
+    {
+        return nullptr;
+    }
     auto i = fits_.find(d->second);
-    if (i == fits_.end()) return nullptr;
+    if (i == fits_.end())
+    {
+        return nullptr;
+    }
     auto j = i->second.find(method);
-    if (j == i->second.end() || !j->second.valid) return nullptr;
+    if (j == i->second.end() || !j->second.valid)
+    {
+        return nullptr;
+    }
     return &j->second;
 }
 
-QStringList CurveSet::ingredients() const
+std::vector<std::string> CurveSet::ingredients() const
 {
-    QStringList out;
-    for (const auto &[name, _] : fits_) out << name;
+    std::vector<std::string> out;
+    for (const auto &[name, _] : fits_)
+    {
+        out.push_back(name);
+    }
     return out;
 }
 
-int CurveSet::count(const QString &ingredient, Method method) const
+int CurveSet::count(const std::string &ingredient, Method method) const
 {
     int n = 0;
     for (const Observation &o : obs_)
-        if (o.ingredient.compare(ingredient, Qt::CaseInsensitive) == 0
-            && (method == Method::Pooled || o.method == method))
+    {
+        if (iequals(o.ingredient, ingredient) && (method == Method::Pooled || o.method == method))
+        {
             ++n;
+        }
+    }
     return n;
 }
 
-QString proxy_curve_for(const QString &ingredient, const CurveSet &curves)
+std::string proxy_curve_for(const std::string &ingredient, const CurveSet &curves)
 {
-    if (curves.fit(ingredient, Method::Pooled)) return {};
+    if (curves.fit(ingredient, Method::Pooled))
+    {
+        return {};
+    }
+
     // An ingredient with no data of its own borrows a measured one from its family:
     // White Jasmine Rice or Brown Rice and Lentils borrow a measured rice, and the
     // retired plain Couscous borrows Lemon Couscous, its near-identical successor.
     // Within a family, a preferred member is taken first when it has data.
-    struct Family {
-        const char *word;
+    struct Family
+    {
+        std::regex word;
         const char *preferred;
     };
-    static const Family kFamilies[] = {{"rice", "Mexican Rice"}, {"couscous", nullptr}};
-    for (const Family &f : kFamilies) {
-        const QRegularExpression word(QString(R"(\b%1\b)").arg(f.word),
-                                      QRegularExpression::CaseInsensitiveOption);
-        if (!ingredient.contains(word)) continue;
-        if (f.preferred && curves.fit(f.preferred, Method::Pooled)) return f.preferred;
-        for (const QString &n : curves.ingredients())
-            if (n.contains(word) && curves.fit(n, Method::Pooled)) return n;
+
+    static const Family kFamilies[] = {{std::regex(R"(\brice\b)", std::regex::icase), "Mexican Rice"},
+                                       {std::regex(R"(\bcouscous\b)", std::regex::icase), nullptr}};
+    for (const Family &f : kFamilies)
+    {
+        if (!std::regex_search(ingredient, f.word))
+        {
+            continue;
+        }
+        if (f.preferred && curves.fit(f.preferred, Method::Pooled))
+        {
+            return f.preferred;
+        }
+        for (const std::string &n : curves.ingredients())
+        {
+            if (std::regex_search(n, f.word) && curves.fit(n, Method::Pooled))
+            {
+                return n;
+            }
+        }
     }
     return {};
 }
 
-}  // namespace bowlfill
+} // namespace bowlfill

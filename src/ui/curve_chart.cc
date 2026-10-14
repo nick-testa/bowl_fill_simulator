@@ -1,4 +1,5 @@
 #include "curve_chart.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 #include "units.hh"
 
@@ -59,7 +60,7 @@ void CurveChart::paintEvent(QPaintEvent *)
     p.fillRect(rect(), pal.panel);
     if (!curves_) return;
 
-    const QStringList names = curves_->ingredients();
+    const QStringList names = qsl(curves_->ingredients());
     if (names.isEmpty()) return;
 
     double g_max = 0, oz_max = 0;
@@ -99,10 +100,10 @@ void CurveChart::paintEvent(QPaintEvent *)
     // end, which keeps them off a neighbouring series.
     double widest = 0;
     for (const QString &n : names)
-        if (const Fit *f = curves_->fit(n, method_)) widest = std::max(widest, f->hi_g);
+        if (const Fit *f = curves_->fit(ss(n), method_)) widest = std::max(widest, f->hi_g);
 
     for (const QString &name : names) {
-        const Fit *f = curves_->fit(name, method_);
+        const Fit *f = curves_->fit(ss(name), method_);
         if (!f) continue;
         const QColor colour = theme::series_colour(name);
 

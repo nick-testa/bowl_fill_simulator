@@ -3,8 +3,11 @@
 #include "core/bowl_data.hh"
 #include "core/manual_entry.hh"
 #include "core/measurements.hh"
+#include "core/step_table.hh"
 
 #include "bowl_diagram.hh"
+#include "manual_entry_settings.hh"
+#include "qt_text.hh"
 #include "chip_picker.hh"
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
@@ -21,6 +24,7 @@
 #include <functional>
 #include <map>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QCompleter>
 #include <QDesktopServices>
@@ -132,7 +136,7 @@ QDoubleSpinBox *make_spin(double lo, double hi, double step, int decimals)
     s->setSingleStep(step);
     s->setDecimals(decimals);
     s->setKeyboardTracking(false);
-    s->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    theme::bare_spin(s);
     s->setFixedHeight(kControlHeight);
     // A spin box asks for room to show its whole range; in a row of four that is
     // wider than the sidebar. Let the layout decide the width instead.
@@ -243,7 +247,7 @@ public:
         const auto field = static_cast<Field>(index.data(kFieldRole).toInt());
         if (field == Field::None) return nullptr;
         auto *spin = new QDoubleSpinBox(parent);
-        spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+        theme::bare_spin(spin);
         spin->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         spin->setRange(0, field == Field::Rate ? 6000 : field == Field::Step ? 100 : 2000);
         spin->setDecimals(field == Field::Step ? 2 : field == Field::Rate ? 1 : 0);
@@ -557,22 +561,22 @@ private:
 MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     : QMainWindow(parent), asset_dir_(asset_dir)
 {
-    QString map_err;
-    if (!load_name_mappings(mappings_path(), name_maps_, &map_err))
-        load_warnings_ << map_err;
-    if (!load_piece_heights(pieces_path(), pieces_, &map_err)) load_warnings_ << map_err;
-    if (!load_mound_slopes(mounds_path(), mound_slopes_, &map_err)) load_warnings_ << map_err;
-    if (!load_roll_off(rolloff_path(), roll_off_, &map_err)) load_warnings_ << map_err;
-    LoadResult loaded = load_menus(asset_dir_ + "/menus", &name_maps_, &pieces_);
+    std::string map_err;
+    if (!load_name_mappings(ss(mappings_path()), name_maps_, &map_err))
+        load_warnings_ << qs(map_err);
+    if (!load_piece_heights(ss(pieces_path()), pieces_, &map_err)) load_warnings_ << qs(map_err);
+    if (!load_mound_slopes(ss(mounds_path()), mound_slopes_, &map_err)) load_warnings_ << qs(map_err);
+    if (!load_roll_off(ss(rolloff_path()), roll_off_, &map_err)) load_warnings_ << qs(map_err);
+    LoadResult loaded = load_menus(ss(asset_dir_ + "/menus"), &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
-    load_warnings_ << loaded.warnings;
-    menu_issues_ = loaded.issues;
+    load_warnings_ << qsl(loaded.warnings);
+    menu_issues_ = qsl(loaded.issues);
     manual_ = load_manual_entry();
     rebuild_manual_menu();
 
-    QString cost_err;
-    if (!costs_.load_csv(asset_dir_ + "/data/ingredient_costs.csv", &cost_err))
-        load_warnings_ << QString("ingredient_costs.csv: %1").arg(cost_err);
+    std::string cost_err;
+    if (!costs_.load_csv(ss(asset_dir_ + "/data/ingredient_costs.csv"), &cost_err))
+        load_warnings_ << QString("ingredient_costs.csv: %1").arg(qs(cost_err));
 
     // Restore the display preferences before the first paint, so nothing is built
     // in one unit and relabelled in the other.
@@ -1312,7 +1316,7 @@ QWidget *MainWindow::build_settings()
         connect(upload, &QPushButton::clicked, this, &MainWindow::on_upload_csv);
         row->addWidget(upload, 1);
         auto *help = new QPushButton("Format");
-        help->setToolTip(CurveSet::format_help());
+        help->setToolTip(qs(CurveSet::format_help()));
         connect(help, &QPushButton::clicked, this, &MainWindow::show_csv_help);
         row->addWidget(help);
         v->addLayout(row);
@@ -1326,7 +1330,7 @@ QWidget *MainWindow::build_settings()
         connect(bowls, &QPushButton::clicked, this, &MainWindow::on_upload_bowl_data);
         bowl_row->addWidget(bowls, 1);
         auto *bowl_help = new QPushButton("Format");
-        bowl_help->setToolTip(bowl_data_format_help());
+        bowl_help->setToolTip(qs(bowl_data_format_help()));
         connect(bowl_help, &QPushButton::clicked, this, &MainWindow::show_bowl_help);
         bowl_row->addWidget(bowl_help);
         v->addLayout(bowl_row);
@@ -1447,7 +1451,7 @@ QWidget *MainWindow::build_settings()
         use->setObjectName("primary");
         use->setToolTip("Switch the brand to Manual Entry and go back to the bowl");
         connect(use, &QPushButton::clicked, this, [this] {
-            select(kManualEntryBrand);
+            select(qs(kManualEntryBrand));
             open_settings(false);
         });
         auto *top = new QHBoxLayout;
@@ -1476,7 +1480,7 @@ QWidget *MainWindow::build_settings()
             name->completer()->setFilterMode(Qt::MatchContains);
             name->completer()->setCaseSensitivity(Qt::CaseInsensitive);
             auto *kind = make_combo();
-            for (const QString &k : kMappingKinds) kind->addItem(capitalised(k), k);
+            for (const std::string &k : kMappingKinds) kind->addItem(capitalised(qs(k)), qs(k));
             kind->setFixedWidth(130);
             station_rows_[i] = {name, kind};
             grid->addWidget(num, i + 1, 0);
@@ -1489,14 +1493,14 @@ QWidget *MainWindow::build_settings()
                 const StationRow &row = station_rows_[i];
                 const QString text = row.name->currentText().trimmed();
                 ManualStation &st = manual_.stations[i];
-                if (text == st.name) return;
-                st.name = text;
-                st.kind = text.isEmpty() ? QString() : catalog_kind(menus_, text);
+                if (ss(text) == st.name) return;
+                st.name = ss(text);
+                st.kind = text.isEmpty() ? std::string() : catalog_kind(menus_, ss(text));
                 const QSignalBlocker block(row.kind);
                 row.kind->setCurrentIndex(text.isEmpty() ? -1
-                                                         : std::max(0, row.kind->findData(st.kind)));
+                                                         : std::max(0, row.kind->findData(qs(st.kind))));
                 row.kind->setEnabled(!text.isEmpty());
-                row.name->setToolTip(!text.isEmpty() && !ingredient_catalog(menus_).contains(text)
+                row.name->setToolTip(!text.isEmpty() && !contains(ingredient_catalog(menus_), ss(text))
                                          ? "Written in: no brand carries this name, so it "
                                            "takes typical ramp settings for its kind"
                                          : QString());
@@ -1505,8 +1509,8 @@ QWidget *MainWindow::build_settings()
             connect(name, &QComboBox::activated, this, commit_name);
             connect(name->lineEdit(), &QLineEdit::editingFinished, this, commit_name);
             connect(kind, &QComboBox::activated, this, [this, i, kind] {
-                if (manual_.stations[i].name.isEmpty()) return;
-                manual_.stations[i].kind = kind->currentData().toString();
+                if (manual_.stations[i].name.empty()) return;
+                manual_.stations[i].kind = ss(kind->currentData().toString());
                 apply_manual_entry();
             });
         }
@@ -1534,7 +1538,7 @@ QWidget *MainWindow::build_settings()
         manual_sauces_ = new ChipPicker("sauce");
         manual_sauces_->set_write_in(true);
         connect(manual_sauces_, &ChipPicker::changed, this, [this](const QStringList &picked) {
-            manual_.sauces = picked;
+            manual_.sauces = ssl(picked);
             apply_manual_entry();
         });
         v->addWidget(manual_sauces_);
@@ -1555,6 +1559,81 @@ QWidget *MainWindow::build_settings()
         });
         v->addWidget(floor);
         refresh_station_catalog();
+        v->addStretch(1);
+    }
+
+    // ---- Volume per gram --------------------------------------------------------
+    // Last in the list, so the saved page index and the estimate links keep pointing at
+    // the pages they always have.
+    {
+        auto [v, page] = add_page(
+            "Volume per gram",
+            "How much room a gram of each of this brand's ingredients takes, and what its "
+            "ramp step adds. A gram of romaine takes several times the room of a gram of "
+            "rice, so equal gram steps grow a bowl unevenly; the last column is the step "
+            "that would make every ingredient add the same volume. Everything is read at "
+            "the ingredient's menu portion, where its ramp starts, with nothing pressing "
+            "on it: the curves bend, so a gram is worth a little less further up the ramp.");
+        // A wide table: let this page use more of the window than the reading measure.
+        v->parentWidget()->setMaximumWidth(1180);
+        step_target_ml_ = make_spin(1, 200, 1, 1);
+        step_target_ml_->setSuffix(" ml");
+        step_target_ml_->setFixedWidth(130);
+        step_target_ml_->setValue(prefs.value("steps/target_ml", 10.0).toDouble());
+        step_target_ml_->setToolTip("The volume every ingredient's step should add. The last "
+                                    "column is the step, in grams, that adds it.");
+        connect(step_target_ml_, &QDoubleSpinBox::valueChanged, this, [this](double ml) {
+            QSettings().setValue("steps/target_ml", ml);
+            update_step_table();
+        });
+        track_spin(page, step_target_ml_, [] { return 10.0; });
+
+        auto csv = [this] {
+            const Menu *m = menu();
+            if (!m) return std::string();
+            const double target = step_target_ml_->value();
+            return step_table_csv(m->brand, step_table(*m, curves_, method(), target), target);
+        };
+        auto *copy = new QPushButton("Copy CSV");
+        copy->setToolTip("Copy this brand's table to the clipboard, for a spreadsheet");
+        connect(copy, &QPushButton::clicked, this,
+                [csv] { QApplication::clipboard()->setText(qs(csv())); });
+        auto *save = new QPushButton("Save CSV…");
+        connect(save, &QPushButton::clicked, this, [this, csv] {
+            const Menu *m = menu();
+            if (!m) return;
+            const QString suggested = QString("%1-volume-per-gram.csv")
+                                          .arg(qs(m->brand).replace(' ', '-').toLower());
+            const QString path = QFileDialog::getSaveFileName(this, "Save volume per gram",
+                                                              suggested, "CSV (*.csv)");
+            if (path.isEmpty()) return;
+            if (!write_text(ss(path), csv()))
+                QMessageBox::warning(this, "Could not save", "Could not write " + path);
+        });
+        auto *row = new QHBoxLayout;
+        row->setSpacing(space::sm);
+        row->addWidget(field("Volume per step", step_target_ml_));
+        row->addStretch(1);
+        row->addWidget(copy, 0, Qt::AlignBottom);
+        row->addWidget(save, 0, Qt::AlignBottom);
+        v->addLayout(row);
+
+        step_table_ = new QTableWidget(0, 10);
+        step_table_->setObjectName("breakdown");
+        step_table_->setShowGrid(false);
+        step_table_->verticalHeader()->setVisible(false);
+        step_table_->verticalHeader()->setDefaultSectionSize(32);
+        step_table_->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+        step_table_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        step_table_->setSelectionMode(QAbstractItemView::NoSelection);
+        step_table_->setFocusPolicy(Qt::NoFocus);
+        // The page scrolls, not the table: it is sized to its rows in update_step_table.
+        step_table_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        step_table_->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+        step_table_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+        v->addWidget(step_table_);
+        step_note_ = make_label("", "note");
+        v->addWidget(step_note_);
         v->addStretch(1);
     }
 
@@ -1911,7 +1990,7 @@ double MainWindow::value_for(const QString &name, const QString &fieldName) cons
     if (fieldName == "start")
         if (auto pin = pins_.find(name); pin != pins_.end()) return pin->second;
     const Menu *m = menu();
-    const Ingredient *ing = m ? m->find(name) : nullptr;
+    const Ingredient *ing = m ? m->find(ss(name)) : nullptr;
     if (!ing) return 0.0;
     // An unpinned base starts at its portion, halved by the split when two are in.
     if (fieldName == "start" && ing->kind == Kind::Base)
@@ -1940,13 +2019,13 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
 
     // Dispense order is stacking order: bases, then proteins, then toppings.
     for (const QString &name : bowl_names()) {
-        const Ingredient *ing = m->find(name);
+        const Ingredient *ing = m->find(ss(name));
         if (!ing) continue;
         BowlItem it = make_item(*ing, curves_, method(), kFlatProteinRate, kFlatToppingRate);
         it.start_g = value_for(name, "start");
         it.step_g = value_for(name, "step");
         it.max_g = value_for(name, "max");
-        it.mound_slope_deg = mound_slope_for(it.name);
+        it.mound_slope_deg = mound_slope_for(qs(it.name));
         if (const auto roll = roll_off_.find(it.name); roll != roll_off_.end())
             it.roll_off_deg = roll->second;
         if (!it.has_curve) {
@@ -1987,7 +2066,7 @@ QString MainWindow::rolloff_path() const
 
 double MainWindow::mound_slope_for(const QString &name) const
 {
-    const auto it = mound_slopes_.find(name);
+    const auto it = mound_slopes_.find(ss(name));
     return it != mound_slopes_.end() ? it->second : -1.0;
 }
 
@@ -1995,7 +2074,7 @@ void MainWindow::update_mapping_note()
 {
     if (!mapping_note_) return;
     QSet<QString> brands;
-    for (const auto &[key, m] : name_maps_) brands << key.first;
+    for (const auto &[key, m] : name_maps_) brands << qs(key.first);
     mapping_note_->setText(
         name_maps_.empty()
             ? QString("Nothing mapped yet. Saved to <code>data/ingredient_aliases.csv</code>.")
@@ -2015,12 +2094,12 @@ void MainWindow::show_mappings()
     const PieceHeights next_pieces = dialog.pieces();
     const MoundSlopes next_slopes = dialog.slopes();
     const RollOffAngles next_rolls = dialog.rolls();
-    QString err;
-    if (!save_name_mappings(mappings_path(), next, &err)
-        || !save_piece_heights(pieces_path(), next_pieces, &err)
-        || !save_mound_slopes(mounds_path(), next_slopes, &err)
-        || !save_roll_off(rolloff_path(), next_rolls, &err)) {
-        QMessageBox::warning(this, "Could not save ingredients", err);
+    std::string err;
+    if (!save_name_mappings(ss(mappings_path()), next, &err)
+        || !save_piece_heights(ss(pieces_path()), next_pieces, &err)
+        || !save_mound_slopes(ss(mounds_path()), next_slopes, &err)
+        || !save_roll_off(ss(rolloff_path()), next_rolls, &err)) {
+        QMessageBox::warning(this, "Could not save ingredients", qs(err));
         return;
     }
     name_maps_ = next;
@@ -2037,9 +2116,9 @@ void MainWindow::reload_menus()
     const QString brand = brand_->currentData().toString();
     const QString recipe = recipe_->currentData().toString();
 
-    LoadResult loaded = load_menus(asset_dir_ + "/menus", &name_maps_, &pieces_);
+    LoadResult loaded = load_menus(ss(asset_dir_ + "/menus"), &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
-    menu_issues_ = loaded.issues;
+    menu_issues_ = qsl(loaded.issues);
     rebuild_manual_menu();
     refresh_station_catalog();
     issues_->setVisible(!menu_issues_.isEmpty());
@@ -2070,19 +2149,19 @@ void MainWindow::rebuild_manual_menu()
 void MainWindow::apply_manual_entry()
 {
     save_manual_entry(manual_);
-    const bool showing = brand_ && brand_->currentData().toString() == kManualEntryBrand;
+    const bool showing = brand_ && brand_->currentData().toString() == qs(kManualEntryBrand);
     rebuild_manual_menu();
     // Its ingredients changed under the bowl, so the bowl starts again.
     if (showing) {
         populate_brand();
-        select(kManualEntryBrand);
+        select(qs(kManualEntryBrand));
     }
 }
 
 void MainWindow::refresh_station_catalog()
 {
     if (station_rows_.empty()) return;
-    const QStringList catalog = ingredient_catalog(menus_);
+    const QStringList catalog = qsl(ingredient_catalog(menus_));
     for (int i = 0; i < static_cast<int>(station_rows_.size()); ++i) {
         const StationRow &row = station_rows_[i];
         const ManualStation &st = manual_.stations[i];
@@ -2091,23 +2170,23 @@ void MainWindow::refresh_station_catalog()
         row.name->addItem(QString());
         row.name->addItems(catalog);
         row.name->setCurrentIndex(0);
-        row.name->setEditText(st.name);
-        row.name->setToolTip(!st.name.isEmpty() && !catalog.contains(st.name)
+        row.name->setEditText(qs(st.name));
+        row.name->setToolTip(!st.name.empty() && !catalog.contains(qs(st.name))
                                  ? "Written in: no brand carries this name, so it takes "
                                    "typical ramp settings for its kind"
                                  : QString());
         // An empty station shows no kind until it holds something.
-        row.kind->setCurrentIndex(st.name.isEmpty() ? -1
-                                                    : std::max(0, row.kind->findData(st.kind)));
-        row.kind->setEnabled(!st.name.isEmpty());
+        row.kind->setCurrentIndex(st.name.empty() ? -1
+                                                  : std::max(0, row.kind->findData(qs(st.kind))));
+        row.kind->setEnabled(!st.name.empty());
     }
     if (manual_sauces_) {
-        QStringList options = sauce_catalog(menus_);
-        for (const QString &n : manual_.sauces)
+        QStringList options = qsl(sauce_catalog(menus_));
+        for (const QString &n : qsl(manual_.sauces))
             if (!options.contains(n)) options << n;
         const QSignalBlocker block(manual_sauces_);
         manual_sauces_->set_options(options);
-        manual_sauces_->set_picked(manual_.sauces);
+        manual_sauces_->set_picked(qsl(manual_.sauces));
     }
 }
 
@@ -2115,7 +2194,7 @@ void MainWindow::populate_brand()
 {
     loading_ = true;
     brand_->clear();
-    for (const Menu &m : menus_) brand_->addItem(m.brand, m.brand);
+    for (const Menu &m : menus_) brand_->addItem(qs(m.brand), qs(m.brand));
     loading_ = false;
     if (!menus_.empty()) on_brand_changed();
 }
@@ -2140,9 +2219,9 @@ void MainWindow::on_brand_changed()
         QComboBox *box = (i == 0 ? base1_ : base2_);
         box->clear();
         if (i == 1) box->addItem("— none —", QString());
-        for (const QString &n : m->names_of(Kind::Base)) box->addItem(n, n);
+        for (const QString &n : qsl(m->names_of(Kind::Base))) box->addItem(n, n);
     }
-    const QStringList bases = m->names_of(Kind::Base);
+    const QStringList bases = qsl(m->names_of(Kind::Base));
     if (!bases.isEmpty()) base1_->setCurrentIndex(0);
     base2_->setCurrentIndex(0);
 
@@ -2151,10 +2230,10 @@ void MainWindow::on_brand_changed()
     // Manual Entry's one recipe is the build-your-own shell the report sweeps.
     const bool manual = m->brand == kManualEntryBrand;
     for (const Recipe &r : m->recipes)
-        if (!manual || !r.customer_built) recipe_->addItem(r.name, r.name);
+        if (!manual || !r.customer_built) recipe_->addItem(qs(r.name), qs(r.name));
     recipe_->setCurrentIndex(0);
 
-    const QStringList proteins = m->names_of(Kind::Protein);
+    const QStringList proteins = qsl(m->names_of(Kind::Protein));
     if (!proteins.isEmpty()) picked_proteins_ << proteins.front();
 
     brand_note_->setText(
@@ -2173,10 +2252,10 @@ void MainWindow::on_brand_changed()
                       "<code>dynamic_portion_increases</code> and no product rules at "
                       "all.</span> Nothing ramps and no base is ever split on this "
                       "brand.")
-                  .arg(theme::palette().over.name(), m->version)
+                  .arg(theme::palette().over.name(), qs(m->version))
             : QString("Menu <code>%1</code> — <b>%2</b> ingredients carry ramp "
                       "settings, <b>%3</b> weight floors. Base-split rule %4.")
-                  .arg(m->version)
+                  .arg(qs(m->version))
                   .arg(m->ingredients.size())
                   .arg(m->floors.size())
                   .arg(m->has_split_rule
@@ -2205,19 +2284,19 @@ void MainWindow::on_recipe_changed()
     const QString want = recipe_->currentData().toString();
     const Recipe *rec = nullptr;
     for (const Recipe &r : m->recipes)
-        if (r.name == want) rec = &r;
+        if (qs(r.name) == want) rec = &r;
 
     if (!rec) {
-        const QStringList bases = m->names_of(Kind::Base);
+        const QStringList bases = qsl(m->names_of(Kind::Base));
         base1_->setCurrentIndex(bases.isEmpty() ? -1 : 0);
         base2_->setCurrentIndex(0);
-        const QStringList proteins = m->names_of(Kind::Protein);
+        const QStringList proteins = qsl(m->names_of(Kind::Protein));
         if (!proteins.isEmpty()) picked_proteins_ << proteins.front();
         // Every bowl comes with one sauce; the second is an upcharge.
-        if (!m->sauces.isEmpty()) picked_sauces_ << m->sauces.front();
+        if (!m->sauces.empty()) picked_sauces_ << qs(m->sauces.front());
         recipe_note_->setText(
             m->brand == kManualEntryBrand
-                ? (m->ingredients.empty() && m->sauces.isEmpty()
+                ? (m->ingredients.empty() && m->sauces.empty()
                        ? QString("<span style='color:%1'>No robot stations are set yet.</span> "
                                  "Fill them in under Settings → Robot-dispensed "
                                  "ingredients.").arg(theme::palette().over.name())
@@ -2231,10 +2310,10 @@ void MainWindow::on_recipe_changed()
         for (const RecipeItem &ri : rec->items) {
             const Ingredient *ing = m->find(ri.name);
             if (!ing) continue;
-            pins_[ri.name] = ri.grams;
-            if (ing->kind == Kind::Base) rec_bases << ri.name;
-            else if (ing->kind == Kind::Protein) picked_proteins_ << ri.name;
-            else picked_toppings_ << ri.name;
+            pins_[qs(ri.name)] = ri.grams;
+            if (ing->kind == Kind::Base) rec_bases << qs(ri.name);
+            else if (ing->kind == Kind::Protein) picked_proteins_ << qs(ri.name);
+            else picked_toppings_ << qs(ri.name);
         }
         auto select = [](QComboBox *box, const QString &name) {
             const int i = box->findData(name);
@@ -2242,9 +2321,10 @@ void MainWindow::on_recipe_changed()
         };
         select(base1_, rec_bases.value(0));
         select(base2_, rec_bases.value(1));
-        picked_sauces_ = m->sauces_in(*rec).mid(0, SauceCups::kMax);
+        picked_sauces_ = qsl(m->sauces_in(*rec)).mid(0, SauceCups::kMax);
 
-        const int n = static_cast<int>(rec->items.size()) - m->sauces_in(*rec).size();
+        const int n = static_cast<int>(rec->items.size())
+                      - static_cast<int>(m->sauces_in(*rec).size());
         QString note = QString("Pins <b>%1</b> ingredient%2")
                            .arg(n)
                            .arg(n == 1 ? "" : "s");
@@ -2270,9 +2350,9 @@ void MainWindow::rebuild_ingredient_pickers()
 {
     const Menu *m = menu();
     if (!m) return;
-    protein_chips_->set_options(m->names_of(Kind::Protein));
-    topping_chips_->set_options(m->names_of(Kind::Topping));
-    sauce_chips_->set_options(m->sauces);
+    protein_chips_->set_options(qsl(m->names_of(Kind::Protein)));
+    topping_chips_->set_options(qsl(m->names_of(Kind::Topping)));
+    sauce_chips_->set_options(qsl(m->sauces));
 }
 
 int MainWindow::sauce_cup_count() const
@@ -2284,7 +2364,7 @@ MainWindow::RateInfo MainWindow::rate_info(const QString &name) const
 {
     RateInfo info;
     const Menu *m = menu();
-    const Ingredient *ing = m ? m->find(name) : nullptr;
+    const Ingredient *ing = m ? m->find(ss(name)) : nullptr;
     if (!ing) return info;
     const BowlItem item = make_item(*ing, curves_, method());
     const auto ov = overrides_.find(name);
@@ -2300,7 +2380,7 @@ MainWindow::RateInfo MainWindow::rate_info(const QString &name) const
         info.oz_per_100g = curve * scale;
         info.edited = edit.curve_scale.has_value();
         info.tip = QString("Volume per 100 g at %1 g, from the %2. ").arg(g, 0, 'f', 0)
-                       .arg(describe(choose_curve(name, ing->kind, curves_, method())));
+                       .arg(qs(describe(choose_curve(ss(name), ing->kind, curves_, method()))));
         info.tip += info.edited
                         ? QString("Your edit scales the curve by \u00D7%1 (it gives %2 alone).")
                               .arg(scale, 0, 'f', 2).arg(shown(curve))
@@ -2317,7 +2397,7 @@ MainWindow::RateInfo MainWindow::rate_info(const QString &name) const
 void MainWindow::set_rate(const QString &name, double oz_per_100g)
 {
     const Menu *m = menu();
-    const Ingredient *ing = m ? m->find(name) : nullptr;
+    const Ingredient *ing = m ? m->find(ss(name)) : nullptr;
     if (!ing) return;
     Override &o = overrides_[name];
     const BowlItem item = make_item(*ing, curves_, method());
@@ -2387,20 +2467,20 @@ bool MainWindow::row_edited(const QString &name) const
 QString MainWindow::ingredient_tip(const BowlItem &it) const
 {
     QString tip = QString("%1 \u00B7 curve: %2")
-                      .arg(capitalised(to_string(it.kind)),
-                           describe(choose_curve(it.name, it.kind, curves_, method())));
-    const QString proxy = proxy_curve_for(it.name, curves_);
-    if (const Fit *f = curves_.fit(proxy.isEmpty() ? it.name : proxy, method())) {
+                      .arg(capitalised(qs(to_string(it.kind))),
+                           qs(describe(choose_curve(it.name, it.kind, curves_, method()))));
+    const std::string proxy = proxy_curve_for(it.name, curves_);
+    if (const Fit *f = curves_.fit(proxy.empty() ? it.name : proxy, method())) {
         tip += QString("\nFit: %1 = %2\u00B7g^%3, R\u00B2 %4, n=%5, measured %6\u2013%7 g")
                    .arg(units::suffix()).arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
                    .arg(fmt(f->r2, 2)).arg(f->n).arg(std::round(f->lo_g)).arg(std::round(f->hi_g));
         if (it.start_g < f->lo_g * 0.8 || it.max_g > f->hi_g * 1.25)
             tip += "\nThe portion runs outside the measured range.";
     }
-    tip += QString("\n%1/100 g: %2").arg(units::suffix()).arg(rate_info(it.name).tip);
+    tip += QString("\n%1/100 g: %2").arg(units::suffix()).arg(rate_info(qs(it.name)).tip);
     if (const Menu *m = menu())
         if (const Ingredient *ing = m->find(it.name))
-            tip += QString("\nPortion source: %1").arg(to_string(ing->source));
+            tip += QString("\nPortion source: %1").arg(qs(to_string(ing->source)));
     return tip;
 }
 
@@ -2408,7 +2488,7 @@ void MainWindow::apply_floor()
 {
     const Menu *m = menu();
     if (!m) return;
-    const FloorRule *f = m->floor_for(bowl_names());
+    const FloorRule *f = m->floor_for(ssl(bowl_names()));
     const double menu_floor = f ? f->minimum_product_weight_g : 0.0;
 
     const QSignalBlocker block(floor_);
@@ -2432,10 +2512,10 @@ void MainWindow::apply_floor()
         floor_note_->setText("From the menu's rule for this bowl.");
         QString tip = QString("Matched %1 on %2")
                           .arg(f->op == FilterOp::ExactlyOne ? "ExactlyOne" : "Any",
-                               f->must_have.isEmpty() ? QString("anything")
-                                                      : f->must_have.join(", "));
-        if (!f->must_not_have.isEmpty())
-            tip += QString(", excluding %1").arg(f->must_not_have.join(", "));
+                               f->must_have.empty() ? QString("anything")
+                                                    : qs(join(f->must_have, ", ")));
+        if (!f->must_not_have.empty())
+            tip += QString(", excluding %1").arg(qs(join(f->must_not_have, ", ")));
         tip += QString(" \u2192 %1 g. The first matching rule wins; type a value to "
                        "override it.").arg(f->minimum_product_weight_g);
         floor_note_->setToolTip(tip);
@@ -2469,7 +2549,7 @@ void MainWindow::on_selection_changed()
             : "Off: volumes are as measured, one ingredient with nothing on top.");
     load_transfer_->setVisible(compress_->isChecked());
 
-    const QString ms = to_string(method());
+    const QString ms = qs(to_string(method()));
     method_note_->setText(
         ms == "robot" ? "Bowls the <b>robot</b> dispensed — the operative case, and the "
                         "most compacted."
@@ -2659,11 +2739,92 @@ AdaptiveSettings MainWindow::adaptive_settings() const
     return a;
 }
 
+void MainWindow::update_step_table()
+{
+    const Menu *m = menu();
+    if (!step_table_ || !m) return;
+    const double target = step_target_ml_->value();
+    const std::vector<StepRow> rows = step_table(*m, curves_, method(), target);
+
+    step_table_->setHorizontalHeaderLabels(
+        {"Ingredient", "Kind", "Curve", "Portion", "ml per g", "g per ml", "Next g adds",
+         "Step now", "Step adds", QString("Step for %1 ml").arg(target, 0, 'g', 4)});
+    const QStringList tips = {
+        "",
+        "",
+        "Where the mass-to-volume curve comes from. Measured is this ingredient's own "
+        "readings; borrowed is a relative's; composite averages every measured curve of "
+        "its kind; flat is a fixed rate with nothing measured behind it.",
+        "The menu portion, where the ramp starts",
+        "Volume of the portion over its mass",
+        "Mass per ml of the portion: the inverse of ml per g",
+        "What one more gram adds at the portion. Below ml per g when the ingredient "
+        "compacts, so each gram buys less room than the average one before it.",
+        "step_g as the menu sets it",
+        "What one step adds from the portion",
+        "The step, in grams, that adds the target volume from the portion"};
+    for (int c = 0; c < step_table_->columnCount(); ++c)
+        if (QTableWidgetItem *h = step_table_->horizontalHeaderItem(c)) h->setToolTip(tips[c]);
+
+    const theme::Palette &pal = theme::palette();
+    auto cell = [](const QString &text, bool number) {
+        auto *item = new QTableWidgetItem(text);
+        item->setTextAlignment((number ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignVCenter);
+        return item;
+    };
+    auto grams = [](double g) { return QString("%1 g").arg(g, 0, 'f', 1); };
+    auto ml = [](double v) { return QString("%1 ml").arg(v, 0, 'f', v < 10 ? 2 : 1); };
+    int measured = 0;
+    step_table_->setRowCount(static_cast<int>(rows.size()));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        const StepRow &r = rows[i];
+        const bool portion = r.portion_g > 0;
+        measured += r.source == CurveSource::Own;
+        auto *name = cell(qs(r.ingredient), false);
+        step_table_->setItem(i, 0, name);
+        step_table_->setItem(i, 1, cell(qs(to_string(r.kind)), false));
+        auto *curve = cell(qs(curve_label(r.source)), false);
+        curve->setToolTip(qs(describe(choose_curve(r.ingredient, r.kind, curves_, method()))));
+        // An estimate is shown as one, like the estimates on the bowl.
+        if (r.source != CurveSource::Own) curve->setForeground(pal.ink_soft);
+        step_table_->setItem(i, 2, curve);
+        step_table_->setItem(i, 3, cell(portion ? grams(r.portion_g) : "—", true));
+        step_table_->setItem(i, 4, cell(portion ? QString::number(r.ml_per_g, 'f', 2) : "—", true));
+        step_table_->setItem(i, 5, cell(portion ? QString::number(r.g_per_ml, 'f', 2) : "—", true));
+        step_table_->setItem(i, 6, cell(ml(r.marginal_ml_per_g), true));
+        step_table_->setItem(i, 7, cell(r.step_g > 0 ? grams(r.step_g) : "—", true));
+        step_table_->setItem(i, 8, cell(r.step_g > 0 ? ml(r.step_ml) : "—", true));
+        auto *suggested = cell(QString("%1 g").arg(r.step_g_for_target, 0, 'f', 2), true);
+        QFont bold = suggested->font();
+        bold.setBold(true);
+        suggested->setFont(bold);
+        step_table_->setItem(i, 9, suggested);
+    }
+    const int header = step_table_->horizontalHeader()->sizeHint().height();
+    step_table_->setFixedHeight(header + step_table_->verticalHeader()->defaultSectionSize()
+                                             * static_cast<int>(rows.size())
+                                + 2 * step_table_->frameWidth());
+
+    const QString method_name = method() == Method::Hand     ? "hand-filled"
+                                : method() == Method::Pooled ? "pooled"
+                                                             : "robot-dispensed";
+    step_note_->setText(
+        rows.empty()
+            ? QString("%1 dispenses nothing from a station.").arg(qs(m->brand))
+            : QString("<b>%1</b>, on the %2 curves. <b>%3</b> of %4 ingredients have curves "
+                      "of their own; the rest are estimates, and their numbers move as "
+                      "measurements come in. Sauces go in cups and have no step.")
+                  .arg(qs(m->brand), method_name)
+                  .arg(measured)
+                  .arg(rows.size()));
+}
+
 void MainWindow::recompute()
 {
     if (loading_) return;
     const Menu *m = menu();
     if (!m) return;
+    update_step_table();
 
     if (adaptive_) {
         last_adaptive_ = solve_adaptive(assemble_bowl(), adaptive_settings(), &costs_);
@@ -2846,19 +3007,19 @@ void MainWindow::recompute()
             last.per_item_oz_uncompressed[i] - last.per_item_oz[i];
 
         BreakdownRow row;
-        row.key = it.name;
-        row.name = it.name;
+        row.key = qs(it.name);
+        row.name = qs(it.name);
         row.kind = ingredient_tip(it);
         if (settings.compress && squeeze > 0.05)
             row.kind += QString("\nSqueezed %1 by the load above it.")
                             .arg(units::volume(squeeze, true));
         row.swatch = band[i];
-        row.edited = row_edited(it.name);
+        row.edited = row_edited(qs(it.name));
         auto plain = [](const QString &text) { TableCell c; c.text = text; return c; };
         row.cells = {
-            portion_cell(it.name, Field::Start, it.start_g),
-            portion_cell(it.name, Field::Step, it.step_g),
-            portion_cell(it.name, Field::Max, it.max_g),
+            portion_cell(qs(it.name), Field::Start, it.start_g),
+            portion_cell(qs(it.name), Field::Step, it.step_g),
+            portion_cell(qs(it.name), Field::Max, it.max_g),
             plain(QString("%1 g").arg(std::round(it.final_g))),
             plain(std::fabs(added_g) > 0.05
                       ? QString("%1%2").arg(added_g > 0 ? "+" : "\u2212")
@@ -2870,7 +3031,7 @@ void MainWindow::recompute()
                       : QString("\u2014")),
             plain(units::volume(last.per_item_oz[i], true)),
             plain(QString("%1%").arg(std::round(last.per_item_oz[i] / total_oz * 100))),
-            rate_cell(it.name),
+            rate_cell(qs(it.name)),
         };
         rows.push_back(row);
     }
@@ -2922,7 +3083,7 @@ void MainWindow::recompute()
             (ratio > 1.15
                  ? QString("At the mass the ramp ends on, <b>%1</b> costs <b>%2×</b> the "
                            "volume per added gram that %3 does (%4 vs %5 %6 per +100 g). ")
-                       .arg(worst->name).arg(fmt(ratio, 2)).arg(best->name)
+                       .arg(qs(worst->name)).arg(fmt(ratio, 2)).arg(qs(best->name))
                        .arg(units::rate(cost(worst)), units::rate(cost(best)),
                             units::suffix())
                  : QString("At the mass the ramp ends on, everything that ramps costs "
@@ -2935,7 +3096,7 @@ void MainWindow::recompute()
     } else if (ramped.size() == 1) {
         foot_note_->setText(QString("Only <b>%1</b> ramps: %2 of bowl spent to gain "
                                     "%3 g, over %4 passes.")
-                                .arg(ramped[0]->name)
+                                .arg(qs(ramped[0]->name))
                                 .arg(units::volume(
                                     last.per_item_oz[0] - r.first().per_item_oz[0], true))
                                 .arg(std::round(ramped[0]->final_g - ramped[0]->start_g))
@@ -2955,7 +3116,7 @@ void MainWindow::recompute()
         QStringList taken;
         for (const BowlItem &it : r.items)
             if (it.start_g - it.final_g > 0.05)
-                taken << QString("%1 \u2212%2 g").arg(it.name)
+                taken << QString("%1 \u2212%2 g").arg(qs(it.name))
                              .arg(QString::number(it.start_g - it.final_g, 'g', 3));
         foot_note_->setText(QString("Stepped down %1 pass%2 by each ingredient's step_g: %3. "
                                     "Proteins are never stepped down; nothing goes below %4% "
@@ -3026,7 +3187,7 @@ void MainWindow::reload_scenarios(const QString &select)
         QFile f(dir.filePath(name));
         if (!f.open(QIODevice::ReadOnly)) continue;
         const QJsonObject j = QJsonDocument::fromJson(f.readAll()).object();
-        if (!m || j["brand"].toString() != m->brand) continue;
+        if (!m || j["brand"].toString() != qs(m->brand)) continue;
         Scenario s;
         s.file = f.fileName();
         s.name = j["name"].toString(QFileInfo(name).completeBaseName());
@@ -3077,7 +3238,7 @@ void MainWindow::save_scenario()
 
     QJsonObject j;
     j["name"] = name;
-    j["brand"] = m->brand;
+    j["brand"] = qs(m->brand);
     j["recipe"] = recipe_->currentData().toString();
     j["mode"] = adaptive_ ? "adaptive" : model_ == Model::VolumeFill ? "volume" : "dynamic";
     QJsonArray bases;
@@ -3099,7 +3260,7 @@ void MainWindow::save_scenario()
 
     // One file per scenario, named for the brand and the scenario; an existing one of
     // the same name is replaced after asking.
-    QString slug = QString("%1 - %2").arg(m->brand, name);
+    QString slug = QString("%1 - %2").arg(qs(m->brand), name);
     slug.replace(QRegularExpression(R"([^A-Za-z0-9 ._+-])"), "_");
     QDir().mkpath(scenarios_dir());
     const QString path = QDir(scenarios_dir()).filePath(slug + ".json");
@@ -3136,14 +3297,14 @@ void MainWindow::apply_scenario(const Scenario &s)
     auto offered = [&](const QStringList &names, Kind kind) {
         QStringList out;
         for (const QString &n : names)
-            if (m->find(n) && m->find(n)->kind == kind) out << n;
+            if (m->find(ss(n)) && m->find(ss(n))->kind == kind) out << n;
         return out;
     };
     picked_proteins_ = offered(s.proteins, Kind::Protein);
     picked_toppings_ = offered(s.toppings, Kind::Topping);
     picked_sauces_.clear();
     for (const QString &n : s.sauces)
-        if (m->sauces.contains(n)) picked_sauces_ << n;
+        if (contains(m->sauces, ss(n))) picked_sauces_ << n;
     split_->setChecked(s.split);
     overrides_ = s.overrides;
     floor_override_ = s.floor_g;
@@ -3172,7 +3333,7 @@ void MainWindow::export_spec()
     if (!m) return;
     const QString recipe = recipe_->currentIndex() > 0 ? recipe_->currentText()
                                                        : QString("Build your own");
-    QString base = QString("%1 - %2 spec.pdf").arg(m->brand, recipe);
+    QString base = QString("%1 - %2 spec.pdf").arg(qs(m->brand), recipe);
     base.replace(QRegularExpression(R"([^A-Za-z0-9 ._+-])"), "_");
     const QString path = QFileDialog::getSaveFileName(
         this, "Export recipe spec", QDir(QDir::homePath()).filePath(base), "PDF (*.pdf)");
@@ -3194,7 +3355,7 @@ bool MainWindow::write_spec(const QString &path)
     auto plain = [](QString html) { return html.remove(QRegularExpression("<[^>]*>")); };
     QString html;
     html += "<html><body style='font-family:sans-serif; color:#1d2321; font-size:10pt;'>";
-    html += QString("<h2 style='margin:0'>%1 · %2</h2>").arg(esc(m->brand), esc(recipe));
+    html += QString("<h2 style='margin:0'>%1 · %2</h2>").arg(esc(qs(m->brand)), esc(recipe));
     html += QString("<p style='color:#5b6663; margin-top:2px'>%1 · %2</p>")
                 .arg(adaptive_ ? "Adaptive fill"
                      : model_ == Model::VolumeFill ? "Volume fill" : "Dynamic portioning",
@@ -3267,7 +3428,7 @@ bool MainWindow::write_spec(const QString &path)
     pdf.setPageSize(QPageSize(QPageSize::Letter));
     pdf.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
     pdf.setResolution(144);
-    pdf.setTitle(QString("%1 - %2").arg(m->brand, recipe));
+    pdf.setTitle(QString("%1 - %2").arg(qs(m->brand), recipe));
     doc.setPageSize(QSizeF(pdf.width(), pdf.height()));
     QPainter painter;
     if (!painter.begin(&pdf)) return false;
@@ -3302,7 +3463,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
     for (const BowlItem &it : items) {
         const CurveChoice c = choose_curve(it.name, it.kind, curves_, method());
         if (c.source != CurveSource::Own)
-            list.push_back({QString("%1: not measured, %2").arg(it.name, describe(c)),
+            list.push_back({QString("%1: not measured, %2").arg(qs(it.name), qs(describe(c))),
                             go_page(kMeasurements)});
     }
     // Manual Entry names no brand carries: their ramp settings are typical, not real.
@@ -3311,7 +3472,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
             if (const Ingredient *ing = m->find(it.name);
                 ing && ing->source == WeightSource::Class)
                 list.push_back({QString("%1: written in, so its portion and ramp are typical "
-                                        "for a %2").arg(it.name, to_string(ing->kind).toLower()),
+                                        "for a %2").arg(qs(it.name), qs(to_string(ing->kind)).toLower()),
                                 go_page(kStations)});
     // Heights and slopes no one has measured.
     if (g.enabled) {
@@ -3321,7 +3482,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
             const Ingredient *ing = m ? m->find(it.name) : nullptr;
             if (ing && ing->piece_height_placeholder && it.piece_height_mm > 0)
                 list.push_back({QString("%1: piece height is a placeholder (%2 mm)")
-                                    .arg(it.name).arg(it.piece_height_mm, 0, 'f', 0),
+                                    .arg(qs(it.name)).arg(it.piece_height_mm, 0, 'f', 0),
                                 [this] { show_mappings(); }});
         }
         if (tallest > 0 && g.chunk_proud == BowlGeometry::kPlaceholderChunkProud)
@@ -3330,7 +3491,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
     if (g.mound && g.mound_slope_deg == BowlGeometry::kPlaceholderMoundSlope) {
         QStringList defaulted;
         for (const BowlItem &it : items)
-            if (it.mound_slope_deg < 0) defaulted << it.name;
+            if (it.mound_slope_deg < 0) defaulted << qs(it.name);
         if (!defaulted.isEmpty())
             list.push_back({QString("Mound slope is a placeholder (%1)").arg(defaulted.join(", ")),
                             go_page(kMounding)});
@@ -3342,7 +3503,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
         list.push_back({"Ingredient prices are placeholders (data/ingredient_costs.csv)", {}});
         for (const AdaptiveItem &it : ar->items)
             if (!it.cost_known)
-                list.push_back({QString("%1: no price, uses its kind's default").arg(it.name), {}});
+                list.push_back({QString("%1: no price, uses its kind's default").arg(qs(it.name)), {}});
     }
     if (m && recipe_->currentIndex() > 0)
         for (const Recipe &r : m->recipes)
@@ -3380,8 +3541,8 @@ void MainWindow::update_settings_summary(const FillUncertainty &u)
 void MainWindow::update_curve_note()
 {
     QStringList bits;
-    for (const QString &n : curves_.ingredients())
-        bits << QString("%1 (%2)").arg(n).arg(curves_.count(n, Method::Pooled));
+    for (const std::string &n : curves_.ingredients())
+        bits << QString("%1 (%2)").arg(qs(n)).arg(curves_.count(n, Method::Pooled));
     const int files = static_cast<int>(measurements_.files.size());
     QString text = QString("<b>%1</b> measurements from %2 file%3 in "
                            "<code>data/measurements</code>")
@@ -3392,7 +3553,7 @@ void MainWindow::update_curve_note()
     if (bf.valid)
         text += QString(" Backfilled from %1 (%2 readings): ×%3 at 10 ml, ×%4 at 50 ml, "
                         "×%5 at 200 ml.")
-                    .arg(bf.reference).arg(bf.points)
+                    .arg(qs(bf.reference)).arg(bf.points)
                     .arg(bf.factor_at_ml(10), 0, 'f', 2).arg(bf.factor_at_ml(50), 0, 'f', 2)
                     .arg(bf.factor_at_ml(200), 0, 'f', 2);
     else if (measurements_.backfill_requested)
@@ -3402,7 +3563,7 @@ void MainWindow::update_curve_note()
     if (const int n = measurements_.dropped_total()) {
         QStringList parts;
         for (const auto &[name, count] : measurements_.dropped)
-            parts << QString("%1 %2").arg(name).arg(count);
+            parts << QString("%1 %2").arg(qs(name)).arg(count);
         text += QString(" Ignored %1 impossible reading%2 (%3).")
                     .arg(n).arg(n == 1 ? "" : "s").arg(parts.join(", "));
     }
@@ -3428,7 +3589,7 @@ void MainWindow::update_curve_note()
                     .arg(squash_.at_bound ? ", at its limit" : "");
     QStringList bad;
     for (const MeasurementFile &f : measurements_.files)
-        if (f.failed) bad << f.name;
+        if (f.failed) bad << qs(f.name);
     if (measurements_.folder_missing || bad.size())
         text += QString(" <span style='color:%1'>%2</span>")
                     .arg(theme::palette().over.name(),
@@ -3469,11 +3630,11 @@ void MainWindow::show_report()
 
     ReportDialog dialog(audit, assumptions, this);
     connect(&dialog, &ReportDialog::recipe_chosen, this,
-            [this, m](const QString &recipe) { select(m->brand, recipe); });
+            [this, m](const QString &recipe) { select(qs(m->brand), recipe); });
     connect(&dialog, &ReportDialog::full_report_requested, this, [this, m] {
         SweepContext ctx;
         ctx.menus = &menus_;
-        ctx.brand = m->brand;
+        ctx.brand = qs(m->brand);
         ctx.curves = &curves_;
         ctx.method = method();
         ctx.legacy = legacy_settings();
@@ -3490,7 +3651,7 @@ void MainWindow::show_csv_help()
     QMessageBox box(this);
     box.setWindowTitle("Mass-to-volume CSV format");
     box.setTextFormat(Qt::RichText);
-    box.setText(CurveSet::format_help());
+    box.setText(qs(CurveSet::format_help()));
     box.setIcon(QMessageBox::Information);
     box.exec();
 }
@@ -3506,7 +3667,7 @@ QStringList MainWindow::reload_measurements()
     options.empty_bowl_ml = empty_bowl_ml_->value();
     options.backfill = backfill_->isChecked();
     options.drop_impossible = drop_impossible_->isChecked();
-    measurements_ = load_measurements(measurements_dir(), curves_, options);
+    measurements_ = load_measurements(ss(measurements_dir()), curves_, options);
     // Fitted for information only, never applied: the model can only squash bases
     // whose own curve compacts (p < 1), so with camera-fitted curves the fit often
     // rests on one or two bowls. Compression and load transfer stay as set.
@@ -3516,7 +3677,7 @@ QStringList MainWindow::reload_measurements()
         problems << QString("data/measurements does not exist, so no curves are loaded. "
                             "Upload a file to create it.");
     for (const MeasurementFile &f : measurements_.files)
-        if (f.failed) problems << QString("data/measurements/%1: %2").arg(f.name, f.problem);
+        if (f.failed) problems << QString("data/measurements/%1: %2").arg(qs(f.name), qs(f.problem));
     if (curve_note_) update_curve_note();
     return problems;
 }
@@ -3524,10 +3685,10 @@ QStringList MainWindow::reload_measurements()
 /// Copies an accepted upload into the store and reloads it, reporting where it went.
 QString MainWindow::store_and_reload(const QString &path, QStringList *problems)
 {
-    QString err;
-    const QString stored = store_measurement_file(path, measurements_dir(), &err);
+    std::string err;
+    const QString stored = qs(store_measurement_file(ss(path), ss(measurements_dir()), &err));
     if (stored.isEmpty()) {
-        QMessageBox::warning(this, "Could not save the file", err);
+        QMessageBox::warning(this, "Could not save the file", qs(err));
         return {};
     }
     *problems = reload_measurements();
@@ -3543,29 +3704,31 @@ void MainWindow::on_upload_csv()
 
     // Read it on its own first, so a bad file is refused before it is stored.
     CurveSet check;
-    QString note;
+    std::string note_text;
     int added = 0;
-    if (!check.load_csv(path, &note, &added)) {
+    const bool read = check.load_csv(ss(path), &note_text, &added);
+    const QString note = qs(note_text);
+    if (!read) {
         QMessageBox box(this);
         box.setWindowTitle("Could not read that CSV");
         box.setIcon(QMessageBox::Warning);
         box.setText(note);
-        box.setInformativeText(is_curve_csv(path)
+        box.setInformativeText(is_curve_csv(ss(path))
                                    ? "Click Show Details for the expected format."
                                    : "This looks like a bowl sheet (a column per "
                                      "ingredient); use Upload bowl data instead.");
-        box.setDetailedText(QString(CurveSet::format_help())
+        box.setDetailedText(qs(CurveSet::format_help())
                                 .replace(QRegularExpression("<[^>]+>"), ""));
         box.exec();
         return;
     }
 
-    const QStringList before = curves_.ingredients();
+    const QStringList before = qsl(curves_.ingredients());
     QStringList problems;
     const QString stored = store_and_reload(path, &problems);
     if (stored.isEmpty()) return;
     QStringList fresh;
-    for (const QString &n : curves_.ingredients())
+    for (const QString &n : qsl(curves_.ingredients()))
         if (!before.contains(n)) fresh << n;
 
     QString msg = QString("Saved as data/measurements/%1 and loaded: %2 row%3. ")
@@ -3585,7 +3748,7 @@ void MainWindow::show_bowl_help()
     QMessageBox box(this);
     box.setWindowTitle("Bowl data CSV format");
     box.setTextFormat(Qt::RichText);
-    box.setText(bowl_data_format_help());
+    box.setText(qs(bowl_data_format_help()));
     box.setIcon(QMessageBox::Information);
     box.exec();
 }
@@ -3597,27 +3760,27 @@ void MainWindow::on_upload_bowl_data()
     if (path.isEmpty()) return;
 
     BowlSheet sheet;
-    QString err;
-    if (!load_bowl_csv(path, sheet, &err, empty_bowl_ml_->value())) {
+    std::string err;
+    if (!load_bowl_csv(ss(path), sheet, &err, empty_bowl_ml_->value())) {
         QMessageBox box(this);
         box.setWindowTitle("Could not read that CSV");
         box.setIcon(QMessageBox::Warning);
-        box.setText(err);
+        box.setText(qs(err));
         box.setInformativeText("Click Show Details for the expected format.");
-        box.setDetailedText(bowl_data_format_help().replace(QRegularExpression("<[^>]+>"), ""));
+        box.setDetailedText(qs(bowl_data_format_help()).replace(QRegularExpression("<[^>]+>"), ""));
         box.exec();
         return;
     }
 
     // Store it, then reload everything: the curves refit with this sheet's single-
     // ingredient bowls, and the squash is fitted over every mixed bowl on file.
-    const QStringList before = curves_.ingredients();
+    const QStringList before = qsl(curves_.ingredients());
     const std::vector<Observation> points = single_ingredient_points(sheet);
     QStringList problems;
     const QString stored = store_and_reload(path, &problems);
     if (stored.isEmpty()) return;
     QStringList fresh;
-    for (const QString &n : curves_.ingredients())
+    for (const QString &n : qsl(curves_.ingredients()))
         if (!before.contains(n)) fresh << n;
 
     QString msg = QString("Saved as <code>data/measurements/%1</code> and loaded.<br><br>"
@@ -3649,9 +3812,9 @@ void MainWindow::on_upload_bowl_data()
                            "value means nothing: the model can only squash bases whose own "
                            "curve compacts, and most of these bowls have none.</span>")
                        .arg(theme::palette().over.name()).arg(kMaxLoadTransfer);
-        if (!fit.flat_rate.isEmpty())
+        if (!fit.flat_rate.empty())
             msg += QString("<br>No curve yet, carried at a flat rate: %1.")
-                       .arg(fit.flat_rate.join(", "));
+                       .arg(qs(join(fit.flat_rate, ", ")));
         msg += "<br><br>Compression and load transfer are unchanged; set them in Settings \u2192 Compression.";
     }
     if (!problems.isEmpty())
@@ -3723,7 +3886,7 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
     for (const BowlItem &it : items) {
         if (it.kind != Kind::Base || slot > 1) continue;
         const auto pit = std::find_if(std::begin(kPhotoSeries), std::end(kPhotoSeries),
-                                      [&](const auto &s) { return it.name.contains(s.first); });
+                                      [&](const auto &s) { return qs(it.name).contains(s.first); });
         if (pit == std::end(kPhotoSeries)) continue;
         // Photos exist at fixed masses; show the nearest one to the simulated weight.
         double best = -1, best_d = 1e18;
@@ -3741,9 +3904,9 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
         photo_caption_[slot]->setVisible(true);
         photo_caption_[slot]->setText(
             QString("<b>%1</b><br>%2 g simulated · %3 g photo%4")
-                .arg(it.name).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
+                .arg(qs(it.name)).arg(std::round(it.final_g)).arg(best, 0, 'f', 0)
                 .arg(pit->second == "MexicanRice"
-                             && it.name.compare("Mexican Rice", Qt::CaseInsensitive) != 0
+                             && !iequals(it.name, "Mexican Rice")
                          ? "<br><span style='color:" + pal.over.name()
                                + "'>proxy series</span>"
                          : ""));
@@ -3865,25 +4028,25 @@ void MainWindow::render_adaptive()
     for (size_t i = 0; i < r.items.size() && i < shim.items.size(); ++i) {
         const AdaptiveItem &it = r.items[i];
         BreakdownRow row;
-        row.key = it.name;
-        row.name = it.name;
+        row.key = qs(it.name);
+        row.name = qs(it.name);
         if (it.clamped) row.name += "  (clamped)";
         if (!it.cost_known) row.name += "  (~cost)";
         row.kind = ingredient_tip(shim.items[i]);
         row.swatch = i < band.size() ? band[i] : QColor();
         if (it.clamped) row.colour = pal.over;
-        row.edited = row_edited(it.name);
+        row.edited = row_edited(qs(it.name));
         auto plain = [](const QString &text) { TableCell c; c.text = text; return c; };
         row.cells = {
-            portion_cell(it.name, Field::Start, it.nominal_g),
-            portion_cell(it.name, Field::Max, shim.items[i].max_g),
+            portion_cell(qs(it.name), Field::Start, it.nominal_g),
+            portion_cell(qs(it.name), Field::Max, shim.items[i].max_g),
             plain(QString("%1 g").arg(std::round(it.final_g))),
             plain(QString("%1%2%").arg(it.delta_pct() > 0.05 ? "+" : "")
                       .arg(it.delta_pct(), 0, 'f', 1)),
             plain(units::volume(it.volume_oz, true)),
             plain(QString("%1%").arg(std::round(it.volume_oz / food_oz * 100))),
             plain(QString("$%1").arg(it.cost, 0, 'f', 2)),
-            rate_cell(it.name),
+            rate_cell(qs(it.name)),
         };
         rows.push_back(row);
     }

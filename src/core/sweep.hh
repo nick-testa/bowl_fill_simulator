@@ -2,13 +2,14 @@
 
 #include "feasibility.hh"
 
-#include <QString>
+#include <cstdint>
 #include <functional>
+#include <ostream>
+#include <string>
 #include <vector>
 
-class QTextStream;
-
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// The combinatorial workup: every bowl a brand's menu can actually produce, run
@@ -24,7 +25,8 @@ namespace bowlfill {
 /// Only bowls a customer could actually order are swept. The menu requires a base, a
 /// topping and a sauce; a second base, a second protein and a second sauce are all
 /// available, and the extra protein is optional in price but never absent in practice.
-struct SweepLimits {
+struct SweepLimits
+{
     int min_bases = 1, max_bases = 2;
     int min_proteins = 1, max_proteins = 2;
     int min_toppings = 1;
@@ -37,47 +39,63 @@ struct SweepLimits {
 };
 
 /// Ingredient combinations a brand admits under these limits, before recipes.
-qint64 combinations_for(const Menu &menu, const SweepLimits &limits);
+std::int64_t combinations_for(const Menu &menu, const SweepLimits &limits);
 
-struct SweepPlan {
-    QString brand;
-    qint64 combinations = 0;
+struct SweepPlan
+{
+    std::string brand;
+    std::int64_t combinations = 0;
     int recipes = 0;
 
-    qint64 rows() const { return combinations * recipes; }
+    std::int64_t rows() const
+    {
+        return combinations * recipes;
+    }
+
     /// Rough CSV size, for warning the user before they commit to a 20 GB file.
-    qint64 bytes() const { return rows() * 290; }
+    std::int64_t bytes() const
+    {
+        return rows() * 290;
+    }
 };
 
 SweepPlan plan_sweep(const Menu &menu, const SweepLimits &limits);
 
-struct SweepTotals {
-    qint64 rows = 0;
-    qint64 legacy_fits = 0, legacy_over = 0, legacy_short = 0;
+struct SweepTotals
+{
+    std::int64_t rows = 0;
+    std::int64_t legacy_fits = 0, legacy_over = 0, legacy_short = 0;
     /// StillOver means "cannot be brought down to the fill target", which is not the
     /// same as not fitting: a bowl held at 90% is both. `adaptive_over_bowl` is the
     /// count that actually overflows.
-    qint64 adaptive_ok = 0, adaptive_over = 0, adaptive_short = 0;
-    qint64 adaptive_over_bowl = 0;
+    std::int64_t adaptive_ok = 0, adaptive_over = 0, adaptive_short = 0;
+    std::int64_t adaptive_over_bowl = 0;
     /// Volume Fill: fits (filled to the limit or stepped down), everything at its max
     /// and still under the limit, or still over at its lowest.
-    qint64 volume_fits = 0, volume_short = 0, volume_over = 0;
+    std::int64_t volume_fits = 0, volume_short = 0, volume_over = 0;
 
-    double legacy_pass_rate() const { return rows ? double(legacy_fits) / rows : 0.0; }
+    double legacy_pass_rate() const
+    {
+        return rows ? double(legacy_fits) / rows : 0.0;
+    }
 };
 
-QString sweep_csv_header();
+std::string sweep_csv_header();
 
 ///
 /// Streams every row to `out`. `progress(done, total)` is called periodically and
 /// returns false to cancel, in which case the sweep stops and this returns false.
 ///
-bool run_sweep(const std::vector<const Menu *> &menus, const CurveSet &curves,
-               Method method, const SimSettings &legacy_settings,
-               const AdaptiveSettings &adaptive_settings, const CostTable *costs,
-               const SweepLimits &limits, QTextStream &out,
-               const std::function<bool(qint64, qint64)> &progress,
+bool run_sweep(const std::vector<const Menu *> &menus,
+               const CurveSet &curves,
+               Method method,
+               const SimSettings &legacy_settings,
+               const AdaptiveSettings &adaptive_settings,
+               const CostTable *costs,
+               const SweepLimits &limits,
+               std::ostream &out,
+               const std::function<bool(std::int64_t, std::int64_t)> &progress,
                std::vector<SweepTotals> *per_brand = nullptr,
                const VolumeFillSettings &volume_settings = {});
 
-}  // namespace bowlfill
+} // namespace bowlfill

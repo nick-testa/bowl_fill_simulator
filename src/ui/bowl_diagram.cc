@@ -1,4 +1,5 @@
 #include "bowl_diagram.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 #include "units.hh"
 
@@ -113,7 +114,7 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     for (size_t i = 0; i < result_.items.size(); ++i) {
         const double oz = result_.last().per_item_oz[i];
         if (oz <= 0.005) continue;
-        slices.push_back({result_.items[i].name, colours[i], oz, 0, 0});
+        slices.push_back({qs(result_.items[i].name), colours[i], oz, 0, 0});
     }
     if (slices.empty()) return;
 
@@ -452,7 +453,7 @@ std::vector<QColor> BowlDiagram::item_colours() const
     for (size_t i = 0; i < result_.items.size(); ++i) {
         if (result_.last().per_item_oz[i] <= 0.005) continue;
         const BowlItem &it = result_.items[i];
-        QColor c = theme::food_colour(it.name, static_cast<int>(it.kind));
+        QColor c = theme::food_colour(qs(it.name), static_cast<int>(it.kind));
         if (previous.isValid()) {
             const double dr = c.redF() - previous.redF(), dg = c.greenF() - previous.greenF(),
                          db = c.blueF() - previous.blueF();

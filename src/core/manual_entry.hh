@@ -2,11 +2,11 @@
 
 #include "menu_model.hh"
 
-#include <QString>
-#include <QStringList>
+#include <string>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// The "Manual Entry" brand: a menu made from what is loaded on the robot rather than
@@ -18,42 +18,38 @@ namespace bowlfill {
 /// a name no menu carries is written in, and borrows typical settings for its kind
 /// (WeightSource::Class), so it shows as an estimate.
 ///
-inline const QString kManualEntryBrand = QStringLiteral("Manual Entry");
+inline const std::string kManualEntryBrand = "Manual Entry";
 
-struct ManualStation {
-    QString name;   ///< empty for an unused station
-    QString kind;   ///< one of kMappingKinds: "base", "protein", "topping", "sauce"
+struct ManualStation
+{
+    std::string name; ///< empty for an unused station
+    std::string kind; ///< one of kMappingKinds: "base", "protein", "topping", "sauce"
 
     bool operator==(const ManualStation &) const = default;
 };
 
-struct ManualEntry {
+struct ManualEntry
+{
     static constexpr int kStations = 19;
 
     std::vector<ManualStation> stations = std::vector<ManualStation>(kStations);
-    QStringList sauces;     ///< served in cups, not from a station
-    double floor_g = 0.0;   ///< one weight floor for every bowl; 0 for none
+    std::vector<std::string> sauces; ///< served in cups, not from a station
+    double floor_g = 0.0;            ///< one weight floor for every bowl; 0 for none
 
     bool empty() const;
 };
 
-/// Kept in the app's settings, under manual/, so the window and the command line
-/// read the same stations.
-ManualEntry load_manual_entry();
-void save_manual_entry(const ManualEntry &entry);
-
 /// Every ingredient and sauce any loaded brand serves, sorted, without duplicates.
-QStringList ingredient_catalog(const std::vector<Menu> &menus);
+std::vector<std::string> ingredient_catalog(const std::vector<Menu> &menus);
 /// Sauces alone, as the brands list them.
-QStringList sauce_catalog(const std::vector<Menu> &menus);
+std::vector<std::string> sauce_catalog(const std::vector<Menu> &menus);
 
 /// What a name serves as: the kind most brands give it, or a guess from the name for
 /// one no brand carries.
-QString catalog_kind(const std::vector<Menu> &menus, const QString &name);
+std::string catalog_kind(const std::vector<Menu> &menus, const std::string &name);
 
 /// Builds the brand from the stations, in station order. `menus` are the loaded
 /// brands; any Manual Entry among them is ignored.
-Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry,
-                       const PieceHeights *pieces = nullptr);
+Menu manual_entry_menu(const std::vector<Menu> &menus, const ManualEntry &entry, const PieceHeights *pieces = nullptr);
 
-}  // namespace bowlfill
+} // namespace bowlfill

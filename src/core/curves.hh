@@ -1,21 +1,27 @@
 #pragma once
 
-#include <QString>
-#include <QStringList>
 #include <map>
+#include <string>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 /// Which fill method a measurement came from. Hand-filled bowls hold about 5.8%
 /// more volume at equal mass than robot-dispensed ones (p = 0.002), and the gap is
 /// concentrated in the greens, so the arms are fitted separately.
-enum class Method { Robot, Hand, Pooled };
+enum class Method
+{
+    Robot,
+    Hand,
+    Pooled
+};
 
-QString to_string(Method method);
+std::string to_string(Method method);
 
-struct Observation {
-    QString ingredient;
+struct Observation
+{
+    std::string ingredient;
     Method method = Method::Robot;
     double grams = 0.0;
     double ounces = 0.0;
@@ -31,13 +37,18 @@ struct Observation {
 /// error, so a 4 ml reading counts as much as a 400 ml one; the camera's error is
 /// a few ml whatever the fill, so its smallest readings bent those curves upward.
 ///
-enum class FitSpace { Linear, Log };
+enum class FitSpace
+{
+    Linear,
+    Log
+};
 
-struct Fit {
+struct Fit
+{
     double K = 0.0;
     double p = 1.0;
     double r2 = 0.0;
-    double lo_g = 0.0;   ///< measured range, for flagging extrapolation
+    double lo_g = 0.0; ///< measured range, for flagging extrapolation
     double hi_g = 0.0;
     int n = 0;
     bool valid = false;
@@ -55,42 +66,55 @@ struct Fit {
 /// The measured mass-to-volume dataset. Ships with the 36 hand-measured bowls and
 /// accepts more from CSV, refitting the affected ingredients.
 ///
-class CurveSet {
+class CurveSet
+{
 public:
     /// Expected columns, case-insensitive, in any order. `method` is optional and
     /// defaults to robot.
-    static QStringList required_columns();
-    static QStringList optional_columns();
-    static QString format_help();
+    static std::vector<std::string> required_columns();
+    static std::vector<std::string> optional_columns();
+    static std::string format_help();
     static const double kMlPerFlOz;
 
-    bool load_csv(const QString &path, QString *error, int *rows_added = nullptr,
-                  QStringList *new_ingredients = nullptr);
+    bool load_csv(const std::string &path,
+                  std::string *error,
+                  int *rows_added = nullptr,
+                  std::vector<std::string> *new_ingredients = nullptr);
     void add(const Observation &obs);
     void refit();
     void clear();
     /// How curves are fitted; refits when it changes. Log reproduces the HTML
     /// simulator's published fits.
     void set_fit_space(FitSpace space);
-    FitSpace fit_space() const { return space_; }
-    void reset_to_builtin(const QString &builtin_csv_path);
 
-    const Fit *fit(const QString &ingredient, Method method) const;
-    QStringList ingredients() const;
-    const std::vector<Observation> &observations() const { return obs_; }
-    int count(const QString &ingredient, Method method) const;
+    FitSpace fit_space() const
+    {
+        return space_;
+    }
+
+    void reset_to_builtin(const std::string &builtin_csv_path);
+
+    const Fit *fit(const std::string &ingredient, Method method) const;
+    std::vector<std::string> ingredients() const;
+
+    const std::vector<Observation> &observations() const
+    {
+        return obs_;
+    }
+
+    int count(const std::string &ingredient, Method method) const;
 
 private:
     std::vector<Observation> obs_;
-    std::map<QString, std::map<Method, Fit>> fits_;
+    std::map<std::string, std::map<Method, Fit>> fits_;
     /// Names match regardless of case ("white rice" from a bowl sheet is the menu's
     /// "White Rice"); lower-cased name -> the spelling the curve is shown under.
-    std::map<QString, QString> display_;
+    std::map<std::string, std::string> display_;
     FitSpace space_ = FitSpace::Linear;
 };
 
 /// Bases with no measurements of their own borrow the closest measured curve.
 /// Returns an empty string when the ingredient has its own data.
-QString proxy_curve_for(const QString &ingredient, const CurveSet &curves);
+std::string proxy_curve_for(const std::string &ingredient, const CurveSet &curves);
 
-}  // namespace bowlfill
+} // namespace bowlfill

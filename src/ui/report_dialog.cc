@@ -1,4 +1,5 @@
 #include "report_dialog.hh"
+#include "qt_text.hh"
 #include "theme.hh"
 #include "units.hh"
 
@@ -82,7 +83,7 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
                            QWidget *parent)
     : QDialog(parent), audit_(audit)
 {
-    setWindowTitle(QString("Recipe feasibility — %1").arg(audit_.brand));
+    setWindowTitle(QString("Recipe feasibility — %1").arg(qs(audit_.brand)));
     setStyleSheet(theme::stylesheet());
     resize(1320, 620);
 
@@ -90,7 +91,7 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     v->setContentsMargins(18, 16, 18, 16);
     v->setSpacing(10);
 
-    auto *head = new QLabel(audit_.headline());
+    auto *head = new QLabel(qs(audit_.headline()));
     head->setFont(theme::font(theme::Text::Heading, true));
     head->setWordWrap(true);
     v->addWidget(head);
@@ -143,12 +144,12 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(full, &QPushButton::clicked, this, [this] { emit full_report_requested(); });
     connect(copy, &QPushButton::clicked, this, [this] {
-        QApplication::clipboard()->setText(audit_.to_csv());
+        QApplication::clipboard()->setText(qs(audit_.to_csv()));
     });
     connect(save, &QPushButton::clicked, this, [this] {
         const QString path = QFileDialog::getSaveFileName(
             this, "Save feasibility report",
-            QString("%1-feasibility.csv").arg(QString(audit_.brand).replace(' ', '-').toLower()),
+            QString("%1-feasibility.csv").arg(qs(audit_.brand).replace(' ', '-').toLower()),
             "CSV (*.csv)");
         if (path.isEmpty()) return;
         QFile f(path);
@@ -156,13 +157,13 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
             QMessageBox::warning(this, "Could not save", QString("Cannot write %1").arg(path));
             return;
         }
-        QTextStream(&f) << audit_.to_csv();
+        QTextStream(&f) << qs(audit_.to_csv());
     });
 
     auto emit_current = [this] {
         const int row = table_->currentRow();
         if (row < 0 || row >= static_cast<int>(audit_.rows.size())) return;
-        emit recipe_chosen(audit_.rows[row].recipe);
+        emit recipe_chosen(qs(audit_.rows[row].recipe));
         accept();
     };
     connect(open, &QPushButton::clicked, this, emit_current);
@@ -185,7 +186,7 @@ void ReportDialog::populate()
         const QString kind = r.customer_built ? "customer-built"
                              : r.complete_bowl ? "complete"
                                                : "partial";
-        table_->setItem(i, 0, cell(r.recipe, fg));
+        table_->setItem(i, 0, cell(qs(r.recipe), fg));
         table_->setItem(i, 1, cell(kind, theme::palette().ink_soft));
         table_->setItem(i, 2, cell(QString::number(r.pinned), fg, Qt::AlignRight));
         table_->setItem(i, 3, cell(r.customer_built ? "—" : QString::number(r.nominal_g, 'f', 0) + " g",
@@ -229,14 +230,14 @@ void ReportDialog::show_detail(int row)
     const RecipeAudit &r = audit_.rows[row];
     const theme::Palette &pal = theme::palette();
     QString html = QString("<b style='color:%1'>%2</b><br>")
-                       .arg(severity_colour(r).name(), r.recipe.toHtmlEscaped());
+                       .arg(severity_colour(r).name(), qs(r.recipe).toHtmlEscaped());
     html += QString("<span style='color:%1'>Dynamic portioning — %2</span><br>")
-                .arg(pal.ink.name(), r.legacy_summary().toHtmlEscaped());
+                .arg(pal.ink.name(), qs(r.legacy_summary()).toHtmlEscaped());
     if (!r.customer_built)
         html += QString("<span style='color:%1'>Adaptive fill — %2</span><br>"
                         "<span style='color:%1'>Volume fill — %3</span>")
-                    .arg(pal.ink_soft.name(), r.adaptive_summary().toHtmlEscaped(),
-                         r.volume_summary().toHtmlEscaped());
+                    .arg(pal.ink_soft.name(), qs(r.adaptive_summary()).toHtmlEscaped(),
+                         qs(r.volume_summary()).toHtmlEscaped());
     if (!r.customer_built && !r.complete_bowl)
         html += QString("<br><span style='color:%1'>Pins only %2 ingredient%3, so this is "
                         "a modifier rather than a finished bowl.</span>")

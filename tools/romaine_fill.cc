@@ -17,16 +17,16 @@
 // loudly if the simulator's volume disagrees with the solve.
 
 #include "core/measurements.hh"
-
-#include <QSettings>
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
+#include "core/text.hh"
+#include "ui/qt_text.hh"
 
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
-#include <QHash>
+#include <QSettings>
 #include <QTextStream>
 
 #include <algorithm>
@@ -35,6 +35,7 @@
 #include <map>
 #include <optional>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -42,7 +43,7 @@ using namespace bowlfill;
 
 namespace {
 
-const QString kRomaine = "Romaine Base";
+const std::string kRomaine = "Romaine Base";
 
 /// Every subset of {0..n-1} with between lo and hi members.
 std::vector<std::vector<int>> subsets(int n, int lo, int hi)
@@ -63,11 +64,7 @@ std::vector<std::vector<int>> subsets(int n, int lo, int hi)
     return out;
 }
 
-QString csv(const QString &s)
-{
-    return s.contains(',') || s.contains('"') ? "\"" + QString(s).replace("\"", "\"\"") + "\""
-                                              : s;
-}
+QString csv(const std::string &s) { return qs(csv_escape(s)); }
 
 /// Food volume of a bowl, as simulate() computes it with the ramp switched off.
 double food_oz(std::vector<BowlItem> items, bool compress)
@@ -133,7 +130,7 @@ int main(int argc, char **argv)
     const QString asset_dir = QDir(parser.value(assets)).absolutePath();
 
     CurveSet curves;
-    QString error;
+    std::string error;
     // The same measurement store the app loads.
     const QSettings prefs("Lab37", "Bowl Fill Simulator");
     MeasurementOptions options;
@@ -141,15 +138,16 @@ int main(int argc, char **argv)
         prefs.value("measurements/empty_bowl_ml", kDefaultEmptyBowlMl).toDouble();
     options.backfill = prefs.value("measurements/backfill", false).toBool();
     options.drop_impossible = prefs.value("measurements/drop_impossible", false).toBool();
-    const MeasurementSet stored = load_measurements(asset_dir + kMeasurementsDir, curves, options);
+    const MeasurementSet stored =
+        load_measurements(ss(asset_dir + kMeasurementsDir), curves, options);
     for (const MeasurementFile &f : stored.files)
-        if (f.failed) err << "data/measurements/" << f.name << ": " << f.problem << "\n";
+        if (f.failed) err << "data/measurements/" << qs(f.name) << ": " << qs(f.problem) << "\n";
     // Same name mappings and piece heights the app applies, so names agree with it.
     NameMappings maps;
     PieceHeights pieces;
-    load_name_mappings(asset_dir + "/data/ingredient_aliases.csv", maps, &error);
-    load_piece_heights(asset_dir + "/data/ingredient_pieces.csv", pieces, &error);
-    const LoadResult loaded = load_menus(asset_dir + "/menus", &maps, &pieces);
+    load_name_mappings(ss(asset_dir + "/data/ingredient_aliases.csv"), maps, &error);
+    load_piece_heights(ss(asset_dir + "/data/ingredient_pieces.csv"), pieces, &error);
+    const LoadResult loaded = load_menus(ss(asset_dir + "/menus"), &maps, &pieces);
 
     const double fill_frac = parser.value(fill).toDouble();
     const double capacity = parser.value(cap).toDouble();
@@ -159,7 +157,7 @@ int main(int argc, char **argv)
 
     const Fit *rfit = curves.fit(kRomaine, Method::Robot);
     if (!rfit) {
-        err << "no robot curve for " << kRomaine << "\n";
+        err << "no robot curve for " << qs(kRomaine) << "\n";
         return 2;
     }
 
@@ -179,35 +177,35 @@ int main(int argc, char **argv)
     }
 
     // brand, base_config, second_base, split_mode, n_proteins, n_toppings, cups, compress
-    using Key = std::tuple<QString, QString, QString, QString, int, int, int, bool>;
+    using Key = std::tuple<std::string, std::string, std::string, std::string, int, int, int, bool>;
     std::map<Key, Summary> summary;
     qint64 rows = 0, mismatches = 0;
     bool matched = false;
 
     for (const Menu &menu : loaded.menus) {
         if (want.compare("all", Qt::CaseInsensitive) != 0
-            && menu.brand.compare(want, Qt::CaseInsensitive) != 0)
+            && qs(menu.brand).compare(want, Qt::CaseInsensitive) != 0)
             continue;
         const Ingredient *romaine = menu.find(kRomaine);
         if (!romaine) {
-            err << menu.brand << ": no " << kRomaine << ", skipped\n";
+            err << qs(menu.brand) << ": no " << qs(kRomaine) << ", skipped\n";
             continue;
         }
         matched = true;
         const BowlItem rproto = make_item(*romaine, curves, Method::Robot);
 
         std::vector<const Ingredient *> proteins, toppings;
-        for (const QString &n : menu.names_of(Kind::Protein)) proteins.push_back(menu.find(n));
-        for (const QString &n : menu.names_of(Kind::Topping)) toppings.push_back(menu.find(n));
+        for (const std::string &n : menu.names_of(Kind::Protein)) proteins.push_back(menu.find(n));
+        for (const std::string &n : menu.names_of(Kind::Topping)) toppings.push_back(menu.find(n));
 
         // Base configurations: romaine alone, then romaine under each other base at
         // half its portion, halved by mass and by volume.
         struct BaseCfg {
-            QString label, second, split;
+            std::string label, second, split;
             std::optional<BowlItem> item;
         };
         std::vector<BaseCfg> base_cfgs{{"single", "", "n/a", std::nullopt}};
-        for (const QString &n : menu.names_of(Kind::Base)) {
+        for (const std::string &n : menu.names_of(Kind::Base)) {
             if (n == kRomaine) continue;
             const Ingredient *b = menu.find(n);
             if (!b || b->full_portion() <= 0) continue;
@@ -221,17 +219,17 @@ int main(int argc, char **argv)
             base_cfgs.push_back({"double", n, "half_volume", by_vol});
         }
 
-        QHash<QString, BowlItem> proto;
+        std::unordered_map<std::string, BowlItem> proto;
         for (const auto *pool : {&proteins, &toppings})
             for (const Ingredient *i : *pool) {
                 BowlItem it = make_item(*i, curves, Method::Robot);
                 it.start_g = i->full_portion();
-                proto.insert(i->name, it);
+                proto.insert_or_assign(i->name, it);
             }
 
         const auto p_sets = subsets(static_cast<int>(proteins.size()), p_lo, p_hi);
         const auto t_sets = subsets(static_cast<int>(toppings.size()), t_lo, t_hi);
-        err << menu.brand << ": " << proteins.size() << " proteins, " << toppings.size()
+        err << qs(menu.brand) << ": " << proteins.size() << " proteins, " << toppings.size()
             << " toppings, " << base_cfgs.size() << " base configs, "
             << p_sets.size() * t_sets.size() << " protein/topping combinations\n";
 
@@ -242,9 +240,9 @@ int main(int argc, char **argv)
             // Dispense order is stacking order: romaine, second base, proteins, toppings.
             others.clear();
             if (bc.item) others.push_back(*bc.item);
-            QStringList pn, tn;
-            for (int i : ps) { others.push_back(proto.value(proteins[i]->name)); pn << proteins[i]->name; }
-            for (int i : ts) { others.push_back(proto.value(toppings[i]->name)); tn << toppings[i]->name; }
+            std::vector<std::string> pn, tn;
+            for (int i : ps) { others.push_back(proto.at(proteins[i]->name)); pn.push_back(proteins[i]->name); }
+            for (int i : ts) { others.push_back(proto.at(toppings[i]->name)); tn.push_back(toppings[i]->name); }
             double load_g = 0.0;
             for (const BowlItem &o : others) load_g += o.start_g;
 
@@ -284,7 +282,7 @@ int main(int argc, char **argv)
 
                     Summary &s = summary[{menu.brand, bc.label, bc.second,
                                           bc.label == "single"
-                                                                    ? QString("n/a")
+                                                                    ? std::string("n/a")
                                                                     : bc.split,
                                           static_cast<int>(ps.size()),
                                           static_cast<int>(ts.size()), cups, compress}];
@@ -293,11 +291,11 @@ int main(int argc, char **argv)
                     ++rows;
 
                     if (want_detail) {
-                        detail << csv(menu.brand) << ',' << bc.label << ',' << csv(bc.second)
+                        detail << csv(menu.brand) << ',' << qs(bc.label) << ',' << csv(bc.second)
                                << ','
                                << (bc.item ? QString::number(bc.item->start_g, 'f', 1) : "")
-                               << ',' << bc.split << ',' << csv(pn.join('|')) << ','
-                               << csv(tn.join('|')) << ',' << ps.size() << ',' << ts.size()
+                               << ',' << qs(bc.split) << ',' << csv(join(pn, "|")) << ','
+                               << csv(join(tn, "|")) << ',' << ps.size() << ',' << ts.size()
                                << ',' << cups << ',' << (compress ? 1 : 0) << ','
                                << QString::number(rest_oz, 'f', 2) << ','
                                << QString::number(load_g, 'f', 0) << ','
@@ -310,7 +308,7 @@ int main(int argc, char **argv)
         }
     }
     if (!matched) {
-        err << "no brand matching \"" << want << "\" with " << kRomaine << "\n";
+        err << "no brand matching \"" << want << "\" with " << qs(kRomaine) << "\n";
         return 2;
     }
 
@@ -332,7 +330,7 @@ int main(int argc, char **argv)
         auto f = [](double v) { return std::isnan(v) ? QString() : QString::number(v, 'f', 1); };
         const double mn = s.grams.empty() ? NAN : *std::min_element(s.grams.begin(), s.grams.end());
         const double mx = s.grams.empty() ? NAN : *std::max_element(s.grams.begin(), s.grams.end());
-        out << csv(b) << ',' << cfg << ',' << csv(second) << ',' << split << ',' << np << ',' << nt << ',' << cups
+        out << csv(b) << ',' << qs(cfg) << ',' << csv(second) << ',' << qs(split) << ',' << np << ',' << nt << ',' << cups
             << ',' << (compress ? 1 : 0) << ',' << s.grams.size() + s.no_room << ','
             << s.no_room << ',' << (s.no_room ? QString("0") : f(mn)) << ','
             << f(quantile(s.grams, 0.10)) << ',' << f(quantile(s.grams, 0.5)) << ','

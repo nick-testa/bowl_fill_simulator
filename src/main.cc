@@ -1,19 +1,28 @@
 #include "core/measurements.hh"
 #include "core/feasibility.hh"
+#include "core/step_table.hh"
 #include "core/sweep.hh"
 #include "ui/main_window.hh"
+#include "ui/manual_entry_settings.hh"
+#include "ui/qt_text.hh"
 #include "ui/theme.hh"
 #include "ui/units.hh"
 
 #include <QApplication>
 #include <QGuiApplication>
 #include <QCommandLineParser>
+#include <QDateTime>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
+#include <QStandardPaths>
 #include <QTextStream>
 #include <QSettings>
 #include <QTimer>
 
+#include <cstdint>
+#include <fstream>
+#include <iostream>
 #include <vector>
 
 namespace {
@@ -25,12 +34,12 @@ bowlfill::LoadResult load_configured_menus(const QString &asset_dir)
     using namespace bowlfill;
     NameMappings maps;
     PieceHeights pieces;
-    QString err;
-    if (!load_name_mappings(asset_dir + "/data/ingredient_aliases.csv", maps, &err))
-        QTextStream(stderr) << err << "\n";
-    if (!load_piece_heights(asset_dir + "/data/ingredient_pieces.csv", pieces, &err))
-        QTextStream(stderr) << err << "\n";
-    LoadResult loaded = load_menus(asset_dir + "/menus", &maps, &pieces);
+    std::string err;
+    if (!load_name_mappings(ss(asset_dir + "/data/ingredient_aliases.csv"), maps, &err))
+        QTextStream(stderr) << qs(err) << "\n";
+    if (!load_piece_heights(ss(asset_dir + "/data/ingredient_pieces.csv"), pieces, &err))
+        QTextStream(stderr) << qs(err) << "\n";
+    LoadResult loaded = load_menus(ss(asset_dir + "/menus"), &maps, &pieces);
     // The stations set in the window, when there are any.
     if (const ManualEntry manual = load_manual_entry(); !manual.empty())
         loaded.menus.push_back(manual_entry_menu(loaded.menus, manual, &pieces));
@@ -102,9 +111,9 @@ bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
         prefs.value("measurements/empty_bowl_ml", kDefaultEmptyBowlMl).toDouble();
     options.backfill = prefs.value("measurements/backfill", false).toBool();
     options.drop_impossible = prefs.value("measurements/drop_impossible", false).toBool();
-    const MeasurementSet ms = load_measurements(asset_dir + kMeasurementsDir, curves, options);
+    const MeasurementSet ms = load_measurements(ss(asset_dir + kMeasurementsDir), curves, options);
     for (const MeasurementFile &f : ms.files)
-        if (f.failed) err << "data/measurements/" << f.name << ": " << f.problem << "\n";
+        if (f.failed) err << "data/measurements/" << qs(f.name) << ": " << qs(f.problem) << "\n";
     if (curves.observations().empty()) {
         err << "no usable measurements in " << asset_dir << kMeasurementsDir << "\n";
         return false;
@@ -124,7 +133,7 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
     SquashFit squash;
     if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
     CostTable costs;
-    costs.load_csv(asset_dir + "/data/ingredient_costs.csv");
+    costs.load_csv(ss(asset_dir + "/data/ingredient_costs.csv"));
 
     const LoadResult loaded = load_configured_menus(asset_dir);
     if (loaded.menus.empty()) {
@@ -135,7 +144,7 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
     bool header_written = false, matched = false;
     for (const Menu &m : loaded.menus) {
         if (want.compare("all", Qt::CaseInsensitive) != 0
-            && m.brand.compare(want, Qt::CaseInsensitive) != 0)
+            && qs(m.brand).compare(want, Qt::CaseInsensitive) != 0)
             continue;
         matched = true;
         SimSettings legacy;
@@ -144,13 +153,44 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         legacy.dispense = adaptive.dispense = configured_dispense();
         const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs,
                                              configured_volume_fill());
-        const QString csv = audit.to_csv();
-        out << (header_written ? csv.section('\n', 1) : csv);
+        const std::string csv = audit.to_csv();
+        out << qs(header_written ? csv.substr(csv.find('\n') + 1) : csv);
         header_written = true;
     }
     if (!matched) {
         err << "no brand matching \"" << want << "\". Known brands:\n";
-        for (const Menu &m : loaded.menus) err << "  " << m.brand << "\n";
+        for (const Menu &m : loaded.menus) err << "  " << qs(m.brand) << "\n";
+        return 2;
+    }
+    return 0;
+}
+
+/// Headless volume-per-gram table: what each ingredient's step adds, and the step that
+/// would add `target_ml`, for choosing volume-proportional steps.
+int run_steps(const QString &asset_dir, const QString &want, double target_ml)
+{
+    using namespace bowlfill;
+    QTextStream out(stdout), err(stderr);
+
+    CurveSet curves;
+    SquashFit squash;
+    if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
+    const LoadResult loaded = load_configured_menus(asset_dir);
+
+    bool header_written = false, matched = false;
+    for (const Menu &m : loaded.menus) {
+        if (want.compare("all", Qt::CaseInsensitive) != 0
+            && qs(m.brand).compare(want, Qt::CaseInsensitive) != 0)
+            continue;
+        matched = true;
+        const std::string csv =
+            step_table_csv(m.brand, step_table(m, curves, Method::Robot, target_ml), target_ml);
+        out << qs(header_written ? csv.substr(csv.find('\n') + 1) : csv);
+        header_written = true;
+    }
+    if (!matched) {
+        err << "no brand matching \"" << want << "\". Known brands:\n";
+        for (const Menu &m : loaded.menus) err << "  " << qs(m.brand) << "\n";
         return 2;
     }
     return 0;
@@ -167,17 +207,17 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     SquashFit squash;
     if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
     CostTable costs;
-    costs.load_csv(asset_dir + "/data/ingredient_costs.csv");
+    costs.load_csv(ss(asset_dir + "/data/ingredient_costs.csv"));
 
     const LoadResult loaded = load_configured_menus(asset_dir);
     std::vector<const Menu *> menus;
     for (const Menu &m : loaded.menus)
         if (want.compare("all", Qt::CaseInsensitive) == 0
-            || m.brand.compare(want, Qt::CaseInsensitive) == 0)
+            || qs(m.brand).compare(want, Qt::CaseInsensitive) == 0)
             menus.push_back(&m);
     if (menus.empty()) {
         err << "no brand matching \"" << want << "\". Known brands:\n";
-        for (const Menu &m : loaded.menus) err << "  " << m.brand << "\n";
+        for (const Menu &m : loaded.menus) err << "  " << qs(m.brand) << "\n";
         return 2;
     }
 
@@ -186,27 +226,29 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     if (max_proteins >= 0) limits.max_proteins = max_proteins;
     if (sauces > 0) limits.min_sauces = limits.max_sauces = sauces;
 
-    QFile file(out_path);
     const bool to_stdout = out_path.isEmpty() || out_path == "-";
-    if (!to_stdout && !file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        err << "cannot write " << out_path << "\n";
-        return 2;
+    std::ofstream file;
+    if (!to_stdout) {
+        file.open(ss(out_path), std::ios::binary | std::ios::trunc);
+        if (!file) {
+            err << "cannot write " << out_path << "\n";
+            return 2;
+        }
     }
-    QTextStream out(stdout);
-    if (!to_stdout) out.setDevice(&file);
+    std::ostream &out = to_stdout ? std::cout : file;
 
-    qint64 last_pct = -1;
+    std::int64_t last_pct = -1;
     std::vector<SweepTotals> totals;
     SimSettings legacy;
     AdaptiveSettings adaptive;
     legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
     legacy.dispense = adaptive.dispense = configured_dispense();
     run_sweep(menus, curves, Method::Robot, legacy, adaptive, &costs,
-              limits, out, [&](qint64 done, qint64 total) {
-                  const qint64 pct = total > 0 ? done * 100 / total : 100;
+              limits, out, [&](std::int64_t done, std::int64_t total) {
+                  const std::int64_t pct = total > 0 ? done * 100 / total : 100;
                   if (pct != last_pct) {
                       last_pct = pct;
-                      err << "\r" << pct << "%" << Qt::flush;
+                      err << "\r" << static_cast<qint64>(pct) << "%" << Qt::flush;
                   }
                   return true;
               },
@@ -236,6 +278,61 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     return 0;
 }
 
+
+/// Where menus/, data/ and photos/ are read from when --assets is not given.
+///
+/// Run from a source build, that is the source tree. Run as the macOS app, the bundle
+/// carries a copy in Resources/assets, but the bundle is read-only and replaced on every
+/// update, so the copy is laid out in Application Support and used from there. A build
+/// with a different stamp replaces the menus, photos and reference CSVs, keeping the
+/// old CSVs under backups/ since the Ingredients dialog edits them; measurements and
+/// scenarios the user added are never overwritten.
+QString default_asset_dir()
+{
+    const QString bundled = QCoreApplication::applicationDirPath() + "/../Resources/assets";
+    QFile bundle_stamp(bundled + "/.stamp");
+    if (!bundle_stamp.open(QIODevice::ReadOnly)) return BOWLFILL_ASSET_DIR;
+    const QByteArray stamp = bundle_stamp.readAll();
+
+    const QString user = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QFile user_stamp(user + "/.stamp");
+    QByteArray previous;
+    if (user_stamp.open(QIODevice::ReadOnly)) previous = user_stamp.readAll();
+    user_stamp.close();
+    if (previous == stamp) return user;
+
+    if (!previous.isEmpty()) {
+        const QString backup =
+            user + "/backups/" + QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss");
+        QDir().mkpath(backup);
+        for (const QFileInfo &f : QDir(user + "/data").entryInfoList({"*.csv"}, QDir::Files))
+            QFile::copy(f.filePath(), backup + "/" + f.fileName());
+    }
+    // Menus deleted from the repo should disappear too, so start that folder afresh.
+    QDir(user + "/menus").removeRecursively();
+
+    QDirIterator it(bundled, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
+    const QDir from(bundled);
+    while (it.hasNext()) {
+        const QString src = it.next();
+        const QString rel = from.relativeFilePath(src);
+        if (rel == ".stamp") continue;
+        const QString dst = user + "/" + rel;
+        const bool users_own =
+            rel.startsWith("data/measurements/") || rel.startsWith("data/scenarios/");
+        if (QFileInfo::exists(dst)) {
+            if (users_own) continue;
+            QFile::remove(dst);
+        }
+        QDir().mkpath(QFileInfo(dst).path());
+        QFile::copy(src, dst);
+        QFile::setPermissions(dst, QFile::permissions(dst) | QFile::WriteUser);
+    }
+
+    if (user_stamp.open(QIODevice::WriteOnly | QIODevice::Truncate)) user_stamp.write(stamp);
+    return user;
+}
+
 }  // namespace
 
 int main(int argc, char **argv)
@@ -260,8 +357,9 @@ int main(int argc, char **argv)
     parser.addHelpOption();
     QCommandLineOption assets(
         {"a", "assets"},
-        "Directory holding menus/, data/ and photos/ (default: the build's source dir).",
-        "dir", BOWLFILL_ASSET_DIR);
+        "Directory holding menus/, data/ and photos/ (default: the build's source dir, "
+        "or Application Support when run as the macOS app).",
+        "dir");
     parser.addOption(assets);
     QCommandLineOption shot("screenshot",
                             "Render the window to a PNG and exit. Useful for docs and "
@@ -287,6 +385,15 @@ int main(int argc, char **argv)
                              "Print the feasibility report for a brand (or \"all\") as "
                              "CSV and exit, without opening a window.", "brand");
     parser.addOption(audit);
+    QCommandLineOption steps("steps",
+                             "Print each ingredient's volume per gram, what its step adds, "
+                             "and the step that would add --step-ml, for a brand (or "
+                             "\"all\") as CSV and exit.", "brand");
+    parser.addOption(steps);
+    QCommandLineOption step_ml("step-ml",
+                               "Volume each step should add, for --steps (default 10 ml).",
+                               "ml", "10");
+    parser.addOption(step_ml);
     QCommandLineOption sweep("sweep",
                              "Run the full combinatorial workup for a brand (or "
                              "\"all\") and exit.", "brand");
@@ -307,17 +414,23 @@ int main(int argc, char **argv)
                                    "cups at their contents, instead of by height under the lid.");
     parser.addOption(volume_only);
     parser.process(app);
+    const QString asset_dir = parser.isSet(assets) ? QDir(parser.value(assets)).absolutePath()
+                                                   : default_asset_dir();
 
     if (parser.isSet(sweep))
-        return run_sweep_cli(QDir(parser.value(assets)).absolutePath(), parser.value(sweep),
+        return run_sweep_cli(asset_dir, parser.value(sweep),
                              parser.value(sweep_out),
                              parser.isSet(max_top) ? parser.value(max_top).toInt() : -1,
                              parser.isSet(max_pro) ? parser.value(max_pro).toInt() : -1,
                              parser.isSet(sauces) ? parser.value(sauces).toInt() : -1,
                              parser.isSet(volume_only));
 
+    if (parser.isSet(steps))
+        return run_steps(asset_dir, parser.value(steps),
+                         parser.value(step_ml).toDouble());
+
     if (parser.isSet(audit))
-        return run_audit(QDir(parser.value(assets)).absolutePath(), parser.value(audit),
+        return run_audit(asset_dir, parser.value(audit),
                          parser.isSet(volume_only));
 
     bowlfill::theme::follow_system();
@@ -327,7 +440,7 @@ int main(int argc, char **argv)
                                  ? bowlfill::units::Volume::Millilitres
                                  : bowlfill::units::Volume::FluidOunces);
 
-    bowlfill::MainWindow window(QDir(parser.value(assets)).absolutePath());
+    bowlfill::MainWindow window(asset_dir);
     if (parser.isSet(mode) && parser.value(mode).startsWith("a")) window.select_adaptive();
     if (parser.isSet(mode) && parser.value(mode).startsWith("v")) window.set_volume_fill();
     if (parser.isSet(pick)) {

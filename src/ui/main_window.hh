@@ -121,6 +121,7 @@ private:
     void populate_brand();
     void reload_menus();
     void update_mapping_note();
+    void update_step_table();
     QString mappings_path() const;
     QString measurements_dir() const;
     /// Re-reads data/measurements into the curves and refits the squash; returns the
@@ -337,6 +338,10 @@ private:
 
     // Readouts
     QLabel *brand_note_ = nullptr;
+    // Volume per gram: what each ingredient's step adds, for choosing step_g.
+    QDoubleSpinBox *step_target_ml_ = nullptr;
+    QTableWidget *step_table_ = nullptr;
+    QLabel *step_note_ = nullptr;
     QLabel *recipe_note_ = nullptr;
     QLabel *floor_note_ = nullptr;
     QPushButton *floor_reset_ = nullptr;

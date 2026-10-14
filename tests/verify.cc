@@ -11,79 +11,111 @@
 #include "core/manual_entry.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
+#include "core/step_table.hh"
 #include "core/sweep.hh"
 
-#include <QDir>
-#include <QTemporaryDir>
-#include <QFile>
-#include <QFileInfo>
-#include <QString>
-#include <QStringList>
-#include <QTextStream>
+#include "core/text.hh"
+
 #include <cmath>
 #include <cstdio>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iterator>
+#include <sstream>
+#include <string>
 #include <vector>
 
 using namespace bowlfill;
+namespace fs = std::filesystem;
 
 namespace {
 
 int failures = 0;
 int checks = 0;
 
-void expect_near(const QString &what, double got, double want, double tol)
+void expect_near(const std::string &what, double got, double want, double tol)
 {
     ++checks;
     if (std::fabs(got - want) > tol) {
         ++failures;
         std::printf("  FAIL %-46s got %10.3f  want %10.3f  (tol %g)\n",
-                    qPrintable(what), got, want, tol);
+                    what.c_str(), got, want, tol);
     } else {
-        std::printf("  ok   %-46s %10.3f\n", qPrintable(what), got);
+        std::printf("  ok   %-46s %10.3f\n", what.c_str(), got);
     }
 }
 
-void expect_eq(const QString &what, const QString &got, const QString &want)
+void expect_eq(const std::string &what, const std::string &got, const std::string &want)
 {
     ++checks;
     if (got != want) {
         ++failures;
-        std::printf("  FAIL %-46s got %-22s want %s\n", qPrintable(what),
-                    qPrintable(got), qPrintable(want));
+        std::printf("  FAIL %-46s got %-22s want %s\n", what.c_str(),
+                    got.c_str(), want.c_str());
     } else {
-        std::printf("  ok   %-46s %s\n", qPrintable(what), qPrintable(got));
+        std::printf("  ok   %-46s %s\n", what.c_str(), got.c_str());
     }
 }
 
-void expect_true(const QString &what, bool ok)
+void expect_true(const std::string &what, bool ok)
 {
     ++checks;
-    if (!ok) { ++failures; std::printf("  FAIL %s\n", qPrintable(what)); }
-    else std::printf("  ok   %s\n", qPrintable(what));
+    if (!ok) { ++failures; std::printf("  FAIL %s\n", what.c_str()); }
+    else std::printf("  ok   %s\n", what.c_str());
 }
 
 /// Number of fields in one RFC4180 record, so the report's quoting is checked rather
 /// than assumed -- every summary sentence contains commas.
-int csv_fields(const QString &line)
+int csv_fields(const std::string &line)
 {
     int n = 1;
     bool quoted = false;
-    for (int i = 0; i < line.size(); ++i) {
-        const QChar c = line[i];
+    for (size_t i = 0; i < line.size(); ++i) {
+        const char c = line[i];
         if (c == '"') quoted = !quoted;
         else if (c == ',' && !quoted) ++n;
     }
     return n;
 }
 
-const RecipeAudit *row_named(const BrandAudit &a, const QString &name)
+const RecipeAudit *row_named(const BrandAudit &a, const std::string &name)
 {
     for (const RecipeAudit &r : a.rows)
         if (r.recipe == name) return &r;
     return nullptr;
 }
 
-QString verdict_name(Verdict v)
+/// A path under the system's temporary directory.
+std::string temp_path(const std::string &name)
+{
+    return (fs::temp_directory_path() / name).string();
+}
+
+/// Writes `text` to `path`; false when it cannot be opened.
+bool write_file(const std::string &path, const std::string &text)
+{
+    std::ofstream f(path, std::ios::binary | std::ios::trunc);
+    f << text;
+    return static_cast<bool>(f);
+}
+
+std::string read_file(const std::string &path)
+{
+    std::ifstream f(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()};
+}
+
+/// Lines of `text`, empty ones dropped.
+std::vector<std::string> nonempty_lines(const std::string &text)
+{
+    std::vector<std::string> out;
+    for (std::string &line : split(text, '\n'))
+        if (!line.empty()) out.push_back(std::move(line));
+    return out;
+}
+
+std::string verdict_name(Verdict v)
 {
     switch (v) {
     case Verdict::NoFloor: return "NoFloor";
@@ -95,28 +127,28 @@ QString verdict_name(Verdict v)
     return "?";
 }
 
-const Menu *by_brand(const std::vector<Menu> &menus, const QString &brand)
+const Menu *by_brand(const std::vector<Menu> &menus, const std::string &brand)
 {
     for (const Menu &m : menus)
         if (m.brand == brand) return &m;
     return nullptr;
 }
 
-QStringList names_in(const std::vector<BowlItem> &items)
+std::vector<std::string> names_in(const std::vector<BowlItem> &items)
 {
-    QStringList out;
-    for (const BowlItem &it : items) out << it.name;
+    std::vector<std::string> out;
+    for (const BowlItem &it : items) out.push_back(it.name);
     return out;
 }
 
-SimResult run_recipe(const Menu &menu, const QString &recipe_name, const CurveSet &curves,
+SimResult run_recipe(const Menu &menu, const std::string &recipe_name, const CurveSet &curves,
                      double cap = 32.0)
 {
     const Recipe *rec = nullptr;
     for (const Recipe &r : menu.recipes)
         if (r.name == recipe_name) rec = &r;
     if (!rec) {
-        std::printf("  FAIL recipe not found: %s\n", qPrintable(recipe_name));
+        std::printf("  FAIL recipe not found: %s\n", recipe_name.c_str());
         ++failures;
         ++checks;
         return {};
@@ -133,16 +165,16 @@ SimResult run_recipe(const Menu &menu, const QString &recipe_name, const CurveSe
 
 int main()
 {
-    const QString assets = BOWLFILL_ASSET_DIR;
+    const std::string assets = BOWLFILL_ASSET_DIR;
 
     std::printf("Curve fitting (robot arm, against the published power-law fits)\n");
     CurveSet curves;
     // The published fits, and everything checked against the HTML simulator below,
     // were made on log-log; the app's default fits on the volume itself.
     curves.set_fit_space(FitSpace::Log);
-    QString err;
+    std::string err;
     if (!curves.load_csv(assets + "/tests/data/mass_to_volume.csv", &err)) {
-        std::printf("  FATAL could not load mass_to_volume.csv: %s\n", qPrintable(err));
+        std::printf("  FATAL could not load mass_to_volume.csv: %s\n", err.c_str());
         return 1;
     }
     struct { const char *name; double K, p, r2, lo, hi; } expected[] = {
@@ -153,12 +185,12 @@ int main()
     for (const auto &e : expected) {
         const Fit *f = curves.fit(e.name, Method::Robot);
         if (!f) { std::printf("  FAIL no fit for %s\n", e.name); ++failures; ++checks; continue; }
-        expect_near(QString("%1 K").arg(e.name), f->K, e.K, 0.002);
-        expect_near(QString("%1 p").arg(e.name), f->p, e.p, 0.002);
-        expect_near(QString("%1 R2").arg(e.name), f->r2, e.r2, 0.01);
-        expect_near(QString("%1 range lo").arg(e.name), f->lo_g, e.lo, 0.01);
-        expect_near(QString("%1 range hi").arg(e.name), f->hi_g, e.hi, 0.01);
-        expect_near(QString("%1 n").arg(e.name), f->n, 6, 0.01);
+        expect_near(std::format("{} K", e.name), f->K, e.K, 0.002);
+        expect_near(std::format("{} p", e.name), f->p, e.p, 0.002);
+        expect_near(std::format("{} R2", e.name), f->r2, e.r2, 0.01);
+        expect_near(std::format("{} range lo", e.name), f->lo_g, e.lo, 0.01);
+        expect_near(std::format("{} range hi", e.name), f->hi_g, e.hi, 0.01);
+        expect_near(std::format("{} n", e.name), f->n, 6, 0.01);
     }
     // Hand-filled bowls hold more volume at equal mass; kale is the extreme case.
     if (const Fit *h = curves.fit("Massaged Kale", Method::Hand))
@@ -168,10 +200,10 @@ int main()
 
     std::printf("\nMenu loading\n");
     LoadResult loaded = load_menus(assets + "/menus");
-    for (const QString &w : loaded.warnings) std::printf("  warn %s\n", qPrintable(w));
-    for (const QString &w : loaded.issues) std::printf("  issue %s\n", qPrintable(w));
+    for (const std::string &w : loaded.warnings) std::printf("  warn %s\n", w.c_str());
+    for (const std::string &w : loaded.issues) std::printf("  issue %s\n", w.c_str());
     // The menus folder grows with the brand refresh; the brands below must be there.
-    expect_true(QString("at least 7 brands parsed (%1)").arg(loaded.menus.size()),
+    expect_true(std::format("at least 7 brands parsed ({})", loaded.menus.size()),
                 loaded.menus.size() >= 7);
 
     const Menu *farmstand = by_brand(loaded.menus, "Farmstand");
@@ -206,11 +238,11 @@ int main()
         // Cotija goes in a cup though nothing in its name says so; the brand's own
         // spellings ("Green Salsa Macha") still land on the list.
         expect_near("Casa Condesa toppings", casa->names_of(Kind::Topping).size(), 2, 0.01);
-        expect_eq("Casa Condesa sauces", casa->sauces.join(" | "),
+        expect_eq("Casa Condesa sauces", join(casa->sauces, " | "),
                   "Cilantro Crema | Cotija | Green Salsa Macha | Guacachile Salsa | "
                   "Salsa Cremosa");
         expect_eq("Casa Condesa bases named",
-                  casa->names_of(Kind::Base).join(" | "), "Mexican Rice | White Jasmine Rice");
+                  join(casa->names_of(Kind::Base), " | "), "Mexican Rice | White Jasmine Rice");
         const Ingredient *rice = casa->find("Mexican Rice");
         expect_true("Casa Condesa rice is a base", rice && rice->kind == Kind::Base);
         expect_near("Casa Condesa rice portion", rice ? rice->full_portion() : 0, 160, 0.01);
@@ -223,7 +255,7 @@ int main()
 
     // M+R2 spells White Jasmine Rice three ways across stores; they are one option.
     if (const Menu *mr2 = by_brand(loaded.menus, "M+R2")) {
-        expect_eq("M+R2 bases named", mr2->names_of(Kind::Base).join(" | "),
+        expect_eq("M+R2 bases named", join(mr2->names_of(Kind::Base), " | "),
                   "Mexican Rice | White Jasmine Rice");
         expect_true("M+R2 carnitas spellings merged", !mr2->find("Pork Carnitas Cooked v11"));
     } else {
@@ -249,7 +281,7 @@ int main()
                     mr2 && mr2->find("Chicken Tex-Mex") && !mr2->find("Guajillo Cumin Chicken"));
         expect_true("kind override to sauce leaves the pool", casa && !casa->find("Cotija"));
 
-        QString smoky_item;
+        std::string smoky_item;
         bool listed = false;
         if (casa) {
             for (const Recipe &r : casa->recipes)
@@ -262,14 +294,14 @@ int main()
         expect_eq("recipe target follows the mapping", smoky_item, "Chicken Tex-Mex");
         expect_true("menu lists raw, automatic and mapped names", listed);
 
-        const QString path = QDir::temp().filePath("bowlfill-verify-aliases.csv");
-        QString err;
+        const std::string path = temp_path("bowlfill-verify-aliases.csv");
+        std::string err;
         NameMappings back;
         const bool saved = save_name_mappings(path, maps, &err);
         const bool read = load_name_mappings(path, back, &err);
         expect_true("mappings round-trip through CSV (names with commas)",
                     saved && read && back == maps);
-        QFile::remove(path);
+        fs::remove(path);
     }
 
     {
@@ -333,9 +365,9 @@ int main()
     for (const auto &c : cases) {
         SimResult r = run_recipe(*c.menu, c.recipe, curves);
         if (r.frames.empty()) continue;
-        std::printf("  -- %s / %s\n", qPrintable(c.menu->brand), c.recipe);
-        expect_near(QString("   final oz"), r.last().ounces, c.oz, 0.15);
-        expect_eq(QString("   verdict"), verdict_name(r.verdict), verdict_name(c.v));
+        std::printf("  -- %s / %s\n", c.menu->brand.c_str(), c.recipe);
+        expect_near(std::string("   final oz"), r.last().ounces, c.oz, 0.15);
+        expect_eq(std::string("   verdict"), verdict_name(r.verdict), verdict_name(c.v));
     }
 
     std::printf("\nBuild-your-own default (Farmstand, romaine + first protein)\n");
@@ -386,7 +418,7 @@ int main()
     std::printf("\nCSV ingest\n");
     {
         CurveSet c2;
-        QString e;
+        std::string e;
         c2.load_csv(assets + "/tests/data/mass_to_volume.csv", &e);
         expect_near("built-in rows", c2.observations().size(), 36, 0.01);
         expect_near("built-in ingredients", c2.ingredients().size(), 3, 0.01);
@@ -395,15 +427,15 @@ int main()
         // using the alternative column spellings and a missing method column.
         const double kale_p_before = c2.fit("Massaged Kale", Method::Robot)->p;
         int added = 0;
-        QStringList fresh;
-        QString note;
+        std::vector<std::string> fresh;
+        std::string note;
         const bool ok = c2.load_csv(assets + "/tests/extra_curve.csv", &note, &added, &fresh);
         ++checks;
-        if (!ok) { ++failures; std::printf("  FAIL upload rejected: %s\n", qPrintable(note)); }
+        if (!ok) { ++failures; std::printf("  FAIL upload rejected: %s\n", note.c_str()); }
         else std::printf("  ok   upload accepted\n");
         expect_near("rows added", added, 7, 0.01);
         expect_near("ingredients after", c2.ingredients().size(), 5, 0.01);
-        expect_eq("new curves reported", fresh.join(", "), "Quinoa, Sweet Potato");
+        expect_eq("new curves reported", join(fresh, ", "), "Quinoa, Sweet Potato");
 
         // "kale" and "KALE " must land in the existing bucket, not create new ones.
         expect_near("kale robot n after", c2.count("Massaged Kale", Method::Robot), 8, 0.01);
@@ -440,12 +472,12 @@ int main()
         // A metric sheet is the same measurement in another unit: it must land on the
         // same curve as an ounces sheet would, not a curve 29.6x larger.
         CurveSet mc;
-        QString mnote;
+        std::string mnote;
         int madded = 0;
         ++checks;
         if (!mc.load_csv(assets + "/tests/metric.csv", &mnote, &madded)) {
             ++failures;
-            std::printf("  FAIL metric CSV rejected: %s\n", qPrintable(mnote));
+            std::printf("  FAIL metric CSV rejected: %s\n", mnote.c_str());
         } else {
             std::printf("  ok   metric CSV accepted\n");
         }
@@ -467,28 +499,28 @@ int main()
 
         // A file missing the required columns is rejected with a useful message.
         CurveSet c3;
-        QString why;
+        std::string why;
         ++checks;
         if (c3.load_csv(assets + "/tests/bad_columns.csv", &why)) {
             ++failures;
             std::printf("  FAIL bad-column CSV was accepted\n");
-        } else if (!why.contains("g") || !why.contains("oz")) {
+        } else if (why.find('g') == std::string::npos || why.find("oz") == std::string::npos) {
             ++failures;
-            std::printf("  FAIL unhelpful error: %s\n", qPrintable(why));
+            std::printf("  FAIL unhelpful error: %s\n", why.c_str());
         } else {
             std::printf("  ok   bad columns rejected: %s\n",
-                        qPrintable(why.split('\n').first()));
+                        split(why, '\n').front().c_str());
         }
     }
 
     std::printf("\nAdaptive Dispense solver\n");
     {
         CostTable costs;
-        QString cerr;
+        std::string cerr;
         ++checks;
         if (!costs.load_csv(assets + "/data/ingredient_costs.csv", &cerr)) {
             ++failures;
-            std::printf("  FAIL cost table: %s\n", qPrintable(cerr));
+            std::printf("  FAIL cost table: %s\n", cerr.c_str());
         } else {
             std::printf("  ok   cost table loaded, %d priced ingredients\n", costs.size());
         }
@@ -698,12 +730,12 @@ int main()
         for (const RecipeAudit &r : a.rows)
             if (!r.customer_built && r.volume.sim.frames.empty()) volume_ran = false;
         expect_true("the audit runs Volume Fill on every recipe", volume_ran);
-        const QStringList lines = a.to_csv().split('\n', Qt::SkipEmptyParts);
+        const std::vector<std::string> lines = nonempty_lines(a.to_csv());
         expect_true("CSV carries a header and one row per recipe",
-                    lines.size() == static_cast<int>(a.rows.size()) + 1);
-        const int width = csv_fields(lines.first());
+                    lines.size() == a.rows.size() + 1);
+        const int width = csv_fields(lines.front());
         bool rectangular = true;
-        for (const QString &line : lines)
+        for (const std::string &line : lines)
             if (csv_fields(line) != width) rectangular = false;
         expect_true("CSV rows are rectangular once quoting is honoured", rectangular);
     }
@@ -908,12 +940,12 @@ int main()
                     herby && herby->piece_height_mm == kPlaceholderProteinPieceMm
                         && herby->piece_height_placeholder);
 
-        const QString path = QDir::temp().filePath("bowlfill-verify-pieces.csv");
+        const std::string path = temp_path("bowlfill-verify-pieces.csv");
         PieceHeights back;
         expect_true("piece heights round-trip through CSV",
                     save_piece_heights(path, pieces) && load_piece_heights(path, back)
                         && back == pieces);
-        QFile::remove(path);
+        fs::remove(path);
     }
 
     std::printf("\nCombinatorial sweep\n");
@@ -952,11 +984,11 @@ int main()
                         > combinations_for(*farmstand, fallback));
 
         bool grows = true;
-        qint64 prev = 0;
+        std::int64_t prev = 0;
         for (int k = 1; k <= 5; ++k) {
             SweepLimits step;
             step.max_toppings = k;
-            const qint64 n = combinations_for(*farmstand, step);
+            const std::int64_t n = combinations_for(*farmstand, step);
             if (n <= prev) grows = false;
             prev = n;
         }
@@ -965,8 +997,7 @@ int main()
         const SweepPlan plan = plan_sweep(*farmstand, base_only);
         expect_near("plan rows = combinations x recipes", plan.rows(), 15 * 12, 0.01);
 
-        QString csv;
-        QTextStream out(&csv);
+        std::ostringstream out;
         std::vector<SweepTotals> totals;
         // Compression is forced on for every swept bowl, so passing it off must not
         // change what comes out.
@@ -975,15 +1006,15 @@ int main()
         const bool finished =
             run_sweep({farmstand}, curves, Method::Robot, no_compress, AdaptiveSettings{},
                       nullptr, base_only, out, {}, &totals);
-        out.flush();
+        const std::string csv = out.str();
         expect_true("sweep runs to completion", finished);
         expect_near("rows emitted = rows planned", totals.at(0).rows, plan.rows(), 0.01);
 
-        const QStringList lines = csv.split('\n', Qt::SkipEmptyParts);
+        const std::vector<std::string> lines = nonempty_lines(csv);
         expect_near("CSV line count", lines.size(), plan.rows() + 1, 0.01);
-        const int width = csv_fields(lines.first());
+        const int width = csv_fields(lines.front());
         bool rectangular = true;
-        for (const QString &line : lines)
+        for (const std::string &line : lines)
             if (csv_fields(line) != width) rectangular = false;
         expect_true("sweep CSV is rectangular", rectangular);
 
@@ -991,8 +1022,8 @@ int main()
                     totals.at(0).legacy_fits + totals.at(0).legacy_over
                         + totals.at(0).legacy_short,
                     totals.at(0).rows, 0.01);
-        expect_true("the sweep carries Volume Fill", lines.first().contains("volume_status")
-                                                         && lines.first().endsWith("volume_p_over_rim"));
+        expect_true("the sweep carries Volume Fill", lines.front().find("volume_status") != std::string::npos
+                                                         && lines.front().ends_with("volume_p_over_rim"));
         expect_near("Volume Fill outcomes partition the rows",
                     totals.at(0).volume_fits + totals.at(0).volume_short + totals.at(0).volume_over,
                     totals.at(0).rows, 0.01);
@@ -1001,11 +1032,11 @@ int main()
         // built by a recipe that does not pin that ingredient.
         const double romaine_portion = farmstand->find("Romaine Base")->full_portion();
         double pinned_g = 0, shell_g = 0;
-        for (const QString &line : lines) {
-            const QStringList f = line.split(',');
+        for (const std::string &line : lines) {
+            const std::vector<std::string> f = split(line, ',');
             if (f.size() < 9 || f[3] != "Romaine Base") continue;
-            if (f[1] == "Farmstand Ranch Salad") pinned_g = f[8].toDouble();
-            if (f[1] == "Build Your Own Farmstand Bowl") shell_g = f[8].toDouble();
+            if (f[1] == "Farmstand Ranch Salad") pinned_g = parse_double(f[8]).value_or(0);
+            if (f[1] == "Build Your Own Farmstand Bowl") shell_g = parse_double(f[8]).value_or(0);
         }
         expect_near("a customer-built shell uses the menu portion", shell_g,
                     romaine_portion, 0.51);
@@ -1015,7 +1046,7 @@ int main()
         // Every recipe has to appear, including the shells the dropdown hides.
         int distinct = 0;
         for (const Recipe &r : farmstand->recipes)
-            if (csv.contains("," + r.name + ",")) ++distinct;
+            if (csv.find("," + r.name + ",") != std::string::npos) ++distinct;
         expect_near("every recipe appears in the sweep", distinct,
                     farmstand->recipes.size(), 0.01);
     }
@@ -1025,7 +1056,7 @@ int main()
     {
         // Volumes generated from the model at a known squash, so the fit must recover it.
         const double truth = 3.0;
-        auto row = [](std::vector<std::pair<QString, double>> items, int cups) {
+        auto row = [](std::vector<std::pair<std::string, double>> items, int cups) {
             BowlRow r;
             r.items = std::move(items);
             r.cups = cups;
@@ -1041,11 +1072,9 @@ int main()
             return predicted_scan_oz(r, curves, Method::Robot, truth) * CurveSet::kMlPerFlOz;
         };
 
-        QTemporaryDir dir;
-        const QString path = dir.path() + "/bowls.csv";
-        QFile f(path);
-        expect_true("temp file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-        QTextStream out(&f);
+        const std::string path = temp_path("bowlfill-verify-bowls.csv");
+        std::ofstream out(path, std::ios::binary | std::ios::trunc);
+        expect_true("temp file opens", static_cast<bool>(out));
         // Station spellings, in station (dispense) order.
         out << "Romaine Base,Massaged Kale,White Jasmine Rice retherm v11,"
                "Chicken Al Pastor [Cooked],Pico de Gallo,Feta,ml,cups,lid,notes\n";
@@ -1055,13 +1084,14 @@ int main()
         out << "60,,,,,,390,,,ladder\n";
         out << "120,,,,,,760,,,ladder\n";
         out << ",,,,,,,,,blank row with a note\n";
-        f.close();
+        out.close();
 
         BowlSheet sheet;
-        QString err;
+        std::string err;
         expect_true("bowl sheet loads", load_bowl_csv(path, sheet, &err));
+        fs::remove(path);
         expect_eq("station names are cleaned",
-                  sheet.ingredients.join(" | "),
+                  join(sheet.ingredients, " | "),
                   "Romaine Base | Massaged Kale | White Jasmine Rice | Chicken Al Pastor | "
                   "Pico de Gallo | Feta");
         expect_near("bowls read", sheet.rows.size(), 5, 0.01);
@@ -1084,8 +1114,8 @@ int main()
         expect_near("fitted error is ~0", fit.rmse_fitted_oz, 0.0, 0.01);
         expect_true("fitted beats no squash", fit.rmse_fitted_oz < fit.rmse_uncompressed_oz);
         expect_true("unmeasured ingredients are flagged",
-                    fit.flat_rate.contains("Chicken Al Pastor")
-                        && fit.flat_rate.contains("Pico de Gallo"));
+                    contains(fit.flat_rate, "Chicken Al Pastor")
+                        && contains(fit.flat_rate, "Pico de Gallo"));
     }
 
     std::printf("\nCurve fitting on the volume itself\n");
@@ -1112,8 +1142,8 @@ int main()
         for (double g = 10; g <= 450; g += 20)
             low.push_back({g, (1.1 * g - 5.0) / kOz});   // truly linear, 5 ml short
         const double p_log = fit_of(low, FitSpace::Log).p, p_lin = fit_of(low, FitSpace::Linear).p;
-        expect_true(QString("a 5 ml zero error bends log-log (p %1) more than linear (p %2)")
-                        .arg(p_log, 0, 'f', 3).arg(p_lin, 0, 'f', 3),
+        expect_true(std::format("a 5 ml zero error bends log-log (p {}) more than linear (p {})",
+                                fixed(p_log, 3), fixed(p_lin, 3)),
                     p_log > p_lin && p_lin < 1.03);
 
         // Compression must leave a curve with p >= 1 at its measured volume: it shows
@@ -1141,12 +1171,9 @@ int main()
 
         // A trusted scale total rescales the robot's per-ingredient weights.
         {
-            const QString sp = QDir::temp().filePath("bowlfill-verify-scale.csv");
-            {
-                QFile f(sp);
-                expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-                f.write("Romaine Base,lemon couscous,ml,scale_g\n70,140,500,231\n60,,300,\n");
-            }
+            const std::string sp = temp_path("bowlfill-verify-scale.csv");
+            expect_true("test file opens",
+                        write_file(sp, "Romaine Base,lemon couscous,ml,scale_g\n70,140,500,231\n60,,300,\n"));
             BowlSheet sheet;
             load_bowl_csv(sp, sheet);
             expect_near("rows rescaled", sheet.rescaled, 1, 0.01);
@@ -1155,16 +1182,12 @@ int main()
             expect_near("... couscous 140 * 231/210", sheet.rows[0].items[1].second, 154.0, 1e-9);
             expect_near("a row with no scale total is left alone", sheet.rows[1].items[0].second, 60.0, 1e-9);
             expect_near("largest correction reported", sheet.largest_rescale_g, 21.0, 1e-9);
-            QFile::remove(sp);
+            fs::remove(sp);
         }
 
         // The empty-bowl correction rescues small scans that read below zero.
-        const QString path = QDir::temp().filePath("bowlfill-verify-zero.csv");
-        {
-            QFile f(path);
-            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-            f.write("test beans,ml\n2.3,-3\n4.4,-1\n100,105\n");
-        }
+        const std::string path = temp_path("bowlfill-verify-zero.csv");
+        expect_true("test file opens", write_file(path, "test beans,ml\n2.3,-3\n4.4,-1\n100,105\n"));
         BowlSheet raw, fixed;
         load_bowl_csv(path, raw);
         load_bowl_csv(path, fixed, nullptr, -5.0);
@@ -1172,7 +1195,7 @@ int main()
         expect_near("corrected by -5 ml, they count", fixed.rows.size(), 3, 0.01);
         expect_near("-3 ml reads as 2 ml", fixed.rows[0].ounces * kOz, 2.0, 1e-9);
         expect_near("105 ml reads as 110 ml", fixed.rows[2].ounces * kOz, 110.0, 1e-9);
-        QFile::remove(path);
+        fs::remove(path);
     }
 
     std::printf("\nComposite curves for unmeasured proteins and toppings\n");
@@ -1189,15 +1212,15 @@ int main()
         for (double g : {50.0, 200.0}) c.add({"white rice", Method::Robot, g, 1.5 * g / kOz});
         c.refit();
 
-        QStringList members;
+        std::vector<std::string> members;
         const Fit pro = composite_curve(Kind::Protein, c, Method::Robot, &members);
         expect_eq("protein composite takes the measured proteins only",
-                  members.join(", "), "Chicken Al Pastor, Suadero Beef");
+                  join(members, ", "), "Chicken Al Pastor, Suadero Beef");
         expect_near("each member counts once: halfway between 1.0 and 2.0 ml/g",
                     pro.volume_oz(120) * kOz, 1.5 * 120, 0.5);
-        QStringList tops;
+        std::vector<std::string> tops;
         composite_curve(Kind::Topping, c, Method::Robot, &tops);
-        expect_eq("test curves are references, not food", tops.join(", "), "Mexican Slaw");
+        expect_eq("test curves are references, not food", join(tops, ", "), "Mexican Slaw");
         expect_true("bases never get a composite",
                     !composite_curve(Kind::Base, c, Method::Robot).valid);
 
@@ -1221,28 +1244,23 @@ int main()
         // A camera that reads true volume t as 0.8 * t^1.1 ml. Test beans are rigid
         // (true = g / 0.8); the food's true volume is 1.5 ml per g.
         auto camera = [](double true_ml) { return 0.8 * std::pow(true_ml, 1.1); };
-        QDir root(QDir::temp().filePath("bowlfill-verify-backfill"));
-        root.removeRecursively();
-        QDir().mkpath(root.path());
+        const fs::path root = temp_path("bowlfill-verify-backfill");
+        fs::remove_all(root);
+        fs::create_directories(root);
         {
-            QFile f(root.filePath("beans.csv"));
-            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-            QTextStream out(&f);
+            std::ofstream out(root / "beans.csv", std::ios::binary);
+            expect_true("test file opens", static_cast<bool>(out));
             out << "test beans,ml\n";
             for (double g = 10; g <= 460; g += 15) out << g << "," << camera(g / 0.8) << "\n";
         }
         {
-            QFile f(root.filePath("food.csv"));
-            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-            QTextStream out(&f);
+            std::ofstream out(root / "food.csv", std::ios::binary);
+            expect_true("test file opens", static_cast<bool>(out));
             out << "slaw,ml\n";
             for (double g : {20.0, 60.0, 120.0, 200.0}) out << g << "," << camera(1.5 * g) << "\n";
         }
-        {
-            QFile f(root.filePath("wet.csv"));
-            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-            f.write("pico,ml\n40,12\n60,70\n");   // 40 g reading 12 ml: below its solids
-        }
+        // 40 g reading 12 ml: below its solids
+        expect_true("test file opens", write_file((root / "wet.csv").string(), "pico,ml\n40,12\n60,70\n"));
 
         const double kOz = CurveSet::kMlPerFlOz;
         auto slaw_ratio = [&](const CurveSet &c, double g) {
@@ -1252,15 +1270,15 @@ int main()
             return -1.0;
         };
         CurveSet plain, back;
-        load_measurements(root.path(), plain);
+        load_measurements(root.string(), plain);
         MeasurementOptions bo;
         bo.backfill = true;
-        const MeasurementSet bs = load_measurements(root.path(), back, bo);
+        const MeasurementSet bs = load_measurements(root.string(), back, bo);
         expect_true("the reference is found", bs.backfill.valid && bs.backfill.reference == "test beans");
         expect_near("it learns the camera's bend", bs.backfill.p, 1.1, 0.01);
         const double low = slaw_ratio(back, 20), high = slaw_ratio(back, 200);
-        expect_true(QString("without it, small readings run low (read/true %1 at 20 g, %2 at 200 g)")
-                        .arg(slaw_ratio(plain, 20), 0, 'f', 2).arg(slaw_ratio(plain, 200), 0, 'f', 2),
+        expect_true(std::format("without it, small readings run low (read/true {} at 20 g, {} at 200 g)",
+                                fixed(slaw_ratio(plain, 20), 2), fixed(slaw_ratio(plain, 200), 2)),
                     slaw_ratio(plain, 20) < slaw_ratio(plain, 200) * 0.85);
         expect_near("backfilled, every size reads in the same proportion", low / high, 1.0, 0.01);
         CurveSet ref_check;
@@ -1273,14 +1291,13 @@ int main()
         MeasurementOptions drop;
         drop.drop_impossible = true;
         CurveSet dropped_set;
-        const MeasurementSet ds = load_measurements(root.path(), dropped_set, drop);
+        const MeasurementSet ds = load_measurements(root.string(), dropped_set, drop);
         expect_near("a reading below its solids is ignored", ds.dropped.count("pico") ? ds.dropped.at("pico") : 0, 1, 0.01);
         expect_near("the rest of that ingredient stays", dropped_set.count("pico", Method::Pooled), 1, 0.01);
         expect_near("off again, it is back", plain.count("pico", Method::Pooled), 2, 0.01);
-        QFile wet(root.filePath("wet.csv"));
-        expect_true("test file opens", wet.open(QIODevice::ReadOnly));
-        expect_true("the file is not changed", wet.readAll().contains("40,12"));
-        root.removeRecursively();
+        expect_true("the file is not changed",
+                    read_file((root / "wet.csv").string()).find("40,12") != std::string::npos);
+        fs::remove_all(root);
     }
 
     std::printf("\nOverfill odds and the 80%% range\n");
@@ -1357,7 +1374,7 @@ int main()
         way_over.ounces = 3 * (60 / 20.0 + 60 / 30.0);
         sheet.rows.push_back(way_over);
         const RangeCheck rc = check_ranges(sheet, m, Method::Robot, 0.0);
-        expect_true(QString("range check: %1 inside, %2 above").arg(rc.inside).arg(rc.above),
+        expect_true(std::format("range check: {} inside, {} above", rc.inside, rc.above),
                     rc.bowls == 4 && rc.inside == 3 && rc.above == 1);
 
         // A simulated bowl carries its distribution.
@@ -1379,13 +1396,11 @@ int main()
 
     std::printf("\nMeasurement store (data/measurements)\n");
     {
-        QDir root(QDir::temp().filePath("bowlfill-verify-store"));
-        root.removeRecursively();
-        QDir().mkpath(root.path());
-        auto write = [&](const QString &name, const QString &text) {
-            QFile f(root.filePath(name));
-            expect_true("test file opens", f.open(QIODevice::WriteOnly | QIODevice::Text));
-            f.write(text.toUtf8());
+        const fs::path root = temp_path("bowlfill-verify-store");
+        fs::remove_all(root);
+        fs::create_directories(root);
+        auto write = [&](const std::string &name, const std::string &text) {
+            expect_true("test file opens", write_file((root / name).string(), text));
         };
         write("curves.csv", "method,ingredient,g,ml\nrobot,white rice,100,90\nrobot,White Rice,200,170\n");
         write("bowls.csv", "Romaine Base,Pico de Gallo,ml,notes\n60,,390,\n120,,760,\n55,50,500,mixed\n");
@@ -1393,7 +1408,7 @@ int main()
         write("broken.csv", "not,a,measurement\n");
 
         CurveSet curves;
-        const MeasurementSet set = load_measurements(root.path(), curves);
+        const MeasurementSet set = load_measurements(root.string(), curves);
         expect_near("both formats load from one folder", curves.observations().size(), 4, 0.01);
         expect_near("lock files are ignored", set.files.size(), 3, 0.01);
         expect_near("a broken file is reported, not fatal", set.failed_files(), 1, 0.01);
@@ -1401,7 +1416,7 @@ int main()
         expect_true("names match regardless of case",
                     curves.fit("WHITE RICE", Method::Robot) && curves.count("White rice", Method::Pooled) == 2);
         expect_eq("an unmeasured rice borrows a measured one",
-                  proxy_curve_for("White Jasmine Rice", curves).toLower(), "white rice");
+                  to_lower(proxy_curve_for("White Jasmine Rice", curves)), "white rice");
 
         CurveSet couscous;
         couscous.add({"lemon couscous", Method::Robot, 109, 98 / CurveSet::kMlPerFlOz});
@@ -1413,25 +1428,87 @@ int main()
                   proxy_curve_for("Lemon Couscous", couscous), "");
 
         CurveSet reloaded;
-        load_measurements(root.path(), reloaded);
+        load_measurements(root.string(), reloaded);
         expect_near("loading twice does not double up", reloaded.observations().size(), 4, 0.01);
 
         // Uploads land in the folder; the same file twice is stored once.
-        QDir outside(QDir::temp().filePath("bowlfill-verify-upload"));
-        outside.removeRecursively();
-        QDir().mkpath(outside.path());
-        const QString up = outside.filePath("curves.csv");
-        { QFile f(up); expect_true("test file opens", f.open(QIODevice::WriteOnly)); f.write("ingredient,g,ml\nfeta,50,60\n"); }
-        QString err;
-        const QString stored = store_measurement_file(up, root.path(), &err);
-        expect_eq("a name clash gets a numbered copy", QFileInfo(stored).fileName(), "curves_2.csv");
+        const fs::path outside = temp_path("bowlfill-verify-upload");
+        fs::remove_all(outside);
+        fs::create_directories(outside);
+        const std::string up = (outside / "curves.csv").string();
+        expect_true("test file opens", write_file(up, "ingredient,g,ml\nfeta,50,60\n"));
+        std::string err;
+        const std::string stored = store_measurement_file(up, root.string(), &err);
+        expect_eq("a name clash gets a numbered copy", fs::path(stored).filename().string(), "curves_2.csv");
         expect_eq("the same file again is not copied twice",
-                  QFileInfo(store_measurement_file(up, root.path(), &err)).fileName(), "curves_2.csv");
+                  fs::path(store_measurement_file(up, root.string(), &err)).filename().string(),
+                  "curves_2.csv");
         CurveSet after;
-        load_measurements(root.path(), after);
+        load_measurements(root.string(), after);
         expect_near("a stored upload loads with the rest", after.observations().size(), 5, 0.01);
-        root.removeRecursively();
-        outside.removeRecursively();
+        fs::remove_all(root);
+        fs::remove_all(outside);
+    }
+
+    std::printf("\nSauces are cups, never ramped ingredients\n");
+    {
+        // A sauce is one container in the bowl. Anything still in a brand's ingredients
+        // can be stepped by the ramps and Volume Fill, so no sauce may be left there.
+        std::vector<std::string> leaked;
+        for (const Menu &m : loaded.menus)
+            for (const auto &[name, ing] : m.ingredients)
+                if (m.is_sauce(name) || is_sauce_name(name)) leaked.push_back(m.brand + ": " + name);
+        expect_eq("no brand ramps a sauce", join(leaked, ", "), "");
+        const Menu *jerk = by_brand(loaded.menus, "BIG JERK");
+        expect_true("BIG JERK's chutney is a cup, unmapped",
+                    jerk && jerk->is_sauce("MintCilantro Chutney")
+                        && !jerk->find("MintCilantro Chutney"));
+        expect_true("dressings and hummus are cups", is_sauce_name("Lemon Garlic Dressing")
+                                                         && is_sauce_name("Hummus"));
+    }
+
+    std::printf("\nVolume per gram, for volume-proportional steps\n");
+    {
+        const double kMl = CurveSet::kMlPerFlOz;
+        const Ingredient &romaine = *farmstand->find("Romaine Base");
+        const BowlItem r = make_item(romaine, curves, Method::Robot);
+        const double added = grams_for_ml(r, 35, 50);
+        expect_near("grams_for_ml adds exactly the volume asked for",
+                    (r.volume_oz(35 + added) - r.volume_oz(35)) * kMl, 50, 1e-9);
+        BowlItem flat;
+        flat.flat_oz_per_100g = 4.5;
+        expect_near("a flat-rate ingredient takes volume / rate",
+                    grams_for_ml(flat, 80, 10), 10 / (4.5 / 100 * kMl), 1e-9);
+
+        const std::vector<StepRow> rows = step_table(*farmstand, curves, Method::Robot, 20);
+        expect_near("one row per dispensed ingredient, sauces left out", rows.size(),
+                    farmstand->ingredients.size(), 0.01);
+        expect_true("bases come first", !rows.empty() && rows.front().kind == Kind::Base);
+        const StepRow *row = nullptr;
+        for (const StepRow &x : rows)
+            if (x.ingredient == "Romaine Base") row = &x;
+        expect_true("romaine has a row", row != nullptr);
+        if (row) {
+            expect_near("ml per g is the portion's volume over its mass", row->ml_per_g,
+                        r.volume_oz(row->portion_g) * kMl / row->portion_g, 1e-9);
+            expect_near("g per ml is its inverse", row->g_per_ml * row->ml_per_g, 1, 1e-9);
+            expect_true("a compacting curve adds less per gram than its average",
+                        r.p >= 1 || row->marginal_ml_per_g < row->ml_per_g);
+            expect_near("asking for the current step's volume gives back the current step",
+                        grams_for_ml(r, row->portion_g, row->step_ml), row->step_g, 1e-9);
+            expect_near("the step for the target adds the target",
+                        (r.volume_oz(row->portion_g + row->step_g_for_target)
+                         - r.volume_oz(row->portion_g)) * kMl,
+                        20, 1e-9);
+        }
+        const std::vector<std::string> lines =
+            nonempty_lines(step_table_csv("Farmstand", rows, 20));
+        expect_near("CSV has a header and one line per row", lines.size(), rows.size() + 1, 0.01);
+        expect_true("the header names the target", lines.front().ends_with("step_g_for_20_ml"));
+        bool rectangular = true;
+        for (const std::string &line : lines)
+            if (csv_fields(line) != csv_fields(lines.front())) rectangular = false;
+        expect_true("step CSV is rectangular", rectangular);
     }
 
     std::printf("\nVolume Fill: step_g passes against the bowl\n");
@@ -1530,13 +1607,13 @@ int main()
 
     std::printf("\nManual Entry\n");
     {
-        const QStringList catalog = ingredient_catalog(loaded.menus);
+        const std::vector<std::string> catalog = ingredient_catalog(loaded.menus);
         expect_true("the catalogue lists ingredients and sauces from every brand",
-                    catalog.contains("Romaine Base") && catalog.contains("Ranch"));
+                    contains(catalog, "Romaine Base") && contains(catalog, "Ranch"));
         expect_eq("a sauce is catalogued as one", catalog_kind(loaded.menus, "Ranch"), "sauce");
         expect_eq("a base is catalogued as one", catalog_kind(loaded.menus, "Romaine Base"), "base");
 
-        const QString protein = farmstand->names_of(Kind::Protein).front();
+        const std::string protein = farmstand->names_of(Kind::Protein).front();
         ManualEntry entry;
         entry.stations[0] = {"Romaine Base", "base"};
         entry.stations[1] = {protein, "topping"};          // served as a topping here
@@ -1552,7 +1629,7 @@ int main()
         expect_near("one ingredient per distinct dispensing station",
                     manual.ingredients.size(), 4, 0.01);
         expect_eq("ingredients are offered in station order",
-                  manual.names_of(Kind::Topping).join("|"), protein + "|Dragonfruit Salsa");
+                  join(manual.names_of(Kind::Topping), "|"), protein + "|Dragonfruit Salsa");
         expect_true("a station's kind overrides the brand's",
                     manual.find(protein) && manual.find(protein)->kind == Kind::Topping);
         expect_near("a known ingredient keeps its brand's portion",
@@ -1563,7 +1640,7 @@ int main()
                     written && written->source == WeightSource::Class
                         && written->full_portion() > 0 && written->step_increment_g > 0);
         expect_eq("sauce stations and listed sauces are the sauces, once each",
-                  manual.sauces.join("|"), "Ranch|Smoked Honey");
+                  join(manual.sauces, "|"), "Ranch|Smoked Honey");
         expect_true("the floor applies to every bowl",
                     manual.floor_for({"Romaine Base"})
                         && manual.floor_for({"Romaine Base"})->minimum_product_weight_g == 600);

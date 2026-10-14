@@ -3,12 +3,13 @@
 #include "menu_model.hh"
 #include "simulator.hh"
 
-#include <QString>
 #include <map>
 #include <optional>
+#include <string>
 #include <vector>
 
-namespace bowlfill {
+namespace bowlfill
+{
 
 ///
 /// Adaptive Dispense, per the user stories.
@@ -31,7 +32,8 @@ namespace bowlfill {
 /// optimiser and no local minima.
 ///
 
-struct Tolerances {
+struct Tolerances
+{
     double base = 0.20;
     double protein = 0.05;
     double topping = 0.10;
@@ -39,7 +41,8 @@ struct Tolerances {
     double for_kind(Kind k) const;
 };
 
-struct AdaptiveSettings {
+struct AdaptiveSettings
+{
     double bowl_capacity_oz = 32.0;
 
     /// Target for the FOOD, as a share of the food room (food_capacity_oz()).
@@ -59,7 +62,7 @@ struct AdaptiveSettings {
 
     /// COGS guardrail. Reported, never solved for: the document is explicit that the
     /// system should "understand the impact on COGS, not optimize up front on COGS".
-    double menu_price = 0.0;      ///< 0 disables the COGS readout
+    double menu_price = 0.0; ///< 0 disables the COGS readout
     double cogs_target = 0.23;
 
     /// Everything that is not food: the cups' contents, or with geometry on, the room
@@ -67,37 +70,44 @@ struct AdaptiveSettings {
     double sauce_volume_oz() const;
     /// Capacity actually available to food, once the cups are in.
     double food_capacity_oz() const;
+
     /// Food that reaches the rim, for the chance of going over it.
-    double rim_oz() const { return rim_food_oz(sauce, geometry); }
+    double rim_oz() const
+    {
+        return rim_food_oz(sauce, geometry);
+    }
 };
 
-enum class AdaptiveStatus {
-    NoAdjustment,     ///< nominal already sits inside the acceptable band
-    Adjusted,         ///< solved within tolerance
-    Underfilled,      ///< cannot reach the target even at full positive tolerance
-    StillOver,        ///< will not fit even at full negative tolerance
+enum class AdaptiveStatus
+{
+    NoAdjustment, ///< nominal already sits inside the acceptable band
+    Adjusted,     ///< solved within tolerance
+    Underfilled,  ///< cannot reach the target even at full positive tolerance
+    StillOver,    ///< will not fit even at full negative tolerance
     NoIngredients,
 };
 
-QString to_string(AdaptiveStatus s);
+std::string to_string(AdaptiveStatus s);
 
-struct AdaptiveItem {
-    QString name;
+struct AdaptiveItem
+{
+    std::string name;
     Kind kind = Kind::Topping;
     double nominal_g = 0.0;
     double final_g = 0.0;
     double min_g = 0.0, max_g = 0.0;
     double volume_oz = 0.0;
     double cost = 0.0;
-    bool clamped = false;        ///< hit a min/max before its tolerance ran out
+    bool clamped = false; ///< hit a min/max before its tolerance ran out
     bool cost_known = false;
 
-    double delta_pct() const;    ///< signed change against nominal
+    double delta_pct() const; ///< signed change against nominal
     /// How much of its allowed band this ingredient actually used, 0..1.
     double band_used(const Tolerances &t) const;
 };
 
-struct AdaptiveResult {
+struct AdaptiveResult
+{
     std::vector<AdaptiveItem> items;
     AdaptiveSettings settings;
     AdaptiveStatus status = AdaptiveStatus::NoIngredients;
@@ -105,14 +115,14 @@ struct AdaptiveResult {
     double alpha = 0.0;
     double nominal_volume_oz = 0.0;
     double food_volume_oz = 0.0;
-    double total_volume_oz = 0.0;   ///< food plus sauce cups
+    double total_volume_oz = 0.0; ///< food plus sauce cups
     double total_cost = 0.0;
-    bool cost_complete = false;     ///< false if any ingredient had no price
-    FillUncertainty fill;           ///< the dispensed bowl as a distribution
+    bool cost_complete = false; ///< false if any ingredient had no price
+    FillUncertainty fill;       ///< the dispensed bowl as a distribution
 
-    double food_fill() const;       ///< food as a share of the food room
-    double occupancy() const;       ///< food plus cups, as a share of capacity
-    double cogs_ratio() const;      ///< 0 when no price is set
+    double food_fill() const;  ///< food as a share of the food room
+    double occupancy() const;  ///< food plus cups, as a share of capacity
+    double cogs_ratio() const; ///< 0 when no price is set
     bool cogs_within_guardrail() const;
 };
 
@@ -120,17 +130,26 @@ struct AdaptiveResult {
 /// Ingredient prices, loaded from a CSV so they can be corrected without a rebuild.
 /// Falls back to a per-kind default for anything unlisted.
 ///
-class CostTable {
+class CostTable
+{
 public:
-    bool load_csv(const QString &path, QString *error = nullptr);
+    bool load_csv(const std::string &path, std::string *error = nullptr);
     /// Cost of `grams` of `name`; `known` reports whether this was a real entry
     /// rather than the per-kind fallback.
-    double cost_of(const QString &name, Kind kind, double grams, bool *known = nullptr) const;
-    bool empty() const { return per_kg_.empty(); }
-    int size() const { return static_cast<int>(per_kg_.size()); }
+    double cost_of(const std::string &name, Kind kind, double grams, bool *known = nullptr) const;
+
+    bool empty() const
+    {
+        return per_kg_.empty();
+    }
+
+    int size() const
+    {
+        return static_cast<int>(per_kg_.size());
+    }
 
 private:
-    std::map<QString, double> per_kg_;
+    std::map<std::string, double> per_kg_;
     std::map<Kind, double> fallback_;
 };
 
@@ -141,4 +160,4 @@ AdaptiveResult solve_adaptive(const std::vector<BowlItem> &items,
                               const AdaptiveSettings &settings,
                               const CostTable *costs = nullptr);
 
-}  // namespace bowlfill
+} // namespace bowlfill
