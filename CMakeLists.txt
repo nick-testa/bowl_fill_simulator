@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
+
+# src/core parses numbers with std::from_chars on double, which Apple's libc++ only
+# ships from macOS 26. Must be set before project().
+set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0" CACHE STRING "Oldest macOS the app runs on")
 project(bowl_fill_simulator VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
