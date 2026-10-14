@@ -309,7 +309,7 @@ void SweepDialog::run()
                         loc.toString(all.volume_over));
     for (size_t i = 0; i < totals.size() && i < menus.size(); ++i)
         summary += QString("%1  %2% of bowls come out right\n")
-                       .arg(menus[i]->brand, -20)
+                       .arg(qs(menus[i]->brand), -20)
                        .arg(std::round(totals[i].legacy_pass_rate() * 100));
     summary += QString("\nWritten to %1.").arg(path);
 

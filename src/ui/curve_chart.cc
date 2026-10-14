@@ -185,7 +185,7 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
     if (best)
         QToolTip::showText(event->globalPosition().toPoint(),
                            QString("%1 · %2\n%3 g → %4")
-                               .arg(best->ingredient, to_string(best->method))
+                               .arg(qs(best->ingredient), qs(to_string(best->method)))
                                .arg(best->grams, 0, 'f', 0)
                                .arg(units::volume(best->ounces, true)),
                            this);
