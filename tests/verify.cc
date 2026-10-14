@@ -228,9 +228,9 @@ int main()
     expect_near("Meat + Rice floors", meatrice->floors.size(), 0, 0.01);
     expect_near("Meat + Rice recipes", meatrice->recipes.size(), 4, 0.01);
 
-    // Casa Condesa has no dynamic_portion_increases and none of the old ingredient
-    // names: its options come from mappings.ingredients alone, kinds read from the
-    // names, and sauces left to the sauce cups.
+    // Casa Condesa uses none of the old ingredient names, and its one
+    // dynamic_portion_increases entry ramps its rices, proteins and toppings: options come
+    // from mappings.ingredients, kinds read from the names, and sauces left to the cups.
     if (const Menu *casa = by_brand(loaded.menus, "Casa Condesa")) {
         expect_near("Casa Condesa bases", casa->names_of(Kind::Base).size(), 2, 0.01);
         // Braised Beef is a stale template target borrowed from another brand.
@@ -267,7 +267,7 @@ int main()
         // Two brands spell the same chicken differently from a third; mapping both
         // onto the established name is what lets them share its cost and curve.
         NameMappings maps;
-        maps[{"Casa Condesa", "Guajillo / Cumin Chicken, [cooked]"}] = {"Chicken Tex-Mex", ""};
+        maps[{"Casa Condesa", "Guajillo  Cumin Chicken cooked"}] = {"Chicken Tex-Mex", ""};
         maps[{"M+R2", "Guajillo  Cumin Chicken cooked"}] = {"Chicken Tex-Mex", ""};
         maps[{"Casa Condesa", "Cotija portion"}] = {"", "sauce"};
         const LoadResult mapped = load_menus(assets + "/menus", &maps);
@@ -276,7 +276,8 @@ int main()
         const Ingredient *tex = casa ? casa->find("Chicken Tex-Mex") : nullptr;
         expect_true("mapped name replaces the menu's", tex && !casa->find("Guajillo Cumin Chicken"));
         expect_true("mapped ingredient keeps its kind", tex && tex->kind == Kind::Protein);
-        expect_near("mapped ingredient keeps its weight", tex ? tex->full_portion() : 0, 60, 0.01);
+        // The menu lists a 60 g half portion and a 120 g full one; the full one is used.
+        expect_near("mapped ingredient keeps its weight", tex ? tex->full_portion() : 0, 120, 0.01);
         expect_true("mapping applies per brand",
                     mr2 && mr2->find("Chicken Tex-Mex") && !mr2->find("Guajillo Cumin Chicken"));
         expect_true("kind override to sauce leaves the pool", casa && !casa->find("Cotija"));
@@ -288,7 +289,7 @@ int main()
                 if (r.name == "Smoky Roasted Chicken Bowl" && !r.items.empty())
                     smoky_item = r.items[0].name;
             for (const MenuName &n : casa->names)
-                if (n.raw == "Guajillo / Cumin Chicken, [cooked]")
+                if (n.raw == "Guajillo  Cumin Chicken cooked")
                     listed = n.automatic == "Guajillo Cumin Chicken" && n.name == "Chicken Tex-Mex";
         }
         expect_eq("recipe target follows the mapping", smoky_item, "Chicken Tex-Mex");
