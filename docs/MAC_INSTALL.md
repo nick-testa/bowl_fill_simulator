@@ -2,6 +2,9 @@
 
 You'll get a file called **BowlFillSimulator-mac.zip**. You don't need to install anything else.
 
+It needs **macOS 26 (Tahoe) or newer**. To check, open the Apple menu → **About This Mac**.
+If it shows an older version, update first in **System Settings → General → Software Update**.
+
 ## The first time
 
 1. **Unzip it.** Double-click `BowlFillSimulator-mac.zip` in your Downloads folder.
