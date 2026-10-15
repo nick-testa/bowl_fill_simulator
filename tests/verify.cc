@@ -13,6 +13,7 @@
 #include "core/simulator.hh"
 #include "core/step_table.hh"
 #include "core/sweep.hh"
+#include "core/volume_fill_export.hh"
 
 #include "core/text.hh"
 
@@ -1494,6 +1495,37 @@ int main()
                         && !jerk->find("MintCilantro Chutney"));
         expect_true("dressings and hummus are cups", is_sauce_name("Lemon Garlic Dressing")
                                                          && is_sauce_name("Hummus"));
+    }
+
+    std::printf("\nVolume Fill export for lab37\n");
+    {
+        SimSettings settings;
+        settings.geometry.enabled = true;
+        settings.compress = true;
+        VolumeFillSettings vf;
+        vf.fit_share = 0.85;
+        const VolumeFillExport ex = export_volume_fill(loaded.menus, curves, Method::Robot, settings, vf);
+        const Ingredient &romaine = *farmstand->find("Romaine Base");
+        const BowlItem r = make_item(romaine, curves, Method::Robot);
+        std::string spelling;
+        for (const MenuName &n : farmstand->names)
+            if (n.name == "Romaine Base") spelling = n.raw;
+        expect_true("rows are keyed by brand and the production spelling, with the window's curve",
+                    ex.source.find(std::format("{{\"Farmstand\", \"{}\", VolumeFillKind::Base, {}, {}, 0, 0}}",
+                                               spelling, r.K, r.p))
+                        != std::string::npos);
+        expect_true("sauces are cups, with no curve",
+                    ex.source.find("\"BIG JERK\", \"MintCilantro Chutney portion\", VolumeFillKind::Sauce, 0, 1")
+                        != std::string::npos);
+        // Brands may serve one spelling differently (Farmstand cups black beans that The
+        // Hungry Cowgirl dispenses), so each brand that serves a spelling has its own row.
+        size_t brands_with_rice = 0;
+        for (size_t at = 0; (at = ex.source.find(", \"White Jasmine Rice retherm v11\",", at)) != std::string::npos; ++at)
+            ++brands_with_rice;
+        expect_true("a spelling several brands share has a row for each", brands_with_rice >= 2);
+        expect_true("settings carry over", ex.source.find(".fit_share = 0.85,") != std::string::npos
+                                               && ex.source.find(".compress = true,") != std::string::npos);
+        expect_true("Manual Entry is not a brand", ex.source.find("\"Manual Entry\"") == std::string::npos);
     }
 
     std::printf("\nVolume per gram, for volume-proportional steps\n");

@@ -2,6 +2,7 @@
 #include "core/feasibility.hh"
 #include "core/step_table.hh"
 #include "core/sweep.hh"
+#include "core/volume_fill_export.hh"
 #include "ui/main_window.hh"
 #include "ui/manual_entry_settings.hh"
 #include "ui/qt_text.hh"
@@ -168,6 +169,33 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
 
 /// Headless volume-per-gram table: what each ingredient's step adds, and the step that
 /// would add `target_ml`, for choosing volume-proportional steps.
+/// Writes lab37's volume_fill_curves.cc: every brand's curves keyed by production
+/// ingredient name, and Volume Fill's settings as last set in the window. Compression
+/// and the bowl's capacity are not remembered by the window, so they take its defaults.
+int run_export_volume_fill(const QString &asset_dir, const QString &path)
+{
+    using namespace bowlfill;
+    QTextStream err(stderr);
+
+    CurveSet curves;
+    SquashFit squash;
+    if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
+    const LoadResult loaded = load_configured_menus(asset_dir);
+
+    SimSettings settings;
+    settings.geometry = configured_geometry(false);
+    settings.compress = true;
+    settings.load_transfer = 1.0;
+    const VolumeFillExport ex =
+        export_volume_fill(loaded.menus, curves, Method::Robot, settings, configured_volume_fill());
+    if (!write_text(ss(path), ex.source)) {
+        err << "could not write " << path << "\n";
+        return 2;
+    }
+    err << ex.rows << " ingredients written to " << path << "\n";
+    return 0;
+}
+
 int run_steps(const QString &asset_dir, const QString &want, double target_ml)
 {
     using namespace bowlfill;
@@ -419,6 +447,11 @@ int main(int argc, char **argv)
                                    "For --sweep and --audit: judge fit by volume alone, with "
                                    "cups at their contents, instead of by height under the lid.");
     parser.addOption(volume_only);
+    QCommandLineOption export_vf("export-volume-fill",
+                                 "Write lab37's volume_fill_curves.cc (curves by production "
+                                 "ingredient name, and Volume Fill's settings) and exit.",
+                                 "file");
+    parser.addOption(export_vf);
     parser.process(app);
     const QString asset_dir = parser.isSet(assets) ? QDir(parser.value(assets)).absolutePath()
                                                    : default_asset_dir();
@@ -430,6 +463,9 @@ int main(int argc, char **argv)
                              parser.isSet(max_pro) ? parser.value(max_pro).toInt() : -1,
                              parser.isSet(sauces) ? parser.value(sauces).toInt() : -1,
                              parser.isSet(volume_only));
+
+    if (parser.isSet(export_vf))
+        return run_export_volume_fill(asset_dir, parser.value(export_vf));
 
     if (parser.isSet(steps))
         return run_steps(asset_dir, parser.value(steps),

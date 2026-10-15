@@ -311,6 +311,27 @@ same curve an imperial one would. `1 fl oz = 29.5735295625 ml`, exact by definit
 checked without a display server. Pair it with `--scale 2` for a sharp PNG — an
 offscreen surface is 1x otherwise, and small chart labels suffer for it.
 
+## Exporting Volume Fill to lab37
+
+lab37 runs Volume Fill in `lab37/orders/volume_fill_algorithm.cc`, reading its curves
+and settings from the generated `lab37/orders/volume_fill_curves.cc`. To update that
+file after new measurements, mappings or settings:
+
+```
+./build/bowl-fill-simulator --export-volume-fill ~/Projects/lab37/lab37/orders/volume_fill_curves.cc
+```
+
+It writes one row per brand and production ingredient spelling (as customizations name
+it), with the Robot-method curve the window would choose, and the fit share, minimum
+share and bowl, lid and cup dimensions last set in the window. Compression is on with a
+load transfer of 1 and the capacity is 32 oz, the window's defaults. A brand turns it on
+by setting `algorithm` (`Shadow` or `VolumeFill`) and `volume_fill_brand` (the brand's
+name here, e.g. `ORO`) on its `dynamic_portion_increases` entry.
+
+The fit target and step-down floor exported here are the defaults for every brand. A
+brand can override either without a release by setting `volume_fill_fit_share` or
+`volume_fill_min_share` on the same entry, as a fraction (`0.8` is 80% of the food room).
+
 ## Known limits
 
 - Proteins and toppings have **no measurements**. They use a flat oz/100 g, editable

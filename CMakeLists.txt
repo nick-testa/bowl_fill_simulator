@@ -62,6 +62,7 @@ add_library(bowlfill_core STATIC
   src/core/feasibility.cc
   src/core/sweep.cc
   src/core/step_table.cc
+  src/core/volume_fill_export.cc
   src/core/bowl_data.cc
   src/core/measurements.cc
 )
