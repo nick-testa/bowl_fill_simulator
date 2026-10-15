@@ -3,6 +3,7 @@
 #include "theme.hh"
 #include "units.hh"
 
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -49,6 +50,27 @@ void CurveChart::set_curves(const CurveSet *curves, Method method)
     update();
 }
 
+void CurveChart::set_hidden(const QSet<QString> &hidden)
+{
+    hidden_ = hidden;
+    update();
+}
+
+bool CurveChart::extent(double &g_max, double &oz_max) const
+{
+    g_max = oz_max = 0;
+    for (const Observation &o : curves_->observations()) {
+        if (method_ != Method::Pooled && o.method != method_) continue;
+        if (!shown(qs(o.ingredient))) continue;
+        g_max = std::max(g_max, o.grams);
+        oz_max = std::max(oz_max, o.ounces);
+    }
+    if (g_max <= 0 || oz_max <= 0) return false;
+    g_max *= 1.06;
+    oz_max *= 1.14;
+    return true;
+}
+
 void CurveChart::paintEvent(QPaintEvent *)
 {
     const theme::Palette &pal = theme::palette();
@@ -60,18 +82,18 @@ void CurveChart::paintEvent(QPaintEvent *)
     p.fillRect(rect(), pal.panel);
     if (!curves_) return;
 
-    const QStringList names = qsl(curves_->ingredients());
+    QStringList names = qsl(curves_->ingredients());
     if (names.isEmpty()) return;
+    names.removeIf([this](const QString &n) { return !shown(n); });
 
     double g_max = 0, oz_max = 0;
-    for (const Observation &o : curves_->observations()) {
-        if (method_ != Method::Pooled && o.method != method_) continue;
-        g_max = std::max(g_max, o.grams);
-        oz_max = std::max(oz_max, o.ounces);
+    if (!extent(g_max, oz_max)) {
+        p.setFont(theme::font(theme::Text::Caption));
+        p.setPen(pal.ink_faint);
+        p.drawText(rect(), Qt::AlignCenter,
+                   names.isEmpty() ? "No ingredients selected" : "Nothing measured this way");
+        return;
     }
-    if (g_max <= 0 || oz_max <= 0) return;
-    g_max *= 1.06;
-    oz_max *= 1.14;
 
     const double pw = width() - kLeft - kRight;
     const double ph = height() - kTop - kBottom;
@@ -161,14 +183,7 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
 {
     if (!curves_) return;
     double g_max = 0, oz_max = 0;
-    for (const Observation &o : curves_->observations()) {
-        if (method_ != Method::Pooled && o.method != method_) continue;
-        g_max = std::max(g_max, o.grams);
-        oz_max = std::max(oz_max, o.ounces);
-    }
-    if (g_max <= 0 || oz_max <= 0) return;
-    g_max *= 1.06;
-    oz_max *= 1.14;
+    if (!extent(g_max, oz_max)) return;
 
     const double pw = width() - kLeft - kRight;
     const double ph = height() - kTop - kBottom;
@@ -178,6 +193,7 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
     double best_d = 12.0;   // pixels
     for (const Observation &o : curves_->observations()) {
         if (method_ != Method::Pooled && o.method != method_) continue;
+        if (!shown(qs(o.ingredient))) continue;
         const QPointF at(kLeft + o.grams / g_max * pw, kTop + ph - o.ounces / oz_max * ph);
         const double d = QLineF(at, event->position()).length();
         if (d < best_d) { best_d = d; best = &o; }
@@ -194,5 +210,92 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
 }
 
 void CurveChart::leaveEvent(QEvent *) { QToolTip::hideText(); }
+
+CurveFilter::CurveFilter(QWidget *parent) : QToolButton(parent)
+{
+    menu_ = new QMenu(this);
+    menu_->installEventFilter(this);
+    setMenu(menu_);
+    setPopupMode(QToolButton::InstantPopup);
+    setToolButtonStyle(Qt::ToolButtonTextOnly);
+    // The label carries its own arrow; Qt's would sit under it.
+    setStyleSheet("QToolButton::menu-indicator { image: none; width: 0px; }");
+    setToolTip("Choose which ingredients' curves the chart shows");
+    relabel();
+}
+
+void CurveFilter::set_options(const QStringList &options)
+{
+    if (options == options_) return;
+    options_ = options;
+    rebuild();
+    relabel();
+}
+
+void CurveFilter::rebuild()
+{
+    menu_->clear();
+    auto set_all = [this](bool on) {
+        hidden_ = on ? QSet<QString>{} : QSet<QString>(options_.begin(), options_.end());
+        for (QAction *a : menu_->actions())
+            if (a->isCheckable()) a->setChecked(on);
+        relabel();
+        emit changed(hidden_);
+    };
+    connect(menu_->addAction("Show all"), &QAction::triggered, this, [set_all] { set_all(true); });
+    connect(menu_->addAction("Show none"), &QAction::triggered, this, [set_all] { set_all(false); });
+    menu_->addSeparator();
+
+    for (const QString &name : options_) {
+        QPixmap dot(12, 12);
+        dot.fill(Qt::transparent);
+        {
+            QPainter p(&dot);
+            p.setRenderHint(QPainter::Antialiasing);
+            p.setPen(Qt::NoPen);
+            p.setBrush(theme::series_colour(name));
+            p.drawEllipse(QRectF(1, 1, 10, 10));
+        }
+        QAction *a = menu_->addAction(QIcon(dot), name);
+        a->setCheckable(true);
+        a->setChecked(!hidden_.contains(name));
+        connect(a, &QAction::toggled, this, [this, name](bool on) {
+            if (on) hidden_.remove(name);
+            else hidden_.insert(name);
+            relabel();
+            emit changed(hidden_);
+        });
+    }
+}
+
+void CurveFilter::relabel()
+{
+    int shown = 0;
+    QString only;
+    for (const QString &n : options_)
+        if (!hidden_.contains(n)) { ++shown; only = n; }
+    const int n = options_.size();
+    QString text;
+    if (shown == n) text = QString("All ingredients (%1)").arg(n);
+    else if (shown == 0) text = "No ingredients";
+    else if (shown == 1) text = only;
+    else text = QString("%1 of %2 ingredients").arg(shown).arg(n);
+    setText(text + "  ▾");
+}
+
+bool CurveFilter::eventFilter(QObject *watched, QEvent *event)
+{
+    // A click in the menu ticks the box and leaves the menu open, so several can be
+    // picked in one go; Esc or a click outside closes it.
+    if (watched == menu_ && event->type() == QEvent::MouseButtonRelease) {
+        auto *me = static_cast<QMouseEvent *>(event);
+        if (QAction *a = menu_->actionAt(me->position().toPoint()); a && a->isEnabled()
+            && !a->isSeparator()) {
+            a->trigger();
+            return true;
+        }
+    }
+    return QToolButton::eventFilter(watched, event);
+}
 
 }  // namespace bowlfill

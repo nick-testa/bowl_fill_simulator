@@ -31,6 +31,7 @@ namespace bowlfill {
 
 class RampChart;
 class CurveChart;
+class CurveFilter;
 class BowlDiagram;
 class ToleranceChart;
 class PhotoLabel;
@@ -235,6 +236,8 @@ private:
     std::vector<Estimate> estimates_list_;
     QPushButton *estimates_ = nullptr;
     void update_estimates(const std::vector<BowlItem> &items, const AdaptiveResult *ar);
+    /// Fills the Bowl COGS tile from the finished bowl's final masses.
+    void show_bowl_cost(const std::vector<BowlItem> &items);
     QPushButton *settings_ = nullptr;
     std::vector<QPushButton *> settings_nav_;
     std::vector<QPushButton *> settings_resets_;   ///< one per page
@@ -351,9 +354,11 @@ private:
     QLabel *verdict_head_ = nullptr;
     QLabel *verdict_sub_ = nullptr;
     QWidget *verdict_panel_ = nullptr;
-    QLabel *stat_value_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-    QLabel *stat_key_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-    QWidget *stat_tile_[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+    /// The last tile is the bowl's food cost, the same in every mode.
+    static constexpr int kStatTiles = 6;
+    QLabel *stat_value_[kStatTiles] = {};
+    QLabel *stat_key_[kStatTiles] = {};
+    QWidget *stat_tile_[kStatTiles] = {};
     QTableWidget *breakdown_ = nullptr;
     QLabel *foot_note_ = nullptr;
     PhotoLabel *photo_[2] = {nullptr, nullptr};
@@ -361,6 +366,7 @@ private:
 
     RampChart *ramp_chart_ = nullptr;
     CurveChart *curve_chart_ = nullptr;
+    CurveFilter *curve_filter_ = nullptr;   ///< which curves the chart shows
     BowlDiagram *diagram_ = nullptr;
     QWidget *bowl_row_ = nullptr;   ///< the finished-bowl card; rearranges with width
 

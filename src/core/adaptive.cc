@@ -114,6 +114,7 @@ bool CostTable::load_csv(const std::string &path, std::string *error)
         return false;
     }
     per_kg_.clear();
+    source_.clear();
     fallback_.clear();
 
     bool seen_header = false;
@@ -160,6 +161,12 @@ bool CostTable::load_csv(const std::string &path, std::string *error)
             continue;
         }
         per_kg_[name] = *per_kg;
+        // An optional third column says where the price came from; older files put a
+        // free-text note there, which reads as no source.
+        const std::string source = cells.size() > 2 ? to_lower(trim(cells[2])) : std::string();
+        source_[name] = source == "kitchenos" ? CostSource::KitchenOs
+                        : source == "estimate" ? CostSource::Estimate
+                                               : CostSource::Placeholder;
     }
     if (per_kg_.empty() && error)
     {
@@ -185,6 +192,81 @@ double CostTable::cost_of(const std::string &name, Kind kind, double grams, bool
     }
     auto f = fallback_.find(kind);
     return f == fallback_.end() ? 0.0 : grams / 1000.0 * f->second;
+}
+
+std::optional<double> CostTable::per_kg(const std::string &name) const
+{
+    auto it = per_kg_.find(name);
+    if (it == per_kg_.end())
+    {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+CostSource CostTable::source_of(const std::string &name) const
+{
+    auto it = source_.find(name);
+    return it == source_.end() ? CostSource::Placeholder : it->second;
+}
+
+std::string to_string(CostSource source)
+{
+    switch (source)
+    {
+    case CostSource::KitchenOs:
+        return "KitchenOS";
+    case CostSource::Estimate:
+        return "estimate";
+    case CostSource::Placeholder:
+        return "placeholder";
+    }
+    return "placeholder";
+}
+
+bool BowlCost::complete() const
+{
+    return std::all_of(lines.begin(), lines.end(), [](const BowlCostLine &l) { return l.known; });
+}
+
+bool BowlCost::all_kitchenos() const
+{
+    return std::all_of(lines.begin(), lines.end(),
+                       [](const BowlCostLine &l) { return l.known && l.source == CostSource::KitchenOs; });
+}
+
+double BowlCost::kitchenos_share() const
+{
+    if (total <= 0)
+    {
+        return 0.0;
+    }
+    double kos = 0.0;
+    for (const BowlCostLine &l : lines)
+    {
+        if (l.known && l.source == CostSource::KitchenOs)
+        {
+            kos += l.cost;
+        }
+    }
+    return kos / total;
+}
+
+BowlCost cost_bowl(const std::vector<BowlItem> &items, const CostTable &costs)
+{
+    BowlCost out;
+    for (const BowlItem &it : items)
+    {
+        BowlCostLine l;
+        l.name = it.name;
+        l.kind = it.kind;
+        l.grams = it.final_g;
+        l.cost = costs.cost_of(it.name, it.kind, it.final_g, &l.known);
+        l.source = costs.source_of(it.name);
+        out.total += l.cost;
+        out.lines.push_back(std::move(l));
+    }
+    return out;
 }
 
 //

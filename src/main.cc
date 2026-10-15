@@ -10,6 +10,7 @@
 
 #include <QApplication>
 #include <QGuiApplication>
+#include <QLoggingCategory>
 #include <QCommandLineParser>
 #include <QDateTime>
 #include <QDir>
@@ -346,6 +347,11 @@ int main(int argc, char **argv)
     // --scale has to be applied before the QApplication reads the environment.
     for (int i = 1; i + 1 < argc; ++i)
         if (QString(argv[i]) == "--scale") qputenv("QT_SCALE_FACTOR", argv[i + 1]);
+
+    // Qt's Wayland plugin warns each time a tooltip closes ("Trying to disable ... but
+    // 0x0 is focused"): tooltips never take keyboard focus, so there is nothing to
+    // disable. Harmless and only noise. QT_LOGGING_RULES still overrides this.
+    QLoggingCategory::setFilterRules("qt.qpa.wayland.textinput.warning=false");
 
     QApplication app(argc, argv);
     app.setApplicationName("Bowl Fill Simulator");

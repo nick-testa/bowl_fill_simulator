@@ -1407,10 +1407,16 @@ QWidget *MainWindow::build_settings()
         curve_note_ = make_label("", "note");
         v->addWidget(curve_note_);
 
-        v->addWidget(section_label("Measured mass → volume curves"));
+        auto *curve_head = new QHBoxLayout;
+        curve_head->addWidget(section_label("Measured mass → volume curves"));
+        curve_head->addStretch(1);
+        curve_filter_ = new CurveFilter;
+        curve_head->addWidget(curve_filter_);
+        v->addLayout(curve_head);
         curve_chart_ = new CurveChart;
         curve_chart_->setMinimumHeight(300);
         v->addWidget(curve_chart_);
+        connect(curve_filter_, &CurveFilter::changed, curve_chart_, &CurveChart::set_hidden);
         v->addStretch(1);
     }
 
@@ -1716,7 +1722,7 @@ QWidget *MainWindow::build_results()
     auto *sh = new QHBoxLayout(stats);
     sh->setContentsMargins(0, space::sm, 0, 0);
     sh->setSpacing(0);
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kStatTiles; ++i) {
         auto *tile = new QFrame;
         tile->setObjectName(i == 0 ? "statFirst" : "stat");
         auto *tv = new QVBoxLayout(tile);
@@ -1731,6 +1737,7 @@ QWidget *MainWindow::build_results()
         stat_tile_[i] = tile;
         sh->addWidget(tile, 1);
     }
+    stat_key_[kStatTiles - 1]->setText("Bowl COGS");
     vv->addSpacing(space::xs);
     vv->addWidget(stats);
 
@@ -2987,6 +2994,7 @@ void MainWindow::recompute()
                                                     : QString("%1 up").arg(vfr.passes_up));
         stat_value_[4]->setText(units::volume(vfr.limit_oz, true));
     }
+    show_bowl_cost(r.items);
 
     // ---- breakdown --------------------------------------------------------
     double total_oz = 0;
@@ -3130,6 +3138,7 @@ void MainWindow::recompute()
 
     ramp_chart_->set_show_uncompressed(settings.compress);
     ramp_chart_->set_result(r);
+    curve_filter_->set_options(qsl(curves_.ingredients()));
     curve_chart_->set_curves(&curves_, method());
 
     update_curve_note();
@@ -3499,8 +3508,15 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
     if (!adaptive_ && compress_->isChecked())
         list.push_back({"Compression is extrapolated: no loaded bowls were measured",
                         go_page(kCompression)});
+    {
+        QStringList unsourced;
+        for (const BowlItem &it : items)
+            if (costs_.per_kg(it.name) && costs_.source_of(it.name) != CostSource::KitchenOs)
+                unsourced << QString("%1 (%2)").arg(qs(it.name), qs(to_string(costs_.source_of(it.name))));
+        if (!unsourced.isEmpty())
+            list.push_back({QString("Price not from KitchenOS: %1").arg(unsourced.join(", ")), {}});
+    }
     if (ar) {
-        list.push_back({"Ingredient prices are placeholders (data/ingredient_costs.csv)", {}});
         for (const AdaptiveItem &it : ar->items)
             if (!it.cost_known)
                 list.push_back({QString("%1: no price, uses its kind's default").arg(qs(it.name)), {}});
@@ -3520,6 +3536,34 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
     for (const Estimate &e : estimates_list_) tip << QString("• ") + e.text;
     estimates_->setToolTip("What this bowl's numbers rest on that is not measured yet:\n"
                            + tip.join("\n"));
+}
+
+void MainWindow::show_bowl_cost(const std::vector<BowlItem> &items)
+{
+    const BowlCost c = cost_bowl(items, costs_);
+    QLabel *value = stat_value_[kStatTiles - 1];
+    // An asterisk when any price is an estimate, a placeholder or a kind default: the
+    // tooltip says which.
+    value->setText(c.lines.empty() ? QString("—")
+                                   : QString("$%1%2").arg(c.total, 0, 'f', 2)
+                                         .arg(c.all_kitchenos() ? "" : " *"));
+    QStringList tip;
+    tip << "Food cost of the finished bowl: each ingredient's final mass at its price in "
+           "data/ingredient_costs.csv. Sauce cups are not included.";
+    for (const BowlCostLine &l : c.lines) {
+        const std::optional<double> kg = costs_.per_kg(l.name);
+        tip << QString("• %1: %2 g → $%3 (%4)")
+                   .arg(qs(l.name))
+                   .arg(std::round(l.grams))
+                   .arg(l.cost, 0, 'f', 2)
+                   .arg(l.known ? QString("$%1/kg, %2").arg(*kg, 0, 'f', 2).arg(qs(to_string(l.source)))
+                                : QString("no price, its kind's default"));
+    }
+    if (!c.lines.empty() && !c.all_kitchenos())
+        tip << QString("%1% of this cost is priced from KitchenOS.")
+                   .arg(std::round(c.kitchenos_share() * 100));
+    value->setToolTip(tip.join("\n"));
+    stat_tile_[kStatTiles - 1]->setToolTip(value->toolTip());
 }
 
 void MainWindow::update_settings_summary(const FillUncertainty &u)
@@ -4017,6 +4061,7 @@ void MainWindow::render_adaptive()
     f.ounces_uncompressed = f.ounces;
     shim.frames.push_back(f);
     shim.fill = r.fill;
+    show_bowl_cost(shim.items);
     update_fill_note(shim);
     diagram_->set_result(shim);
     render_photos(shim.items);
@@ -4073,7 +4118,8 @@ void MainWindow::render_adaptive()
     if (!r.cost_complete)
         note += QString("<span style='color:%1'>Some ingredients fell back to a "
                         "per-kind default price.</span> ").arg(pal.over.name());
-    note += "All prices in <code>data/ingredient_costs.csv</code> are placeholders.";
+    note += "Prices are from <code>data/ingredient_costs.csv</code>; the Bowl COGS tile says "
+            "which came from KitchenOS.";
     foot_note_->setText(note);
 
     tol_chart_->set_result(r);
@@ -4081,6 +4127,7 @@ void MainWindow::render_adaptive()
     update_estimates(shim.items, &r);
 
 
+    curve_filter_->set_options(qsl(curves_.ingredients()));
     curve_chart_->set_curves(&curves_, method());
 }
 
