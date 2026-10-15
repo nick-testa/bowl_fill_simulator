@@ -2,11 +2,12 @@
 # cost the finished bowl in every dispense mode.
 #
 # source says where each price came from:
-#   kitchenos    COGS rolled up from the recipe by KitchenOS at Melwood
+#   kitchenos    KitchenOS COGS, pulled 2026-10-15: the recipe rollup at Melwood
 #                (ItemRegistryService/GetItemDefinitionRollup, includeCogs, lookbackDays -1),
-#                pulled 2026-10-15. Recipe inputs KitchenOS has no price for count as $0;
-#                the note says when that understates the item noticeably.
-#   estimate     KitchenOS has no cost for this item at all; a wholesale estimate stands in.
+#                with org-level purchase prices (items_cog_snapshot with no facility,
+#                "Promoted from the R&D purchase cost") filling any item or recipe input
+#                Melwood has no price for. The rollup alone ignores those org-level prices.
+#   estimate     KitchenOS has no cost anywhere; a wholesale estimate stands in.
 #   placeholder  pre-refresh menu item with no KitchenOS equivalent; an order-of-magnitude
 #                guess, not good enough to quote.
 # A row with no recognised source counts as a placeholder.
@@ -21,22 +22,22 @@
 ingredient,cost_per_kg,source,note
 
 # ---- bases
-White Rice,1.19,kitchenos,White Jasmine Rice retherm v1.1
-Mexican Rice,1.70,kitchenos,Mexican Rice [Retherm]; Roma tomato and onion uncosted (~+45% if priced)
-Lemon Couscous,4.92,kitchenos,Lemon Couscous Expo
-Lemon Orzo,3.16,kitchenos,
-Romaine Base,3.50,estimate,no KitchenOS cost for Romaine [Chop]; raw romaine $39.80 per 24 heads at ~475 g usable each
+White Rice,1.22,kitchenos,White Jasmine Rice retherm v1.1
+Mexican Rice,2.15,kitchenos,Mexican Rice [Retherm]; org-level Roma tomato onion and bouillon
+Lemon Couscous,4.96,kitchenos,Lemon Couscous Expo
+Lemon Orzo,3.41,kitchenos,org-level bouillon
+Romaine Base,1.77,kitchenos,Romaine [Chop] (same item); org-level Lettuce Romaine $43.19 per 24.4 kg; chop yields 1:1
 Massaged Kale,5.20,placeholder,KitchenOS has the recipe but not the kale price
 Brown Rice and Lentils,2.30,placeholder,
 
 # ---- proteins
-Suadero Beef,27.97,kitchenos,Suadero Beef [Cooked]; beef chuck flap is ~96% of it
-Pork Carnitas,9.23,kitchenos,Pork Carnitas [Cooked] v1.1
-Beef Chile con Carne,8.40,kitchenos,onion and ancho chile uncosted
-Beef Chile con Carne Dry,8.35,kitchenos,onion and ancho chile uncosted
-Chicken Al Pastor,8.05,kitchenos,Roma tomato uncosted (~+10% if priced)
-Jerk Chicken,7.93,kitchenos,
-Guajillo Cumin Chicken,7.54,kitchenos,Guajillo / Cumin Chicken [cooked]
+Suadero Beef,28.08,kitchenos,Suadero Beef [Cooked]; beef chuck flap is ~96% of it
+Pork Carnitas,9.25,kitchenos,Pork Carnitas [Cooked] v1.1
+Beef Chile con Carne,9.38,kitchenos,org-level onion ancho chile and soy
+Beef Chile con Carne Dry,9.12,kitchenos,org-level onion ancho chile and soy
+Chicken Al Pastor,8.82,kitchenos,org-level Roma tomato and onion
+Jerk Chicken,8.15,kitchenos,org-level soy sugar and allspice; Maggi and turmeric unpriced
+Guajillo Cumin Chicken,7.56,kitchenos,Guajillo / Cumin Chicken [cooked]
 Chicken Herby,11.50,placeholder,
 Chicken Tex-Mex,11.50,placeholder,
 Braised Beef,17.00,placeholder,
@@ -45,14 +46,14 @@ Seared Pork,10.50,placeholder,
 Broccoli,4.20,placeholder,counted as a protein on the menu
 
 # ---- toppings
-Garlic Green Beans,22.57,kitchenos,raw green beans priced at $14.08/kg on 2026-09-25 (was $6.59/kg in Aug)
-Tabbouleh,7.63,kitchenos,Cucumber-Quinoa Tabbouleh [Mixed]; English cucumber uncosted (~+10% if priced)
-Corn Salad,4.39,kitchenos,Corn Salad Make 1.1; onion and cilantro uncosted (~+30% if priced)
-Pineapple-Cucumber Salad,3.93,kitchenos,English cucumber and onion uncosted (~+30% if priced)
-Sweet Potatoes Roasted Glazed,3.76,kitchenos,
-Mexican Slaw,1.19,kitchenos,cabbage onion and cilantro uncosted (~3.5x if priced)
-Cheese Cheddar Monterey Jack,9.00,estimate,no KitchenOS cost for the shredded cheddar-jack blend
-Pico de Gallo,4.00,estimate,no KitchenOS cost
+Garlic Green Beans,22.60,kitchenos,raw green beans priced at $14.08/kg on 2026-09-25 (was $6.59/kg in Aug)
+Tabbouleh,9.01,kitchenos,Cucumber-Quinoa Tabbouleh [Mixed]; org-level cucumber and sumac; Knorr veggie powder unpriced
+Corn Salad,5.39,kitchenos,Corn Salad Make 1.1; org-level onion and cilantro
+Pineapple-Cucumber Salad,5.95,kitchenos,org-level cucumber and onion
+Sweet Potatoes Roasted Glazed,3.83,kitchenos,
+Mexican Slaw,3.95,kitchenos,org-level cabbage onion and cilantro (3.3x the Melwood rollup alone)
+Cheese Cheddar Monterey Jack,6.00,kitchenos,CHEESE CHEDDAR MONTEREY JACK BLEND SHREDDED; org-level purchase price
+Pico de Gallo,5.60,kitchenos,org-level purchase price; bought in
 Black Beans,2.60,placeholder,
 Corn,2.40,placeholder,
 Couscous,2.60,placeholder,

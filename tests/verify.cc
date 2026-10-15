@@ -525,10 +525,10 @@ int main()
         } else {
             std::printf("  ok   cost table loaded, %d priced ingredients\n", costs.size());
         }
-        // 100 g of romaine at 3.50/kg.
+        // 100 g of romaine at 1.77/kg.
         bool known = false;
         expect_near("cost of 100 g romaine",
-                    costs.cost_of("Romaine Base", Kind::Base, 100, &known), 0.35, 0.001);
+                    costs.cost_of("Romaine Base", Kind::Base, 100, &known), 0.177, 0.001);
         ++checks;
         if (!known) { ++failures; std::printf("  FAIL romaine should be a real entry\n"); }
         else std::printf("  ok   romaine priced from the table\n");
@@ -538,10 +538,10 @@ int main()
         if (unknown_known) { ++failures; std::printf("  FAIL unlisted should fall back\n"); }
         else std::printf("  ok   unlisted ingredient falls back and is flagged\n");
 
-        // The source column: KitchenOS prices, estimates, and placeholders for the rest.
+        // The source column: KitchenOS prices, and placeholders for the rest.
         ++checks;
         if (costs.source_of("Suadero Beef") != CostSource::KitchenOs
-            || costs.source_of("Romaine Base") != CostSource::Estimate
+            || costs.source_of("Romaine Base") != CostSource::KitchenOs
             || costs.source_of("Chicken Herby") != CostSource::Placeholder
             || costs.source_of("Nonesuch") != CostSource::Placeholder) {
             ++failures;
@@ -559,7 +559,7 @@ int main()
         bowl[1].start_g = 170;
         bowl[1].final_g = 170;
         const BowlCost bc = cost_bowl(bowl, costs);
-        expect_near("bowl cost at final masses", bc.total, 0.255 * 1.19 + 0.170 * 7.54, 0.001);
+        expect_near("bowl cost at final masses", bc.total, 0.255 * 1.22 + 0.170 * 7.56, 0.001);
         ++checks;
         if (!bc.complete() || !bc.all_kitchenos()) {
             ++failures;
