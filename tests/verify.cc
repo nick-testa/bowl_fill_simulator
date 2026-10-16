@@ -1510,19 +1510,26 @@ int main()
         std::string spelling;
         for (const MenuName &n : farmstand->names)
             if (n.name == "Romaine Base") spelling = n.raw;
-        expect_true("rows are keyed by brand and the production spelling, with the window's curve",
-                    ex.source.find(std::format("{{\"Farmstand\", \"{}\", VolumeFillKind::Base, {}, {}, 0, 0}}",
-                                               spelling, r.K, r.p))
+        expect_true("rows are keyed by the production spelling, with the window's curve",
+                    ex.source.find(std::format("{{\"{}\", VolumeFillKind::Base, {}, {}, 0}}", spelling, r.K, r.p))
                         != std::string::npos);
         expect_true("sauces are cups, with no curve",
-                    ex.source.find("\"BIG JERK\", \"MintCilantro Chutney portion\", VolumeFillKind::Sauce, 0, 1")
+                    ex.source.find("{\"MintCilantro Chutney portion\", VolumeFillKind::Sauce, 0, 1, 0}")
                         != std::string::npos);
-        // Brands may serve one spelling differently (Farmstand cups black beans that The
-        // Hungry Cowgirl dispenses), so each brand that serves a spelling has its own row.
-        size_t brands_with_rice = 0;
-        for (size_t at = 0; (at = ex.source.find(", \"White Jasmine Rice retherm v11\",", at)) != std::string::npos; ++at)
-            ++brands_with_rice;
-        expect_true("a spelling several brands share has a row for each", brands_with_rice >= 2);
+        size_t rice_rows = 0;
+        for (const VolumeFillRow &row : ex.rows)
+            if (row.ingredient_name == "White Jasmine Rice retherm v11") {
+                ++rice_rows;
+                expect_true("an ingredient lists every brand that serves it", row.brands.size() >= 2);
+            }
+        expect_near("an ingredient has one curve whichever brands serve it", rice_rows, 1, 0.01);
+        bool flat_ok = true;
+        for (const VolumeFillRow &row : ex.rows)
+            if (row.source == "flat-rate placeholder") flat_ok = flat_ok && row.p == 1.0 && row.k > 0;
+        expect_true("a flat rate is written as a curve with p = 1", flat_ok);
+        expect_true("the manifest lists curves and sauces apart",
+                    ex.manifest.find("\"volume_curves\"") != std::string::npos
+                        && ex.manifest.find("\"sauces\"") != std::string::npos);
         expect_true("settings carry over", ex.source.find(".fit_share = 0.85,") != std::string::npos
                                                && ex.source.find(".compress = true,") != std::string::npos);
         expect_true("Manual Entry is not a brand", ex.source.find("\"Manual Entry\"") == std::string::npos);

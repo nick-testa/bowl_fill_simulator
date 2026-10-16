@@ -167,12 +167,11 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
     return 0;
 }
 
-/// Headless volume-per-gram table: what each ingredient's step adds, and the step that
-/// would add `target_ml`, for choosing volume-proportional steps.
-/// Writes lab37's volume_fill_curves.cc: every brand's curves keyed by production
-/// ingredient name, and Volume Fill's settings as last set in the window. Compression
-/// and the bowl's capacity are not remembered by the window, so they take its defaults.
-int run_export_volume_fill(const QString &asset_dir, const QString &path)
+/// Writes lab37's volume_fill_curves.cc (the default curve of every ingredient, keyed by
+/// production name, and Volume Fill's settings as last set in the window) and, given a
+/// manifest path, the JSON of values for the Catalog's volume_curve fields. Compression and
+/// the bowl's capacity are not remembered by the window, so they take its defaults.
+int run_export_volume_fill(const QString &asset_dir, const QString &path, const QString &manifest_path)
 {
     using namespace bowlfill;
     QTextStream err(stderr);
@@ -188,14 +187,24 @@ int run_export_volume_fill(const QString &asset_dir, const QString &path)
     settings.load_transfer = 1.0;
     const VolumeFillExport ex =
         export_volume_fill(loaded.menus, curves, Method::Robot, settings, configured_volume_fill());
+    for (const std::string &c : ex.conflicts) err << "brands disagree: " << qs(c) << "\n";
     if (!write_text(ss(path), ex.source)) {
         err << "could not write " << path << "\n";
         return 2;
     }
-    err << ex.rows << " ingredients written to " << path << "\n";
+    err << ex.rows.size() << " ingredients written to " << path << "\n";
+    if (!manifest_path.isEmpty()) {
+        if (!write_text(ss(manifest_path), ex.manifest)) {
+            err << "could not write " << manifest_path << "\n";
+            return 2;
+        }
+        err << "Catalog values written to " << manifest_path << "\n";
+    }
     return 0;
 }
 
+/// Headless volume-per-gram table: what each ingredient's step adds, and the step that
+/// would add `target_ml`, for choosing volume-proportional steps.
 int run_steps(const QString &asset_dir, const QString &want, double target_ml)
 {
     using namespace bowlfill;
@@ -448,10 +457,15 @@ int main(int argc, char **argv)
                                    "cups at their contents, instead of by height under the lid.");
     parser.addOption(volume_only);
     QCommandLineOption export_vf("export-volume-fill",
-                                 "Write lab37's volume_fill_curves.cc (curves by production "
-                                 "ingredient name, and Volume Fill's settings) and exit.",
+                                 "Write lab37's volume_fill_curves.cc (default curves by "
+                                 "production ingredient name, and Volume Fill's settings) and exit.",
                                  "file");
     parser.addOption(export_vf);
+    QCommandLineOption catalog_manifest("catalog-manifest",
+                                        "With --export-volume-fill, also write the values for the "
+                                        "Catalog's volume_curve fields as JSON.",
+                                        "file");
+    parser.addOption(catalog_manifest);
     parser.process(app);
     const QString asset_dir = parser.isSet(assets) ? QDir(parser.value(assets)).absolutePath()
                                                    : default_asset_dir();
@@ -465,7 +479,8 @@ int main(int argc, char **argv)
                              parser.isSet(volume_only));
 
     if (parser.isSet(export_vf))
-        return run_export_volume_fill(asset_dir, parser.value(export_vf));
+        return run_export_volume_fill(asset_dir, parser.value(export_vf),
+                                      parser.value(catalog_manifest));
 
     if (parser.isSet(steps))
         return run_steps(asset_dir, parser.value(steps),
