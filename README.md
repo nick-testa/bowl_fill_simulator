@@ -313,24 +313,30 @@ offscreen surface is 1x otherwise, and small chart labels suffer for it.
 
 ## Exporting Volume Fill to lab37
 
-lab37 runs Volume Fill in `lab37/orders/volume_fill_algorithm.cc`, reading its curves
-and settings from the generated `lab37/orders/volume_fill_curves.cc`. To update that
-file after new measurements, mappings or settings:
+lab37 runs Volume Fill in `lab37/orders/volume_fill_algorithm.cc`. Each ingredient's
+curve comes from the Catalog (`RobotBrandConfig.ingredients[name].volume_curve`) when it
+is set there, and otherwise from the defaults compiled into
+`lab37/orders/volume_fill_curves.cc`; anything in the Catalog's `sauces` is a cup. To
+update the defaults, and write the values the Catalog should hold, after new
+measurements, mappings or settings:
 
 ```
-./build/bowl-fill-simulator --export-volume-fill ~/Projects/lab37/lab37/orders/volume_fill_curves.cc
+./build/bowl-fill-simulator --export-volume-fill ~/Projects/lab37/lab37/orders/volume_fill_curves.cc \
+    --catalog-manifest volume_fill_catalog.json
 ```
 
-It writes one row per brand and production ingredient spelling (as customizations name
-it), with the Robot-method curve the window would choose, and the fit share, minimum
-share and bowl, lid and cup dimensions last set in the window. Compression is on with a
-load transfer of 1 and the capacity is 32 oz, the window's defaults. A brand turns it on
-by setting `algorithm` (`Shadow` or `VolumeFill`) and `volume_fill_brand` (the brand's
-name here, e.g. `ORO`) on its `dynamic_portion_increases` entry.
+It writes one row per production ingredient spelling (as customizations and the Catalog
+name it), with the Robot-method curve the window would choose; a flat rate is written as
+`k = rate / 100`, `p = 1`. An ingredient has one curve whichever brands serve it. Where
+brands disagree (one cups an ingredient another dispenses), the dispensed curve is kept
+and the disagreement is printed. The defaults also carry the fit share, minimum share and
+bowl, lid and cup dimensions last set in the window; compression is on with a load
+transfer of 1 and the capacity is 32 oz, the window's defaults.
 
-The fit target and step-down floor exported here are the defaults for every brand. A
-brand can override either without a release by setting `volume_fill_fit_share` or
-`volume_fill_min_share` on the same entry, as a fraction (`0.8` is 80% of the food room).
+A brand turns Volume Fill on by setting `algorithm` (`Shadow` or `VolumeFill`) on its
+`dynamic_portion_increases` entry, and can override the fit target and step-down floor
+without a release with `volume_fill_fit_share` or `volume_fill_min_share`, as fractions
+(`0.8` is 80% of the food room).
 
 ## Known limits
 
