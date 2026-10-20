@@ -1766,6 +1766,21 @@ int main()
         expect_eq("romaine pools with the greens", automatic_group("Romaine Base"), "green");
         expect_eq("a chicken pools with the proteins", automatic_group("Guajillo Cumin Chicken"), "protein");
         expect_eq("a salsa pools with the toppings", automatic_group("Pico de Gallo"), "topping");
+        expect_eq("a listed protein's group does not depend on its case", automatic_group("broccoli"),
+                  automatic_group("Broccoli"));
+        expect_eq("nor does a listed green's", automatic_group("ROMAINE BASE"), "green");
+        {
+            // Two spellings of one ingredient, from different files, fit as one ingredient in one group.
+            CurveSet two;
+            two.add({"Broccoli", 50.0, 2.0, "a.csv"});
+            two.add({"broccoli", 100.0, 4.0, "b.csv"});
+            two.refit();
+            const std::string in = fit_input_csv(two);
+            expect_true("both spellings carry the first spelling's group",
+                        in.find("Broccoli,protein,a.csv") != std::string::npos
+                            && in.find("Broccoli,protein,b.csv") != std::string::npos
+                            && in.find(",topping,") == std::string::npos);
+        }
         const IngredientGroups set_by_hand = {{"Lemon Couscous", "grain"}, {"Sweet Potato", "dense topping"}};
         expect_eq("a listed group wins, whatever the case", pooling_group("lemon couscous", set_by_hand), "grain");
         expect_eq("a user's own group", pooling_group("sweet potato", set_by_hand), "dense topping");

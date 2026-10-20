@@ -1333,17 +1333,31 @@ const std::vector<std::string> kAutomaticGroups = {"grain", "green", "protein", 
 
 std::string automatic_group(const std::string &name)
 {
-    switch (kind_of(name))
+    // The named bases and proteins match by exact spelling in kind_of and family_of, but a
+    // measurement file may spell one in lower case ("broccoli"), and its group must not
+    // depend on that: use the listed spelling when the name is one of them.
+    std::string canonical = name;
+    for (const std::vector<std::string> *list : {&kBases, &kProteins})
+    {
+        for (const std::string &listed : *list)
+        {
+            if (iequals(listed, trim(name)))
+            {
+                canonical = listed;
+            }
+        }
+    }
+    switch (kind_of(canonical))
     {
     case Kind::Base:
     {
-        const std::string family = family_of(name);
+        const std::string family = family_of(canonical);
         return family.empty() ? "grain" : family;
     }
     case Kind::Protein:
         return "protein";
     case Kind::Topping:
-        return is_sauce(name) ? "sauce" : "topping";
+        return is_sauce(canonical) ? "sauce" : "topping";
     }
     return "topping";
 }

@@ -65,21 +65,21 @@ std::string fit_input_csv(const CurveSet &curves)
         {
             continue;
         }
-        rows.push_back({to_lower(o.ingredient),
-                        o.ingredient,
-                        curves.group_of(o.ingredient),
-                        o.batch,
-                        o.grams,
-                        o.ounces * CurveSet::kMlPerFlOz});
+        rows.push_back({to_lower(o.ingredient), o.ingredient, {}, o.batch, o.grams, o.ounces * CurveSet::kMlPerFlOz});
     }
     std::sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) {
         return std::tie(a.key, a.batch, a.g, a.ml) < std::tie(b.key, b.batch, b.g, b.ml);
     });
-    // The first spelling of an ingredient names it throughout, as CurveSet does.
+    // The first spelling of an ingredient names it throughout, as CurveSet does, and sets
+    // its group, so two spellings of one ingredient can never land in different groups.
     std::map<std::string, std::string> spelling;
     for (const Observation &o : curves.observations())
     {
         spelling.try_emplace(to_lower(o.ingredient), o.ingredient);
+    }
+    for (Row &r : rows)
+    {
+        r.group = curves.group_of(spelling.at(r.key));
     }
     std::string out = "ingredient,group,batch,g,ml\n";
     for (const Row &r : rows)
