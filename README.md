@@ -190,6 +190,54 @@ Curves are robot-only. Hand-filled bowls held about 5.8% more volume at equal ma
 concentrated in the greens, and production is robot-filled, so hand-filled
 measurements are skipped.
 
+## Fitted curves
+
+The curves are fitted **together**, as one hierarchical Bayesian model
+(`tools/fit_curves.py`, PyMC), and the app reads the result from
+`data/fitted_curves.json`:
+
+- Each ingredient keeps its own power law, but ingredients in a **pool group** share
+  a typical size, and all foods share a typical shape. An ingredient with plenty of
+  data follows its own points; one with a handful is pulled toward its group, in
+  proportion to how little its points say.
+- Every measurement file counts as one **batch**, and batches may sit above or below
+  an ingredient's typical batch. How much they vary is learned from the ingredients
+  measured on more than one day, and applies to all of them.
+- An ingredient with **no measurements** takes its group's typical curve, with a
+  spread that reflects how much the group's members differ. A group with nothing
+  measured falls back to the flat rate.
+- Each curve carries a **new-batch spread**: how far one bowl from a batch nobody has
+  measured lands from the curve (batch variation, the curve's own uncertainty and bowl
+  scatter together). Every range and overfill chance in the app is built from it, plus
+  the dispense variation. Production never fills from a measured batch, so this is the
+  honest spread.
+
+**Pool groups** are set per ingredient in `data/ingredient_groups.csv`
+(`ingredient,group`), or in the Ingredients dialog's *Pool group* column, where typing a
+new name starts a group. Unlisted ingredients take an automatic group: `grain` or
+`green` for a base, `protein`, or `topping`.
+
+**Refitting.** After adding measurements or changing groups, run
+
+```
+uv run tools/fit_curves.py
+```
+
+It asks the app for exactly the points it loads (`--export-fit-input`, so the camera
+zero, `scale_g`, backfill and the drop-impossible setting all apply), samples for about
+a minute, and writes `data/fitted_curves.json`. Press **Reload** (or restart) to use it.
+Review the diff and commit the JSON with the measurements it was fitted on. The script
+stops with a warning if the sampler had trouble (divergences, r̂ above 1.01).
+
+The JSON records a fingerprint of the points and groups it was fitted on. When they
+change, the header shows **Fitted curves out of date** (and the command-line reports
+say so): the old fit stays in use, and any ingredient it does not cover uses least
+squares until refitted. With no JSON at all the header shows **Curves not fitted**, and
+every curve is least squares with no batch term.
+
+The model, its priors and what partial pooling does to each ingredient are walked
+through in `curve_model_selection.ipynb` (sections 10 and 11).
+
 ## Tests
 
 ```bash
