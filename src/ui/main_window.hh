@@ -110,6 +110,11 @@ private slots:
     void show_issues();
     void show_fit_state();
     void show_mappings();
+    /// Re-reads the per-ingredient files (aliases, pieces, mounds, roll-off, pool groups), which
+    /// other programs, scripts or another copy of the app may have changed since they were
+    /// loaded, and refreshes whatever depends on them. False, with `problems` set, when one cannot
+    /// be read; nothing is replaced then.
+    bool reload_ingredient_files(QStringList *problems);
     void toggle_theme();
     void set_units(bool metric);
 

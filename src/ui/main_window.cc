@@ -30,6 +30,7 @@
 #include <QCompleter>
 #include <QDesktopServices>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QUrl>
 #include <QDoubleSpinBox>
@@ -2135,8 +2136,57 @@ void MainWindow::update_mapping_note()
                   .arg(brands.size()).arg(brands.size() == 1 ? "" : "s"));
 }
 
+bool MainWindow::reload_ingredient_files(QStringList *problems)
+{
+    NameMappings maps;
+    PieceHeights pieces;
+    MoundSlopes slopes;
+    RollOffAngles rolls;
+    IngredientGroups groups;
+    std::string err;
+    auto read = [&](bool ok) {
+        if (!ok && problems) *problems << qs(err);
+        return ok;
+    };
+    // Every file is read, so each problem is reported, before anything is replaced.
+    bool ok = read(load_name_mappings(ss(mappings_path()), maps, &err));
+    ok = read(load_piece_heights(ss(pieces_path()), pieces, &err)) && ok;
+    ok = read(load_mound_slopes(ss(mounds_path()), slopes, &err)) && ok;
+    ok = read(load_roll_off(ss(rolloff_path()), rolls, &err)) && ok;
+    ok = read(load_ingredient_groups(ss(groups_path()), groups, &err)) && ok;
+    if (!ok) return false;
+
+    const bool regroup = groups != groups_;
+    const bool changed = regroup || maps != name_maps_ || pieces != pieces_ || slopes != mound_slopes_
+                         || rolls != roll_off_;
+    name_maps_ = std::move(maps);
+    pieces_ = std::move(pieces);
+    mound_slopes_ = std::move(slopes);
+    roll_off_ = std::move(rolls);
+    groups_ = std::move(groups);
+    if (regroup) reload_measurements();   // new groups make the fitted curves out of date
+    if (changed) reload_menus();
+    return true;
+}
+
 void MainWindow::show_mappings()
 {
+    // Open on the files as they are now, not as they were when the app started: anything that
+    // changed them since (an edit by hand, a script, another copy of the app) would otherwise be
+    // silently reverted by the next save.
+    QStringList problems;
+    if (!reload_ingredient_files(&problems)) {
+        QMessageBox::warning(this, "Could not read ingredient files", problems.join("\n"));
+        return;
+    }
+    auto bytes = [](const QString &path) {
+        QFile f(path);
+        return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
+    };
+    const QStringList paths = {mappings_path(), pieces_path(), mounds_path(), rolloff_path(), groups_path()};
+    QList<QByteArray> at_open;
+    for (const QString &p : paths) at_open << bytes(p);
+
     const std::vector<Menu> loaded = loaded_menus();
     MappingDialog dialog(loaded, name_maps_, pieces_, mound_slopes_, roll_off_, groups_,
                          brand_->currentData().toString(), this);
@@ -2146,11 +2196,32 @@ void MainWindow::show_mappings()
     const MoundSlopes next_slopes = dialog.slopes();
     const RollOffAngles next_rolls = dialog.rolls();
     const IngredientGroups next_groups = dialog.groups();
+
+    // A file changed while the dialog was open would be overwritten by what the dialog shows.
+    QStringList moved;
+    for (int i = 0; i < paths.size(); ++i)
+        if (bytes(paths[i]) != at_open[i]) moved << QFileInfo(paths[i]).fileName();
+    if (!moved.isEmpty()) {
+        QMessageBox box(this);
+        box.setWindowTitle("Ingredient files changed");
+        box.setIcon(QMessageBox::Warning);
+        box.setText(QString("%1 changed on disk while the Ingredients dialog was open.")
+                        .arg(moved.join(", ")));
+        box.setInformativeText("Saving replaces those changes with what the dialog shows. Cancel "
+                               "keeps the files as they are; reopen the dialog to see the changes.");
+        QPushButton *save = box.addButton("Save anyway", QMessageBox::DestructiveRole);
+        box.addButton(QMessageBox::Cancel);
+        box.setDefaultButton(QMessageBox::Cancel);
+        box.exec();
+        if (box.clickedButton() != save) return;
+    }
+
+    // Only files whose contents changed are written.
     std::string err;
-    if (!save_name_mappings(ss(mappings_path()), next, &err)
-        || !save_piece_heights(ss(pieces_path()), next_pieces, &err)
-        || !save_mound_slopes(ss(mounds_path()), next_slopes, &err)
-        || !save_roll_off(ss(rolloff_path()), next_rolls, &err)
+    if ((next != name_maps_ && !save_name_mappings(ss(mappings_path()), next, &err))
+        || (next_pieces != pieces_ && !save_piece_heights(ss(pieces_path()), next_pieces, &err))
+        || (next_slopes != mound_slopes_ && !save_mound_slopes(ss(mounds_path()), next_slopes, &err))
+        || (next_rolls != roll_off_ && !save_roll_off(ss(rolloff_path()), next_rolls, &err))
         || (next_groups != groups_ && !save_ingredient_groups(ss(groups_path()), next_groups, &err))) {
         QMessageBox::warning(this, "Could not save ingredients", qs(err));
         return;
