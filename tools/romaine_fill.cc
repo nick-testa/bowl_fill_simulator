@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     const int t_lo = parser.value(min_top).toInt(), t_hi = parser.value(max_top).toInt();
     const QString want = parser.value(brand);
 
-    const Fit *rfit = curves.fit(kRomaine, Method::Robot);
+    const Fit *rfit = curves.fit(kRomaine);
     if (!rfit) {
         err << "no robot curve for " << qs(kRomaine) << "\n";
         return 2;
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
             continue;
         }
         matched = true;
-        const BowlItem rproto = make_item(*romaine, curves, Method::Robot);
+        const BowlItem rproto = make_item(*romaine, curves);
 
         std::vector<const Ingredient *> proteins, toppings;
         for (const std::string &n : menu.names_of(Kind::Protein)) proteins.push_back(menu.find(n));
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
             if (n == kRomaine) continue;
             const Ingredient *b = menu.find(n);
             if (!b || b->full_portion() <= 0) continue;
-            BowlItem it = make_item(*b, curves, Method::Robot);
+            BowlItem it = make_item(*b, curves);
             const double full = b->full_portion();
             BowlItem by_mass = it, by_vol = it;
             by_mass.start_g = full * 0.5;
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
         std::unordered_map<std::string, BowlItem> proto;
         for (const auto *pool : {&proteins, &toppings})
             for (const Ingredient *i : *pool) {
-                BowlItem it = make_item(*i, curves, Method::Robot);
+                BowlItem it = make_item(*i, curves);
                 it.start_g = i->full_portion();
                 proto.insert_or_assign(i->name, it);
             }

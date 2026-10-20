@@ -154,7 +154,7 @@ SimResult run_recipe(const Menu &menu, const std::string &recipe_name, const Cur
         ++checks;
         return {};
     }
-    std::vector<BowlItem> items = bowl_from_recipe(menu, *rec, curves, Method::Robot);
+    std::vector<BowlItem> items = bowl_from_recipe(menu, *rec, curves);
     SimSettings s;
     s.bowl_capacity_oz = cap;
     if (const FloorRule *f = menu.floor_for(names_in(items)))
@@ -184,7 +184,7 @@ int main()
         {"Romaine Base",  0.311, 0.938, 0.983, 67, 141},
     };
     for (const auto &e : expected) {
-        const Fit *f = curves.fit(e.name, Method::Robot);
+        const Fit *f = curves.fit(e.name);
         if (!f) { std::printf("  FAIL no fit for %s\n", e.name); ++failures; ++checks; continue; }
         expect_near(std::format("{} K", e.name), f->K, e.K, 0.002);
         expect_near(std::format("{} p", e.name), f->p, e.p, 0.002);
@@ -193,11 +193,10 @@ int main()
         expect_near(std::format("{} range hi", e.name), f->hi_g, e.hi, 0.01);
         expect_near(std::format("{} n", e.name), f->n, 6, 0.01);
     }
-    // Hand-filled bowls hold more volume at equal mass; kale is the extreme case.
-    if (const Fit *h = curves.fit("Massaged Kale", Method::Hand))
-        expect_near("Massaged Kale hand K", h->K, 1.318, 0.002);
-    if (const Fit *a = curves.fit("Massaged Kale", Method::Pooled))
-        expect_near("Massaged Kale pooled n", a->n, 12, 0.01);
+    // Curves are robot-only: the bundled set's hand-filled half is skipped, so each
+    // curve rests on its six robot bowls alone.
+    if (const Fit *k = curves.fit("Massaged Kale"))
+        expect_near("Massaged Kale uses only robot bowls", k->n, 6, 0.01);
 
     std::printf("\nMenu loading\n");
     LoadResult loaded = load_menus(assets + "/menus");
@@ -375,9 +374,9 @@ int main()
     std::printf("\nBuild-your-own default (Farmstand, romaine + first protein)\n");
     {
         std::vector<BowlItem> items;
-        items.push_back(make_item(*farmstand->find("Romaine Base"), curves, Method::Robot,
+        items.push_back(make_item(*farmstand->find("Romaine Base"), curves,
                                   3.5, 4.5));
-        items.push_back(make_item(*farmstand->find("Chicken Herby"), curves, Method::Robot,
+        items.push_back(make_item(*farmstand->find("Chicken Herby"), curves,
                                   3.5, 4.5));
         SimSettings s;
         s.floor_g = farmstand->floor_for(names_in(items))->minimum_product_weight_g;
@@ -391,7 +390,7 @@ int main()
 
     std::printf("\nCompression model (reduces to the plain fit at zero load)\n");
     {
-        const Fit *f = curves.fit("Massaged Kale", Method::Robot);
+        const Fit *f = curves.fit("Massaged Kale");
         BowlItem kale;
         kale.name = "Massaged Kale";
         kale.kind = Kind::Base;
@@ -422,27 +421,31 @@ int main()
         CurveSet c2;
         std::string e;
         c2.load_csv(assets + "/tests/data/mass_to_volume.csv", &e);
-        expect_near("built-in rows", c2.observations().size(), 36, 0.01);
+        expect_near("built-in rows (hand-filled half skipped)", c2.observations().size(), 18, 0.01);
         expect_near("built-in ingredients", c2.ingredients().size(), 3, 0.01);
 
         // A CSV that adds points to a known ingredient and introduces two new ones,
         // using the alternative column spellings and a missing method column.
-        const double kale_p_before = c2.fit("Massaged Kale", Method::Robot)->p;
+        const double kale_p_before = c2.fit("Massaged Kale")->p;
         int added = 0;
         std::vector<std::string> fresh;
         std::string note;
-        const bool ok = c2.load_csv(assets + "/tests/extra_curve.csv", &note, &added, &fresh);
+        int hand = 0;
+        const bool ok = c2.load_csv(assets + "/tests/extra_curve.csv", &note, &added, &fresh, &hand);
         ++checks;
         if (!ok) { ++failures; std::printf("  FAIL upload rejected: %s\n", note.c_str()); }
         else std::printf("  ok   upload accepted\n");
         expect_near("rows added", added, 7, 0.01);
+        expect_near("hand-filled rows skipped", hand, 1, 0.01);
+        expect_true("the upload note says hand rows were skipped", note.find("hand-filled") != std::string::npos);
+        expect_true("a hand-filled ingredient gets no curve", c2.count("Farro") == 0);
         expect_near("ingredients after", c2.ingredients().size(), 5, 0.01);
         expect_eq("new curves reported", join(fresh, ", "), "Quinoa, Sweet Potato");
 
         // "kale" and "KALE " must land in the existing bucket, not create new ones.
-        expect_near("kale robot n after", c2.count("Massaged Kale", Method::Robot), 8, 0.01);
+        expect_near("kale robot n after", c2.count("Massaged Kale"), 8, 0.01);
         ++checks;
-        if (std::fabs(c2.fit("Massaged Kale", Method::Robot)->p - kale_p_before) < 1e-9) {
+        if (std::fabs(c2.fit("Massaged Kale")->p - kale_p_before) < 1e-9) {
             ++failures;
             std::printf("  FAIL kale curve did not refit after new points\n");
         } else {
@@ -450,7 +453,7 @@ int main()
         }
 
         // A brand-new ingredient with four points gets a usable curve.
-        const Fit *sweet = c2.fit("Sweet Potato", Method::Robot);
+        const Fit *sweet = c2.fit("Sweet Potato");
         ++checks;
         if (!sweet || !sweet->valid) { ++failures; std::printf("  FAIL no Sweet Potato fit\n"); }
         else std::printf("  ok   Sweet Potato fitted: K=%.3f p=%.3f R2=%.3f\n",
@@ -459,7 +462,7 @@ int main()
 
         // One point is not a curve.
         ++checks;
-        if (c2.fit("Quinoa", Method::Pooled)) {
+        if (c2.fit("Quinoa")) {
             ++failures;
             std::printf("  FAIL a single point produced a curve\n");
         } else {
@@ -468,7 +471,7 @@ int main()
 
         // Reset must discard uploads and restore exactly the bundled set.
         c2.reset_to_builtin(assets + "/tests/data/mass_to_volume.csv");
-        expect_near("rows after reset", c2.observations().size(), 36, 0.01);
+        expect_near("rows after reset", c2.observations().size(), 18, 0.01);
         expect_near("ingredients after reset", c2.ingredients().size(), 3, 0.01);
 
         // A metric sheet is the same measurement in another unit: it must land on the
@@ -580,7 +583,7 @@ int main()
         auto recipe_items = [&](const Menu &m, const char *name) {
             auto it = std::find_if(m.recipes.begin(), m.recipes.end(),
                                    [&](const Recipe &r) { return r.name == name; });
-            return bowl_from_recipe(m, *it, curves, Method::Robot);
+            return bowl_from_recipe(m, *it, curves);
         };
 
         // The target is a share of the food room, so cups lower it.
@@ -693,7 +696,7 @@ int main()
         CostTable costs;
         costs.load_csv(assets + "/data/ingredient_costs.csv");
         const BrandAudit a =
-            audit_brand(*farmstand, curves, Method::Robot, ls, as, &costs);
+            audit_brand(*farmstand, curves, ls, as, &costs);
 
         expect_true("every recipe is audited",
                     a.rows.size() == farmstand->recipes.size());
@@ -741,7 +744,7 @@ int main()
         // A partial template pins only a protein; judging it as a finished bowl would
         // report a false failure, so it is separated rather than counted as one.
         const BrandAudit cow =
-            audit_brand(*cowgirl, curves, Method::Robot, ls, as, &costs);
+            audit_brand(*cowgirl, curves, ls, as, &costs);
         const RecipeAudit *pollo = row_named(cow, "Pollo Verde Asado Bowl");
         expect_true("a one-ingredient template is flagged partial, not complete",
                     pollo && !pollo->complete_bowl && !pollo->customer_built);
@@ -791,7 +794,7 @@ int main()
         expect_true("Yiayia's Garden is found", hank != nullptr);
         if (hank) {
             std::vector<BowlItem> items =
-                bowl_from_recipe(*farmstand, *hank, curves, Method::Robot);
+                bowl_from_recipe(*farmstand, *hank, curves);
             SimSettings s;
             s.floor_g = farmstand->floor_for(names_in(items))->minimum_product_weight_g;
             s.sauce.cups = 0;
@@ -1034,7 +1037,7 @@ int main()
         SimSettings no_compress;
         no_compress.compress = false;
         const bool finished =
-            run_sweep({farmstand}, curves, Method::Robot, no_compress, AdaptiveSettings{},
+            run_sweep({farmstand}, curves, no_compress, AdaptiveSettings{},
                       nullptr, base_only, out, {}, &totals);
         const std::string csv = out.str();
         expect_true("sweep runs to completion", finished);
@@ -1099,7 +1102,7 @@ int main()
             row({{"Romaine Base", 80}, {"Massaged Kale", 40}, {"Chicken Al Pastor", 100}}, 1),
         };
         auto ml = [&](const BowlRow &r) {
-            return predicted_scan_oz(r, curves, Method::Robot, truth) * CurveSet::kMlPerFlOz;
+            return predicted_scan_oz(r, curves, truth) * CurveSet::kMlPerFlOz;
         };
 
         const std::string path = temp_path("bowlfill-verify-bowls.csv");
@@ -1138,7 +1141,7 @@ int main()
         expect_near("ml converted to oz", pts.empty() ? 0 : pts[0].ounces,
                     390 / CurveSet::kMlPerFlOz, 1e-9);
 
-        const SquashFit fit = fit_squash(sheet, curves, Method::Robot);
+        const SquashFit fit = fit_squash(sheet, curves);
         expect_true("squash fit is valid", fit.valid);
         expect_near("squash recovers the generating factor", fit.load_transfer, truth, 0.01);
         expect_near("fitted error is ~0", fit.rmse_fitted_oz, 0.0, 0.01);
@@ -1154,9 +1157,9 @@ int main()
         auto fit_of = [](const std::vector<std::pair<double, double>> &pts, FitSpace space) {
             CurveSet c;
             c.set_fit_space(space);
-            for (const auto &[g, oz] : pts) c.add({"probe", Method::Robot, g, oz});
+            for (const auto &[g, oz] : pts) c.add({"probe", g, oz});
             c.refit();
-            const Fit *f = c.fit("probe", Method::Robot);
+            const Fit *f = c.fit("probe");
             return f ? *f : Fit{};
         };
         // Exact power-law data is recovered exactly.
@@ -1235,37 +1238,37 @@ int main()
         // Al Pastor has far more readings; each must still count once.
         const double kOz = CurveSet::kMlPerFlOz;
         for (double g = 50; g <= 200; g += 5)
-            c.add({"Chicken Al Pastor", Method::Robot, g, 1.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"Suadero Beef", Method::Robot, g, 2.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"test beans", Method::Robot, g, 9.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"Mexican Slaw", Method::Robot, g, 3.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"white rice", Method::Robot, g, 1.5 * g / kOz});
+            c.add({"Chicken Al Pastor", g, 1.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"Suadero Beef", g, 2.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"test beans", g, 9.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"Mexican Slaw", g, 3.0 * g / kOz});
+        for (double g : {50.0, 200.0}) c.add({"white rice", g, 1.5 * g / kOz});
         c.refit();
 
         std::vector<std::string> members;
-        const Fit pro = composite_curve(Kind::Protein, c, Method::Robot, &members);
+        const Fit pro = composite_curve(Kind::Protein, c, &members);
         expect_eq("protein composite takes the measured proteins only",
                   join(members, ", "), "Chicken Al Pastor, Suadero Beef");
         expect_near("each member counts once: halfway between 1.0 and 2.0 ml/g",
                     pro.volume_oz(120) * kOz, 1.5 * 120, 0.5);
         std::vector<std::string> tops;
-        composite_curve(Kind::Topping, c, Method::Robot, &tops);
+        composite_curve(Kind::Topping, c, &tops);
         expect_eq("test curves are references, not food", join(tops, ", "), "Mexican Slaw");
         expect_true("bases never get a composite",
-                    !composite_curve(Kind::Base, c, Method::Robot).valid);
+                    !composite_curve(Kind::Base, c).valid);
 
-        const CurveChoice guajillo = choose_curve("Guajillo Cumin Chicken", Kind::Protein, c, Method::Robot);
+        const CurveChoice guajillo = choose_curve("Guajillo Cumin Chicken", Kind::Protein, c);
         expect_true("an unmeasured protein uses the composite",
                     guajillo.source == CurveSource::Composite && guajillo.from.size() == 2);
         expect_true("a measured protein uses its own curve",
-                    choose_curve("Suadero Beef", Kind::Protein, c, Method::Robot).source
+                    choose_curve("Suadero Beef", Kind::Protein, c).source
                         == CurveSource::Own);
         expect_true("a family stand-in wins over the composite",
-                    choose_curve("White Jasmine Rice", Kind::Base, c, Method::Robot).source
+                    choose_curve("White Jasmine Rice", Kind::Base, c).source
                         == CurveSource::Family);
         CurveSet empty;
         expect_true("nothing measured: flat rate",
-                    choose_curve("Guajillo Cumin Chicken", Kind::Protein, empty, Method::Robot).source
+                    choose_curve("Guajillo Cumin Chicken", Kind::Protein, empty).source
                         == CurveSource::Flat);
     }
 
@@ -1323,8 +1326,8 @@ int main()
         CurveSet dropped_set;
         const MeasurementSet ds = load_measurements(root.string(), dropped_set, drop);
         expect_near("a reading below its solids is ignored", ds.dropped.count("pico") ? ds.dropped.at("pico") : 0, 1, 0.01);
-        expect_near("the rest of that ingredient stays", dropped_set.count("pico", Method::Pooled), 1, 0.01);
-        expect_near("off again, it is back", plain.count("pico", Method::Pooled), 2, 0.01);
+        expect_near("the rest of that ingredient stays", dropped_set.count("pico"), 1, 0.01);
+        expect_near("off again, it is back", plain.count("pico"), 2, 0.01);
         expect_true("the file is not changed",
                     read_file((root / "wet.csv").string()).find("40,12") != std::string::npos);
         fs::remove_all(root);
@@ -1336,10 +1339,10 @@ int main()
         CurveSet c;
         for (int i = 0; i < 20; ++i) {
             const double g = 50 + 10 * i;
-            c.add({"slaw", Method::Robot, g, 0.1 * g * (i % 2 ? 1.1 : 0.9)});
+            c.add({"slaw", g, 0.1 * g * (i % 2 ? 1.1 : 0.9)});
         }
         c.refit();
-        const Fit *f = c.fit("slaw", Method::Robot);
+        const Fit *f = c.fit("slaw");
         expect_near("a curve measures its own scatter (10%)", f ? f->rel_sd : 0, 0.10, 0.01);
 
         // Two items of 10 oz, each 10% scatter, no curve or dispense term: sd = sqrt(2) oz.
@@ -1380,13 +1383,13 @@ int main()
         // Readings 5% either side of their curves, so ranges have width.
         for (double g : {50.0, 100.0, 150.0, 200.0, 250.0, 300.0}) {
             const double wiggle = (static_cast<int>(g) / 50) % 2 ? 1.05 : 0.95;
-            m.add({"Chicken Al Pastor", Method::Robot, g, wiggle * g / 30.0});
-            m.add({"Suadero Beef", Method::Robot, g, wiggle * g / 20.0});
+            m.add({"Chicken Al Pastor", g, wiggle * g / 30.0});
+            m.add({"Suadero Beef", g, wiggle * g / 20.0});
         }
         m.refit();
-        const CurveChoice own = choose_curve("Suadero Beef", Kind::Protein, m, Method::Robot);
-        const CurveChoice comp = choose_curve("Guajillo Cumin Chicken", Kind::Protein, m, Method::Robot);
-        const CurveChoice flat = choose_curve("Corn", Kind::Topping, m, Method::Robot);
+        const CurveChoice own = choose_curve("Suadero Beef", Kind::Protein, m);
+        const CurveChoice comp = choose_curve("Guajillo Cumin Chicken", Kind::Protein, m);
+        const CurveChoice flat = choose_curve("Corn", Kind::Topping, m);
         expect_true("a composite of members that disagree is wider than either",
                     comp.rel_sd > own.rel_sd + 0.1);
         expect_near("a flat rate carries the widest band", flat.rel_sd, kFlatRateRelSd, 1e-12);
@@ -1403,7 +1406,7 @@ int main()
         way_over.items = {{"Suadero Beef", 60.0}, {"Chicken Al Pastor", 60.0}};
         way_over.ounces = 3 * (60 / 20.0 + 60 / 30.0);
         sheet.rows.push_back(way_over);
-        const RangeCheck rc = check_ranges(sheet, m, Method::Robot, 0.0);
+        const RangeCheck rc = check_ranges(sheet, m, 0.0);
         expect_true(std::format("range check: {} inside, {} above", rc.inside, rc.above),
                     rc.bowls == 4 && rc.inside == 3 && rc.above == 1);
 
@@ -1444,13 +1447,13 @@ int main()
         expect_near("a broken file is reported, not fatal", set.failed_files(), 1, 0.01);
         expect_near("mixed bowls are kept for the squash fit", set.bowls.mixed_rows(), 1, 0.01);
         expect_true("names match regardless of case",
-                    curves.fit("WHITE RICE", Method::Robot) && curves.count("White rice", Method::Pooled) == 2);
+                    curves.fit("WHITE RICE") && curves.count("White rice") == 2);
         expect_eq("an unmeasured rice borrows a measured one",
                   to_lower(proxy_curve_for("White Jasmine Rice", curves)), "white rice");
 
         CurveSet couscous;
-        couscous.add({"lemon couscous", Method::Robot, 109, 98 / CurveSet::kMlPerFlOz});
-        couscous.add({"lemon couscous", Method::Robot, 183, 213 / CurveSet::kMlPerFlOz});
+        couscous.add({"lemon couscous", 109, 98 / CurveSet::kMlPerFlOz});
+        couscous.add({"lemon couscous", 183, 213 / CurveSet::kMlPerFlOz});
         couscous.refit();
         expect_eq("plain couscous borrows lemon couscous", proxy_curve_for("Couscous", couscous),
                   "lemon couscous");
@@ -1504,9 +1507,9 @@ int main()
         settings.compress = true;
         VolumeFillSettings vf;
         vf.fit_share = 0.85;
-        const VolumeFillExport ex = export_volume_fill(loaded.menus, curves, Method::Robot, settings, vf);
+        const VolumeFillExport ex = export_volume_fill(loaded.menus, curves, settings, vf);
         const Ingredient &romaine = *farmstand->find("Romaine Base");
-        const BowlItem r = make_item(romaine, curves, Method::Robot);
+        const BowlItem r = make_item(romaine, curves);
         std::string spelling;
         for (const MenuName &n : farmstand->names)
             if (n.name == "Romaine Base") spelling = n.raw;
@@ -1539,7 +1542,7 @@ int main()
     {
         const double kMl = CurveSet::kMlPerFlOz;
         const Ingredient &romaine = *farmstand->find("Romaine Base");
-        const BowlItem r = make_item(romaine, curves, Method::Robot);
+        const BowlItem r = make_item(romaine, curves);
         const double added = grams_for_ml(r, 35, 50);
         expect_near("grams_for_ml adds exactly the volume asked for",
                     (r.volume_oz(35 + added) - r.volume_oz(35)) * kMl, 50, 1e-9);
@@ -1548,7 +1551,7 @@ int main()
         expect_near("a flat-rate ingredient takes volume / rate",
                     grams_for_ml(flat, 80, 10), 10 / (4.5 / 100 * kMl), 1e-9);
 
-        const std::vector<StepRow> rows = step_table(*farmstand, curves, Method::Robot, 20);
+        const std::vector<StepRow> rows = step_table(*farmstand, curves, 20);
         expect_near("one row per dispensed ingredient, sauces left out", rows.size(),
                     farmstand->ingredients.size(), 0.01);
         expect_true("bases come first", !rows.empty() && rows.front().kind == Kind::Base);

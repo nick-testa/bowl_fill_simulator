@@ -436,7 +436,7 @@ struct CurveChoice
 };
 
 /// The curve to use for `name`, of kind `kind` (see CurveSource).
-CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &curves, Method method);
+CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &curves);
 
 ///
 /// The average curve of every measured ingredient of `kind`, each counted once
@@ -444,7 +444,7 @@ CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &cur
 /// span. Curves named "test ..." are calibration references, not food, and bases
 /// never get a composite. Invalid when nothing of that kind is measured.
 ///
-Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vector<std::string> *members = nullptr);
+Fit composite_curve(Kind kind, const CurveSet &curves, std::vector<std::string> *members = nullptr);
 
 /// One line for the UI: "own curve", "composite of A, B", ...
 std::string describe(const CurveChoice &choice);
@@ -452,7 +452,6 @@ std::string describe(const CurveChoice &choice);
 /// Builds a bowl item from menu configuration plus the fitted curves.
 BowlItem make_item(const Ingredient &ingredient,
                    const CurveSet &curves,
-                   Method method,
                    double flat_protein_rate = kFlatProteinRate,
                    double flat_topping_rate = kFlatToppingRate);
 

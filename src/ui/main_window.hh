@@ -174,7 +174,6 @@ private:
     const Menu *menu() const;
     SimSettings legacy_settings() const;
     AdaptiveSettings adaptive_settings() const;
-    Method method() const;
     double value_for(const QString &name, const QString &field) const;
     std::vector<BowlItem> assemble_bowl() const;
     QStringList bowl_names() const;
@@ -280,9 +279,6 @@ private:
     QDoubleSpinBox *floor_ = nullptr;
     QDoubleSpinBox *capacity_ = nullptr;
     QDoubleSpinBox *load_transfer_ = nullptr;
-    QPushButton *method_robot_ = nullptr;
-    QPushButton *method_hand_ = nullptr;
-    QPushButton *method_pooled_ = nullptr;
     QCheckBox *split_ = nullptr;
     QCheckBox *compress_ = nullptr;
     QPushButton *theme_ = nullptr;
@@ -348,7 +344,6 @@ private:
     QLabel *recipe_note_ = nullptr;
     QLabel *floor_note_ = nullptr;
     QPushButton *floor_reset_ = nullptr;
-    QLabel *method_note_ = nullptr;
     QLabel *compress_note_ = nullptr;
     QLabel *curve_note_ = nullptr;
     QLabel *verdict_head_ = nullptr;

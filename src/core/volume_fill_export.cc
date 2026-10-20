@@ -54,7 +54,6 @@ bool same_curve(const VolumeFillRow &a, const VolumeFillRow &b)
 
 VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                     const CurveSet &curves,
-                                    Method method,
                                     const SimSettings &settings,
                                     const VolumeFillSettings &vf)
 {
@@ -79,7 +78,7 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                 {
                     continue; // never dispensed by weight, so nothing to predict
                 }
-                const BowlItem item = make_item(*ing, curves, method, kFlatProteinRate, kFlatToppingRate);
+                const BowlItem item = make_item(*ing, curves, kFlatProteinRate, kFlatToppingRate);
                 row.k = item.has_curve ? item.K : item.flat_oz_per_100g / 100.0;
                 row.p = item.has_curve ? item.p : 1.0;
                 row.piece_height_mm = item.piece_height_mm;

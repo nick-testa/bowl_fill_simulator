@@ -21,7 +21,6 @@ constexpr int kCompleteBowlThreshold = 4;
 std::vector<BowlItem> bowl_from_recipe(const Menu &menu,
                                        const Recipe &recipe,
                                        const CurveSet &curves,
-                                       Method method,
                                        double flat_protein_rate,
                                        double flat_topping_rate)
 {
@@ -33,7 +32,7 @@ std::vector<BowlItem> bowl_from_recipe(const Menu &menu,
         {
             continue;
         }
-        BowlItem item = make_item(*ing, curves, method, flat_protein_rate, flat_topping_rate);
+        BowlItem item = make_item(*ing, curves, flat_protein_rate, flat_topping_rate);
         item.start_g = ri.grams;
         (ing->kind == Kind::Base ? bases : ing->kind == Kind::Protein ? proteins : toppings).push_back(item);
     }
@@ -336,7 +335,6 @@ std::string BrandAudit::to_csv() const
 
 BrandAudit audit_brand(const Menu &menu,
                        const CurveSet &curves,
-                       Method method,
                        const SimSettings &legacy_settings,
                        const AdaptiveSettings &adaptive_settings,
                        const CostTable *costs,
@@ -353,7 +351,7 @@ BrandAudit audit_brand(const Menu &menu,
         row.pinned = static_cast<int>(recipe.items.size());
         row.complete_bowl = !recipe.customer_built && row.pinned >= kCompleteBowlThreshold;
 
-        std::vector<BowlItem> items = bowl_from_recipe(menu, recipe, curves, method);
+        std::vector<BowlItem> items = bowl_from_recipe(menu, recipe, curves);
 
         std::vector<std::string> names;
         for (const BowlItem &it : items)

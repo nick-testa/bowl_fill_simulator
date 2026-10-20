@@ -1196,25 +1196,8 @@ QWidget *MainWindow::build_settings()
 
     // ---- Dispense ---------------------------------------------------------
     {
-        auto [v, page] = add_page("Dispense",
-                                  "Which measurements the curves come from, and how far "
-                                  "the robot misses its targets.");
-        method_robot_ = make_toggle("Robot");
-        method_hand_ = make_toggle("Hand");
-        method_pooled_ = make_toggle("Pooled");
-        method_robot_->setChecked(true);
-        for (QPushButton *b : {method_robot_, method_hand_, method_pooled_}) {
-            connect(b, &QPushButton::clicked, this, [this, b] {
-                for (QPushButton *o : {method_robot_, method_hand_, method_pooled_})
-                    o->setChecked(o == b);
-                on_selection_changed();
-            });
-        }
-        v->addWidget(field("Measurement source", segment({method_robot_, method_hand_,
-                                                          method_pooled_})));
-        track_choice(page, method_robot_);
-        method_note_ = make_label("", "note");
-        v->addWidget(method_note_);
+        auto [v, page] = add_page("Dispense", "How far the robot misses its targets.");
+
 
         v->addWidget(section_label("Dispense variation"));
         const DispenseVariation def;
@@ -1598,7 +1581,7 @@ QWidget *MainWindow::build_settings()
             const Menu *m = menu();
             if (!m) return std::string();
             const double target = step_target_ml_->value();
-            return step_table_csv(m->brand, step_table(*m, curves_, method(), target), target);
+            return step_table_csv(m->brand, step_table(*m, curves_, target), target);
         };
         auto *copy = new QPushButton("Copy CSV");
         copy->setToolTip("Copy this brand's table to the clipboard, for a spreadsheet");
@@ -1975,14 +1958,6 @@ const Menu *MainWindow::menu() const
     return (i >= 0 && i < static_cast<int>(menus_.size())) ? &menus_[i] : nullptr;
 }
 
-Method MainWindow::method() const
-{
-    if (!method_hand_) return Method::Robot;
-    if (method_hand_->isChecked()) return Method::Hand;
-    if (method_pooled_->isChecked()) return Method::Pooled;
-    return Method::Robot;
-}
-
 double MainWindow::value_for(const QString &name, const QString &fieldName) const
 {
     // Your edits win, then the recipe's pinned weight, then the menu.
@@ -2028,7 +2003,7 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
     for (const QString &name : bowl_names()) {
         const Ingredient *ing = m->find(ss(name));
         if (!ing) continue;
-        BowlItem it = make_item(*ing, curves_, method(), kFlatProteinRate, kFlatToppingRate);
+        BowlItem it = make_item(*ing, curves_, kFlatProteinRate, kFlatToppingRate);
         it.start_g = value_for(name, "start");
         it.step_g = value_for(name, "step");
         it.max_g = value_for(name, "max");
@@ -2373,7 +2348,7 @@ MainWindow::RateInfo MainWindow::rate_info(const QString &name) const
     const Menu *m = menu();
     const Ingredient *ing = m ? m->find(ss(name)) : nullptr;
     if (!ing) return info;
-    const BowlItem item = make_item(*ing, curves_, method());
+    const BowlItem item = make_item(*ing, curves_);
     const auto ov = overrides_.find(name);
     const Override edit = ov != overrides_.end() ? ov->second : Override{};
     auto shown = [](double oz) {
@@ -2387,7 +2362,7 @@ MainWindow::RateInfo MainWindow::rate_info(const QString &name) const
         info.oz_per_100g = curve * scale;
         info.edited = edit.curve_scale.has_value();
         info.tip = QString("Volume per 100 g at %1 g, from the %2. ").arg(g, 0, 'f', 0)
-                       .arg(qs(describe(choose_curve(ss(name), ing->kind, curves_, method()))));
+                       .arg(qs(describe(choose_curve(ss(name), ing->kind, curves_))));
         info.tip += info.edited
                         ? QString("Your edit scales the curve by \u00D7%1 (it gives %2 alone).")
                               .arg(scale, 0, 'f', 2).arg(shown(curve))
@@ -2407,7 +2382,7 @@ void MainWindow::set_rate(const QString &name, double oz_per_100g)
     const Ingredient *ing = m ? m->find(ss(name)) : nullptr;
     if (!ing) return;
     Override &o = overrides_[name];
-    const BowlItem item = make_item(*ing, curves_, method());
+    const BowlItem item = make_item(*ing, curves_);
     if (item.has_curve) {
         const double g = value_for(name, "start") > 0 ? value_for(name, "start") : 100.0;
         const double curve = item.volume_oz(g) / g * 100.0;
@@ -2475,9 +2450,9 @@ QString MainWindow::ingredient_tip(const BowlItem &it) const
 {
     QString tip = QString("%1 \u00B7 curve: %2")
                       .arg(capitalised(qs(to_string(it.kind))),
-                           qs(describe(choose_curve(it.name, it.kind, curves_, method()))));
+                           qs(describe(choose_curve(it.name, it.kind, curves_))));
     const std::string proxy = proxy_curve_for(it.name, curves_);
-    if (const Fit *f = curves_.fit(proxy.empty() ? it.name : proxy, method())) {
+    if (const Fit *f = curves_.fit(proxy.empty() ? it.name : proxy)) {
         tip += QString("\nFit: %1 = %2\u00B7g^%3, R\u00B2 %4, n=%5, measured %6\u2013%7 g")
                    .arg(units::suffix()).arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
                    .arg(fmt(f->r2, 2)).arg(f->n).arg(std::round(f->lo_g)).arg(std::round(f->hi_g));
@@ -2555,15 +2530,6 @@ void MainWindow::on_selection_changed()
                   .arg(theme::palette().over.name())
             : "Off: volumes are as measured, one ingredient with nothing on top.");
     load_transfer_->setVisible(compress_->isChecked());
-
-    const QString ms = qs(to_string(method()));
-    method_note_->setText(
-        ms == "robot" ? "Bowls the <b>robot</b> dispensed — the operative case, and the "
-                        "most compacted."
-        : ms == "hand" ? "<b>Hand</b>-filled reference bowls. Looser packing: kale reads "
-                         "+13% at equal mass (p = 0.001), romaine +6%, rice unchanged."
-                       : "Both methods <b>pooled</b>. Avoid for kale — its two arms "
-                         "differ significantly, so pooling averages two relationships.");
 
     loading_ = false;
     apply_floor();
@@ -2751,7 +2717,7 @@ void MainWindow::update_step_table()
     const Menu *m = menu();
     if (!step_table_ || !m) return;
     const double target = step_target_ml_->value();
-    const std::vector<StepRow> rows = step_table(*m, curves_, method(), target);
+    const std::vector<StepRow> rows = step_table(*m, curves_, target);
 
     step_table_->setHorizontalHeaderLabels(
         {"Ingredient", "Kind", "Curve", "Portion", "ml per g", "g per ml", "Next g adds",
@@ -2791,7 +2757,7 @@ void MainWindow::update_step_table()
         step_table_->setItem(i, 0, name);
         step_table_->setItem(i, 1, cell(qs(to_string(r.kind)), false));
         auto *curve = cell(qs(curve_label(r.source)), false);
-        curve->setToolTip(qs(describe(choose_curve(r.ingredient, r.kind, curves_, method()))));
+        curve->setToolTip(qs(describe(choose_curve(r.ingredient, r.kind, curves_))));
         // An estimate is shown as one, like the estimates on the bowl.
         if (r.source != CurveSource::Own) curve->setForeground(pal.ink_soft);
         step_table_->setItem(i, 2, curve);
@@ -2812,9 +2778,7 @@ void MainWindow::update_step_table()
                                              * static_cast<int>(rows.size())
                                 + 2 * step_table_->frameWidth());
 
-    const QString method_name = method() == Method::Hand     ? "hand-filled"
-                                : method() == Method::Pooled ? "pooled"
-                                                             : "robot-dispensed";
+    const QString method_name = "robot-dispensed";
     step_note_->setText(
         rows.empty()
             ? QString("%1 dispenses nothing from a station.").arg(qs(m->brand))
@@ -3139,7 +3103,7 @@ void MainWindow::recompute()
     ramp_chart_->set_show_uncompressed(settings.compress);
     ramp_chart_->set_result(r);
     curve_filter_->set_options(qsl(curves_.ingredients()));
-    curve_chart_->set_curves(&curves_, method());
+    curve_chart_->set_curves(&curves_);
 
     update_curve_note();
     update_settings_summary(r.fill);
@@ -3420,8 +3384,7 @@ bool MainWindow::write_spec(const QString &path)
     setup << (g.enabled ? QString("fit judged by height, cups %1")
                               .arg(g.cups_pressed ? "pressed in" : "resting on top")
                         : QString("fit judged by volume"));
-    setup << QString("%1 measurements").arg(method() == Method::Robot ? "robot"
-                                            : method() == Method::Hand ? "hand" : "pooled");
+    setup << QString("robot measurements");
     html += QString("<p><b>Set-up:</b> %1.</p>").arg(esc(setup.join(" · ")));
     if (!estimates_list_.empty()) {
         html += "<p><b>Estimates these numbers rest on:</b></p><ul>";
@@ -3470,7 +3433,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
 
     // Curves standing in for measurements the ingredient does not have yet.
     for (const BowlItem &it : items) {
-        const CurveChoice c = choose_curve(it.name, it.kind, curves_, method());
+        const CurveChoice c = choose_curve(it.name, it.kind, curves_);
         if (c.source != CurveSource::Own)
             list.push_back({QString("%1: not measured, %2").arg(qs(it.name), qs(describe(c))),
                             go_page(kMeasurements)});
@@ -3586,7 +3549,7 @@ void MainWindow::update_curve_note()
 {
     QStringList bits;
     for (const std::string &n : curves_.ingredients())
-        bits << QString("%1 (%2)").arg(qs(n)).arg(curves_.count(n, Method::Pooled));
+        bits << QString("%1 (%2)").arg(qs(n)).arg(curves_.count(n));
     const int files = static_cast<int>(measurements_.files.size());
     QString text = QString("<b>%1</b> measurements from %2 file%3 in "
                            "<code>data/measurements</code>")
@@ -3613,7 +3576,7 @@ void MainWindow::update_curve_note()
     }
     // Can the 80% ranges be trusted? Predict each scanned mixed bowl from the single-
     // ingredient curves and see how often the scan lands inside its range.
-    const RangeCheck rc = check_ranges(measurements_.bowls, curves_, method(),
+    const RangeCheck rc = check_ranges(measurements_.bowls, curves_,
                                        compress_->isChecked() ? load_transfer_->value() : 0.0);
     if (rc.bowls) {
         const double share = rc.inside_share();
@@ -3656,7 +3619,7 @@ void MainWindow::show_report()
     // Each recipe resolves its own floor, so the panel's floor field is deliberately
     // not carried in: the report answers what the menu does, not what is dialled up.
     const BrandAudit audit =
-        audit_brand(*m, curves_, method(), legacy_settings(), adaptive_settings(), &costs_,
+        audit_brand(*m, curves_, legacy_settings(), adaptive_settings(), &costs_,
                     volume_fill_settings());
 
     const QString assumptions =
@@ -3665,7 +3628,7 @@ void MainWindow::show_report()
                 "stepping down to %7% · each recipe uses the floor its own ingredients "
                 "match.")
             .arg(units::volume(units::to_oz(capacity_->value()), true))
-            .arg(method() == Method::Robot ? "robot" : method() == Method::Hand ? "hand" : "pooled")
+            .arg("robot")
             .arg(sauce_cup_count())
             .arg(sauce_cup_count() == 1 ? "" : "s")
             .arg(std::round(target_fill_->value()))
@@ -3680,7 +3643,6 @@ void MainWindow::show_report()
         ctx.menus = &menus_;
         ctx.brand = qs(m->brand);
         ctx.curves = &curves_;
-        ctx.method = method();
         ctx.legacy = legacy_settings();
         ctx.adaptive = adaptive_settings();
         ctx.volume = volume_fill_settings();
@@ -3715,7 +3677,7 @@ QStringList MainWindow::reload_measurements()
     // Fitted for information only, never applied: the model can only squash bases
     // whose own curve compacts (p < 1), so with camera-fitted curves the fit often
     // rests on one or two bowls. Compression and load transfer stay as set.
-    squash_ = fit_squash(measurements_.bowls, curves_, method());
+    squash_ = fit_squash(measurements_.bowls, curves_);
     QStringList problems;
     if (measurements_.folder_missing)
         problems << QString("data/measurements does not exist, so no curves are loaded. "
@@ -4128,7 +4090,7 @@ void MainWindow::render_adaptive()
 
 
     curve_filter_->set_options(qsl(curves_.ingredients()));
-    curve_chart_->set_curves(&curves_, method());
+    curve_chart_->set_curves(&curves_);
 }
 
 }  // namespace bowlfill

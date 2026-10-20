@@ -258,7 +258,7 @@ void SweepDialog::run()
     QLocale loc;
     std::vector<SweepTotals> totals;
     const bool finished = run_sweep(
-        menus, *ctx_.curves, ctx_.method, ctx_.legacy, ctx_.adaptive, ctx_.costs, limits(),
+        menus, *ctx_.curves, ctx_.legacy, ctx_.adaptive, ctx_.costs, limits(),
         out, [&](std::int64_t done, std::int64_t total) {
             progress.setLabelText(QString("%1 of %2 bowls…")
                                       .arg(loc.toString(done), loc.toString(total)));

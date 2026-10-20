@@ -52,7 +52,6 @@ double grams_for_ml(const BowlItem &item, double from_g, double ml);
 /// toppings, as the menu lists them. Sauces are left out: they go in cups.
 std::vector<StepRow> step_table(const Menu &menu,
                                 const CurveSet &curves,
-                                Method method,
                                 double target_ml,
                                 double flat_protein_rate = kFlatProteinRate,
                                 double flat_topping_rate = kFlatToppingRate);

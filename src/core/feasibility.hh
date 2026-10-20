@@ -19,7 +19,6 @@ namespace bowlfill
 std::vector<BowlItem> bowl_from_recipe(const Menu &menu,
                                        const Recipe &recipe,
                                        const CurveSet &curves,
-                                       Method method,
                                        double flat_protein_rate = 3.5,
                                        double flat_topping_rate = 4.5);
 
@@ -74,7 +73,6 @@ struct BrandAudit
 
 BrandAudit audit_brand(const Menu &menu,
                        const CurveSet &curves,
-                       Method method,
                        const SimSettings &legacy_settings,
                        const AdaptiveSettings &adaptive_settings,
                        const CostTable *costs = nullptr,

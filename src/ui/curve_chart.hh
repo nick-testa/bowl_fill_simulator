@@ -21,7 +21,7 @@ class CurveChart : public QWidget {
 public:
     explicit CurveChart(QWidget *parent = nullptr);
 
-    void set_curves(const CurveSet *curves, Method method);
+    void set_curves(const CurveSet *curves);
     /// Ingredients left off the chart; the axes fit what is still shown.
     void set_hidden(const QSet<QString> &hidden);
 
@@ -40,7 +40,6 @@ private:
 
     const CurveSet *curves_ = nullptr;
     QSet<QString> hidden_;
-    Method method_ = Method::Robot;
     QPointF hover_;
     bool hovering_ = false;
 };

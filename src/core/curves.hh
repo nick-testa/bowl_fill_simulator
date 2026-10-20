@@ -7,22 +7,11 @@
 namespace bowlfill
 {
 
-/// Which fill method a measurement came from. Hand-filled bowls hold about 5.8%
-/// more volume at equal mass than robot-dispensed ones (p = 0.002), and the gap is
-/// concentrated in the greens, so the arms are fitted separately.
-enum class Method
-{
-    Robot,
-    Hand,
-    Pooled
-};
-
-std::string to_string(Method method);
-
+/// One robot-dispensed bowl of a single ingredient. Hand-filled measurements are no
+/// longer used: hand bowls held about 5.8% more volume, and production is robot-filled.
 struct Observation
 {
     std::string ingredient;
-    Method method = Method::Robot;
     double grams = 0.0;
     double ounces = 0.0;
 };
@@ -63,14 +52,14 @@ struct Fit
 };
 
 ///
-/// The measured mass-to-volume dataset. Ships with the 36 hand-measured bowls and
-/// accepts more from CSV, refitting the affected ingredients.
+/// The measured mass-to-volume dataset, refitting the affected ingredients as
+/// measurements are added.
 ///
 class CurveSet
 {
 public:
-    /// Expected columns, case-insensitive, in any order. `method` is optional and
-    /// defaults to robot.
+    /// Expected columns, case-insensitive, in any order. `method` is optional; rows
+    /// marked `hand` are skipped.
     static std::vector<std::string> required_columns();
     static std::vector<std::string> optional_columns();
     static std::string format_help();
@@ -79,7 +68,8 @@ public:
     bool load_csv(const std::string &path,
                   std::string *error,
                   int *rows_added = nullptr,
-                  std::vector<std::string> *new_ingredients = nullptr);
+                  std::vector<std::string> *new_ingredients = nullptr,
+                  int *hand_rows_skipped = nullptr);
     void add(const Observation &obs);
     void refit();
     void clear();
@@ -94,7 +84,7 @@ public:
 
     void reset_to_builtin(const std::string &builtin_csv_path);
 
-    const Fit *fit(const std::string &ingredient, Method method) const;
+    const Fit *fit(const std::string &ingredient) const;
     std::vector<std::string> ingredients() const;
 
     const std::vector<Observation> &observations() const
@@ -102,11 +92,11 @@ public:
         return obs_;
     }
 
-    int count(const std::string &ingredient, Method method) const;
+    int count(const std::string &ingredient) const;
 
 private:
     std::vector<Observation> obs_;
-    std::map<std::string, std::map<Method, Fit>> fits_;
+    std::map<std::string, Fit> fits_;
     /// Names match regardless of case ("white rice" from a bowl sheet is the menu's
     /// "White Rice"); lower-cased name -> the spelling the curve is shown under.
     std::map<std::string, std::string> display_;

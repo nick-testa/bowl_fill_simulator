@@ -270,7 +270,6 @@ std::vector<Observation> single_ingredient_points(const BowlSheet &sheet)
         }
         Observation o;
         o.ingredient = r.items.front().first;
-        o.method = Method::Robot;
         o.grams = r.items.front().second;
         o.ounces = r.ounces;
         out.push_back(o);
@@ -284,7 +283,6 @@ namespace
 /// The row's ingredients as bowl items, on their chosen curves.
 std::vector<BowlItem> row_items(const BowlRow &row,
                                 const CurveSet &curves,
-                                Method method,
                                 double flat_protein_rate,
                                 double flat_topping_rate,
                                 std::vector<std::string> *flat_rate)
@@ -297,7 +295,7 @@ std::vector<BowlItem> row_items(const BowlRow &row,
         it.kind = guess_kind(name);
         it.start_g = grams;
         it.flat_oz_per_100g = it.kind == Kind::Protein ? flat_protein_rate : flat_topping_rate;
-        const CurveChoice c = choose_curve(name, it.kind, curves, method);
+        const CurveChoice c = choose_curve(name, it.kind, curves);
         if (c.source != CurveSource::Flat)
         {
             it.has_curve = true;
@@ -317,14 +315,13 @@ std::vector<BowlItem> row_items(const BowlRow &row,
 
 Frame scan_frame(const BowlRow &row,
                  const CurveSet &curves,
-                 Method method,
                  double load_transfer,
                  double flat_protein_rate,
                  double flat_topping_rate,
                  std::vector<std::string> *flat_rate,
                  std::vector<BowlItem> *items_out)
 {
-    const std::vector<BowlItem> items = row_items(row, curves, method, flat_protein_rate, flat_topping_rate, flat_rate);
+    const std::vector<BowlItem> items = row_items(row, curves, flat_protein_rate, flat_topping_rate, flat_rate);
     SimSettings s;
     s.floor_g = 0.0;
     s.compress = load_transfer > 0;
@@ -340,7 +337,6 @@ Frame scan_frame(const BowlRow &row,
 
 double predicted_scan_oz(const BowlRow &row,
                          const CurveSet &curves,
-                         Method method,
                          double load_transfer,
                          double flat_protein_rate,
                          double flat_topping_rate,
@@ -348,15 +344,15 @@ double predicted_scan_oz(const BowlRow &row,
 {
     SauceCups cups;
     cups.cups = row.cups;
-    return scan_frame(row, curves, method, load_transfer, flat_protein_rate, flat_topping_rate, flat_rate, nullptr)
+    return scan_frame(row, curves, load_transfer, flat_protein_rate, flat_topping_rate, flat_rate, nullptr)
                .ounces +
            cups.volume_oz();
 }
 
-FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, Method method, double load_transfer)
+FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, double load_transfer)
 {
     std::vector<BowlItem> items;
-    const Frame f = scan_frame(row, curves, method, load_transfer, kFlatProteinRate, kFlatToppingRate, nullptr, &items);
+    const Frame f = scan_frame(row, curves, load_transfer, kFlatProteinRate, kFlatToppingRate, nullptr, &items);
     // The masses were weighed, so the robot's dispense variation does not apply.
     FillUncertainty u = fill_uncertainty(items, f.per_item_oz, 0, 0, nullptr);
     SauceCups cups;
@@ -367,7 +363,7 @@ FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, Metho
     return u;
 }
 
-RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method method, double load_transfer)
+RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, double load_transfer)
 {
     RangeCheck c;
     for (const BowlRow &r : sheet.rows)
@@ -376,7 +372,7 @@ RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method m
         {
             continue; // single bowls were used to fit the curves
         }
-        const FillUncertainty u = predicted_scan(r, curves, method, load_transfer);
+        const FillUncertainty u = predicted_scan(r, curves, load_transfer);
         if (!u.valid)
         {
             continue;
@@ -400,7 +396,6 @@ RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method m
 
 SquashFit fit_squash(const BowlSheet &sheet,
                      const CurveSet &curves,
-                     Method method,
                      double flat_protein_rate,
                      double flat_topping_rate)
 {
@@ -423,7 +418,7 @@ SquashFit fit_squash(const BowlSheet &sheet,
         std::vector<double> e;
         for (const BowlRow *r : mixed)
         {
-            e.push_back(predicted_scan_oz(*r, curves, method, phi, flat_protein_rate, flat_topping_rate, flat) -
+            e.push_back(predicted_scan_oz(*r, curves, phi, flat_protein_rate, flat_topping_rate, flat) -
                         r->ounces);
         }
         return e;

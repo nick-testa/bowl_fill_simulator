@@ -43,10 +43,9 @@ CurveChart::CurveChart(QWidget *parent) : QWidget(parent)
     setMinimumHeight(220);
 }
 
-void CurveChart::set_curves(const CurveSet *curves, Method method)
+void CurveChart::set_curves(const CurveSet *curves)
 {
     curves_ = curves;
-    method_ = method;
     update();
 }
 
@@ -60,7 +59,6 @@ bool CurveChart::extent(double &g_max, double &oz_max) const
 {
     g_max = oz_max = 0;
     for (const Observation &o : curves_->observations()) {
-        if (method_ != Method::Pooled && o.method != method_) continue;
         if (!shown(qs(o.ingredient))) continue;
         g_max = std::max(g_max, o.grams);
         oz_max = std::max(oz_max, o.ounces);
@@ -122,10 +120,10 @@ void CurveChart::paintEvent(QPaintEvent *)
     // end, which keeps them off a neighbouring series.
     double widest = 0;
     for (const QString &n : names)
-        if (const Fit *f = curves_->fit(ss(n), method_)) widest = std::max(widest, f->hi_g);
+        if (const Fit *f = curves_->fit(ss(n))) widest = std::max(widest, f->hi_g);
 
     for (const QString &name : names) {
-        const Fit *f = curves_->fit(ss(name), method_);
+        const Fit *f = curves_->fit(ss(name));
         if (!f) continue;
         const QColor colour = theme::series_colour(name);
 
@@ -163,7 +161,6 @@ void CurveChart::paintEvent(QPaintEvent *)
         p.setBrush(colour);
         for (const Observation &o : curves_->observations()) {
             if (o.ingredient != name) continue;
-            if (method_ != Method::Pooled && o.method != method_) continue;
             p.drawEllipse(QPointF(X(o.grams), Y(o.ounces)), 4.0, 4.0);
         }
     }
@@ -192,7 +189,6 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
     const Observation *best = nullptr;
     double best_d = 12.0;   // pixels
     for (const Observation &o : curves_->observations()) {
-        if (method_ != Method::Pooled && o.method != method_) continue;
         if (!shown(qs(o.ingredient))) continue;
         const QPointF at(kLeft + o.grams / g_max * pw, kTop + ph - o.ounces / oz_max * ph);
         const double d = QLineF(at, event->position()).length();
@@ -200,8 +196,8 @@ void CurveChart::mouseMoveEvent(QMouseEvent *event)
     }
     if (best)
         QToolTip::showText(event->globalPosition().toPoint(),
-                           QString("%1 · %2\n%3 g → %4")
-                               .arg(qs(best->ingredient), qs(to_string(best->method)))
+                           QString("%1\n%2 g → %3")
+                               .arg(qs(best->ingredient))
                                .arg(best->grams, 0, 'f', 0)
                                .arg(units::volume(best->ounces, true)),
                            this);

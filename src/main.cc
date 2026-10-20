@@ -120,7 +120,7 @@ bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
         err << "no usable measurements in " << asset_dir << kMeasurementsDir << "\n";
         return false;
     }
-    *squash = fit_squash(ms.bowls, curves, Method::Robot);
+    *squash = fit_squash(ms.bowls, curves);
     return true;
 }
 
@@ -153,7 +153,7 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         AdaptiveSettings adaptive;
         legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
         legacy.dispense = adaptive.dispense = configured_dispense();
-        const BrandAudit audit = audit_brand(m, curves, Method::Robot, legacy, adaptive, &costs,
+        const BrandAudit audit = audit_brand(m, curves, legacy, adaptive, &costs,
                                              configured_volume_fill());
         const std::string csv = audit.to_csv();
         out << qs(header_written ? csv.substr(csv.find('\n') + 1) : csv);
@@ -186,7 +186,7 @@ int run_export_volume_fill(const QString &asset_dir, const QString &path, const 
     settings.compress = true;
     settings.load_transfer = 1.0;
     const VolumeFillExport ex =
-        export_volume_fill(loaded.menus, curves, Method::Robot, settings, configured_volume_fill());
+        export_volume_fill(loaded.menus, curves, settings, configured_volume_fill());
     for (const std::string &c : ex.conflicts) err << "brands disagree: " << qs(c) << "\n";
     if (!write_text(ss(path), ex.source)) {
         err << "could not write " << path << "\n";
@@ -222,7 +222,7 @@ int run_steps(const QString &asset_dir, const QString &want, double target_ml)
             continue;
         matched = true;
         const std::string csv =
-            step_table_csv(m.brand, step_table(m, curves, Method::Robot, target_ml), target_ml);
+            step_table_csv(m.brand, step_table(m, curves, target_ml), target_ml);
         out << qs(header_written ? csv.substr(csv.find('\n') + 1) : csv);
         header_written = true;
     }
@@ -281,7 +281,7 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     AdaptiveSettings adaptive;
     legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
     legacy.dispense = adaptive.dispense = configured_dispense();
-    run_sweep(menus, curves, Method::Robot, legacy, adaptive, &costs,
+    run_sweep(menus, curves, legacy, adaptive, &costs,
               limits, out, [&](std::int64_t done, std::int64_t total) {
                   const std::int64_t pct = total > 0 ? done * 100 / total : 100;
                   if (pct != last_pct) {

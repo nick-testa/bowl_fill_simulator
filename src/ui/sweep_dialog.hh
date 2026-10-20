@@ -18,7 +18,6 @@ struct SweepContext {
     const std::vector<Menu> *menus = nullptr;
     QString brand;
     const CurveSet *curves = nullptr;
-    Method method = Method::Robot;
     SimSettings legacy;
     AdaptiveSettings adaptive;
     VolumeFillSettings volume;

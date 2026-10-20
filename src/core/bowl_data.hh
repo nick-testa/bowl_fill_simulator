@@ -98,15 +98,14 @@ struct RangeCheck
 
 /// A weighed bowl's predicted scan as a distribution (no dispense variation: the
 /// masses are known). `load_transfer` 0 means no squash.
-FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, Method method, double load_transfer);
+FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, double load_transfer);
 
-RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, Method method, double load_transfer);
+RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, double load_transfer);
 
 /// Predicted scan volume of one row: food, compressed at `load_transfer`, plus the
 /// cups' contents when cups were in for the scan.
 double predicted_scan_oz(const BowlRow &row,
                          const CurveSet &curves,
-                         Method method,
                          double load_transfer,
                          double flat_protein_rate = kFlatProteinRate,
                          double flat_topping_rate = kFlatToppingRate,
@@ -116,7 +115,6 @@ double predicted_scan_oz(const BowlRow &row,
 /// include the sheet's single-ingredient points.
 SquashFit fit_squash(const BowlSheet &sheet,
                      const CurveSet &curves,
-                     Method method,
                      double flat_protein_rate = kFlatProteinRate,
                      double flat_topping_rate = kFlatToppingRate);
 

@@ -42,7 +42,6 @@ struct VolumeFillExport
 
 VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                     const CurveSet &curves,
-                                    Method method,
                                     const SimSettings &settings,
                                     const VolumeFillSettings &vf);
 

@@ -131,11 +131,11 @@ Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference, c
     double g_max = 0;
     for (const auto &[g, oz] : reference)
     {
-        c.add({"reference", Method::Robot, g, oz});
+        c.add({"reference", g, oz});
         g_max = std::max(g_max, g);
     }
     c.refit();
-    const Fit *f = c.fit("reference", Method::Robot);
+    const Fit *f = c.fit("reference");
     if (!f)
     {
         return b;

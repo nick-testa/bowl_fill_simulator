@@ -671,7 +671,7 @@ FillUncertainty fill_uncertainty(const std::vector<BowlItem> &items,
     return u;
 }
 
-Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vector<std::string> *members)
+Fit composite_curve(Kind kind, const CurveSet &curves, std::vector<std::string> *members)
 {
     Fit out;
     if (kind == Kind::Base)
@@ -687,7 +687,7 @@ Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vecto
         {
             continue;
         }
-        const Fit *f = curves.fit(n, method);
+        const Fit *f = curves.fit(n);
         if (!f)
         {
             continue;
@@ -714,10 +714,10 @@ Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vecto
         {
             oz += f->volume_oz(g);
         }
-        avg.add({"composite", method == Method::Pooled ? Method::Robot : method, g, oz / fits.size()});
+        avg.add({"composite", g, oz / fits.size()});
     }
     avg.refit();
-    if (const Fit *f = avg.fit("composite", method))
+    if (const Fit *f = avg.fit("composite"))
     {
         out = *f;
         out.n = static_cast<int>(fits.size()); // members, not samples
@@ -759,12 +759,12 @@ Fit composite_curve(Kind kind, const CurveSet &curves, Method method, std::vecto
     return out;
 }
 
-CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &curves, Method method)
+CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &curves)
 {
     CurveChoice c;
     // Scatter of a fit, or the assumed figure when it has too few points to say.
     auto scatter = [](const Fit &f) { return f.rel_sd > 0 ? f.rel_sd : kAssumedRelSd; };
-    if (const Fit *f = curves.fit(name, method))
+    if (const Fit *f = curves.fit(name))
     {
         c.source = CurveSource::Own;
         c.K = f->K;
@@ -775,7 +775,7 @@ CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &cur
     }
     if (const std::string proxy = proxy_curve_for(name, curves); !proxy.empty())
     {
-        if (const Fit *f = curves.fit(proxy, method))
+        if (const Fit *f = curves.fit(proxy))
         {
             c.source = CurveSource::Family;
             c.K = f->K;
@@ -787,7 +787,7 @@ CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &cur
         }
     }
     std::vector<std::string> members;
-    const Fit f = composite_curve(kind, curves, method, &members);
+    const Fit f = composite_curve(kind, curves, &members);
     if (f.valid)
     {
         c.source = CurveSource::Composite;
@@ -818,7 +818,6 @@ std::string describe(const CurveChoice &choice)
 
 BowlItem make_item(const Ingredient &ingredient,
                    const CurveSet &curves,
-                   Method method,
                    double flat_protein_rate,
                    double flat_topping_rate)
 {
@@ -831,7 +830,7 @@ BowlItem make_item(const Ingredient &ingredient,
     item.flat_oz_per_100g = ingredient.kind == Kind::Protein ? flat_protein_rate : flat_topping_rate;
     item.piece_height_mm = ingredient.piece_height_mm;
 
-    const CurveChoice c = choose_curve(ingredient.name, ingredient.kind, curves, method);
+    const CurveChoice c = choose_curve(ingredient.name, ingredient.kind, curves);
     if (c.source != CurveSource::Flat)
     {
         item.has_curve = true;

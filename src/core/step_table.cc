@@ -61,7 +61,6 @@ double grams_for_ml(const BowlItem &item, double from_g, double ml)
 
 std::vector<StepRow> step_table(const Menu &menu,
                                 const CurveSet &curves,
-                                Method method,
                                 double target_ml,
                                 double flat_protein_rate,
                                 double flat_topping_rate)
@@ -76,11 +75,11 @@ std::vector<StepRow> step_table(const Menu &menu,
             {
                 continue;
             }
-            const BowlItem item = make_item(*ing, curves, method, flat_protein_rate, flat_topping_rate);
+            const BowlItem item = make_item(*ing, curves, flat_protein_rate, flat_topping_rate);
             StepRow row;
             row.ingredient = name;
             row.kind = kind;
-            row.source = choose_curve(name, kind, curves, method).source;
+            row.source = choose_curve(name, kind, curves).source;
             row.portion_g = ing->full_portion();
             row.step_g = ing->step_increment_g;
             row.marginal_ml_per_g = item.marginal_oz_per_100g(row.portion_g) / 100.0 * kMlPerOz;

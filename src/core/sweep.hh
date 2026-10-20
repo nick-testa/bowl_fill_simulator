@@ -88,7 +88,6 @@ std::string sweep_csv_header();
 ///
 bool run_sweep(const std::vector<const Menu *> &menus,
                const CurveSet &curves,
-               Method method,
                const SimSettings &legacy_settings,
                const AdaptiveSettings &adaptive_settings,
                const CostTable *costs,

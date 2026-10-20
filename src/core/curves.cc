@@ -17,14 +17,9 @@ std::string normalise(const std::string &s)
     return to_lower(trim(s));
 }
 
-Method method_from(const std::string &raw)
+bool is_hand(const std::string &raw)
 {
-    const std::string s = normalise(raw);
-    if (s.starts_with("hand"))
-    {
-        return Method::Hand;
-    }
-    return Method::Robot;
+    return normalise(raw).starts_with("hand");
 }
 
 /// Canonical spellings for the three ingredients the built-in set covers, so a CSV
@@ -195,20 +190,6 @@ Fit fit_power_law(const std::vector<const Observation *> &pts, FitSpace space)
 
 } // namespace
 
-std::string to_string(Method method)
-{
-    switch (method)
-    {
-    case Method::Robot:
-        return "robot";
-    case Method::Hand:
-        return "hand";
-    case Method::Pooled:
-        return "pooled";
-    }
-    return {};
-}
-
 double Fit::volume_oz(double grams) const
 {
     return (!valid || grams <= 0) ? 0.0 : K * std::pow(grams, p);
@@ -245,12 +226,12 @@ std::string CurveSet::format_help()
                        "<code>millilitres</code>, <code>volume_ml</code>, <code>cc</code>), converted "
                        "on import<br>"
                        "&nbsp;&nbsp;<code>method</code> &mdash; <i>optional</i>: "
-                       "<code>robot</code> or <code>hand</code>, defaults to robot<br><br>"
+                       "<code>robot</code> (the default) or <code>hand</code>; hand-filled rows are "
+                       "skipped, as curves are robot-only<br><br>"
                        "<pre>method,ingredient,g,oz\n"
                        "robot,romaine,86,20\n"
-                       "robot,kale,73,25\n"
-                       "hand,mexican rice,150,11</pre>"
-                       "Rows are <b>added</b> to the built-in 36 bowls and the affected curves are "
+                       "robot,kale,73,25</pre>"
+                       "Rows are <b>added</b> to the measurements and the affected curves are "
                        "refitted. An ingredient not seen before gets a curve of its own once it has "
                        "at least two points at different masses.<br><br>"
                        "Names are matched loosely: <i>kale</i>, <i>Kale</i> and <i>Massaged Kale</i> "
@@ -265,7 +246,8 @@ void CurveSet::add(const Observation &obs)
 bool CurveSet::load_csv(const std::string &path,
                         std::string *error,
                         int *rows_added,
-                        std::vector<std::string> *new_ingredients)
+                        std::vector<std::string> *new_ingredients,
+                        int *hand_rows_skipped)
 {
     std::vector<std::string> lines;
     if (!read_lines(path, lines))
@@ -341,7 +323,7 @@ bool CurveSet::load_csv(const std::string &path,
 
     const std::vector<std::string> before = ingredients();
     std::vector<Observation> staged;
-    int skipped = 0;
+    int skipped = 0, hand = 0;
     for (size_t l = 1; l < lines.size(); ++l)
     {
         const std::string &line = lines[l];
@@ -368,9 +350,12 @@ bool CurveSet::load_csv(const std::string &path,
             o.ounces /= kMlPerFlOz;
         }
         // method is optional, and a ragged row may simply stop before it.
-        o.method = (col.count("method") && col.at("method") < static_cast<int>(cells.size()))
-                       ? method_from(cells[col.at("method")])
-                       : Method::Robot;
+        if (col.count("method") && col.at("method") < static_cast<int>(cells.size()) &&
+            is_hand(cells[col.at("method")]))
+        {
+            ++hand;
+            continue;
+        }
 
         if (!g || !oz || o.grams <= 0 || o.ounces <= 0 || o.ingredient.empty())
         {
@@ -380,6 +365,13 @@ bool CurveSet::load_csv(const std::string &path,
         staged.push_back(o);
     }
 
+    if (hand_rows_skipped)
+    {
+        *hand_rows_skipped = hand;
+    }
+    const std::string hand_note =
+        hand ? std::format("{} hand-filled row{} skipped: curves are robot-only.", hand, hand == 1 ? " was" : "s were")
+             : std::string();
     if (staged.empty())
     {
         if (error)
@@ -388,6 +380,10 @@ bool CurveSet::load_csv(const std::string &path,
                                  "mass or volume.",
                                  skipped,
                                  skipped == 1 ? "" : "s");
+            if (!hand_note.empty())
+            {
+                *error += " " + hand_note;
+            }
         }
         return false;
     }
@@ -412,9 +408,18 @@ bool CurveSet::load_csv(const std::string &path,
             }
         }
     }
-    if (error && skipped > 0)
+    if (error && (skipped > 0 || hand > 0))
     {
-        *error = std::format("{} row{} skipped as unusable.", skipped, skipped == 1 ? " was" : "s were");
+        std::vector<std::string> notes;
+        if (skipped > 0)
+        {
+            notes.push_back(std::format("{} row{} skipped as unusable.", skipped, skipped == 1 ? " was" : "s were"));
+        }
+        if (!hand_note.empty())
+        {
+            notes.push_back(hand_note);
+        }
+        *error = join(notes, " ");
     }
     return true;
 }
@@ -423,20 +428,16 @@ void CurveSet::refit()
 {
     fits_.clear();
     display_.clear();
-    std::map<std::string, std::map<Method, std::vector<const Observation *>>> buckets;
+    std::map<std::string, std::vector<const Observation *>> buckets;
     for (const Observation &o : obs_)
     {
         // The first spelling seen names the curve; later ones in other cases join it.
         const std::string &name = display_.try_emplace(to_lower(o.ingredient), o.ingredient).first->second;
-        buckets[name][o.method].push_back(&o);
-        buckets[name][Method::Pooled].push_back(&o);
+        buckets[name].push_back(&o);
     }
-    for (const auto &[ingredient, by_method] : buckets)
+    for (const auto &[ingredient, pts] : buckets)
     {
-        for (const auto &[method, pts] : by_method)
-        {
-            fits_[ingredient][method] = fit_power_law(pts, space_);
-        }
+        fits_[ingredient] = fit_power_law(pts, space_);
     }
 }
 
@@ -464,7 +465,7 @@ void CurveSet::reset_to_builtin(const std::string &builtin_csv_path)
     load_csv(builtin_csv_path, &ignored);
 }
 
-const Fit *CurveSet::fit(const std::string &ingredient, Method method) const
+const Fit *CurveSet::fit(const std::string &ingredient) const
 {
     auto d = display_.find(to_lower(ingredient));
     if (d == display_.end())
@@ -472,16 +473,11 @@ const Fit *CurveSet::fit(const std::string &ingredient, Method method) const
         return nullptr;
     }
     auto i = fits_.find(d->second);
-    if (i == fits_.end())
+    if (i == fits_.end() || !i->second.valid)
     {
         return nullptr;
     }
-    auto j = i->second.find(method);
-    if (j == i->second.end() || !j->second.valid)
-    {
-        return nullptr;
-    }
-    return &j->second;
+    return &i->second;
 }
 
 std::vector<std::string> CurveSet::ingredients() const
@@ -494,12 +490,12 @@ std::vector<std::string> CurveSet::ingredients() const
     return out;
 }
 
-int CurveSet::count(const std::string &ingredient, Method method) const
+int CurveSet::count(const std::string &ingredient) const
 {
     int n = 0;
     for (const Observation &o : obs_)
     {
-        if (iequals(o.ingredient, ingredient) && (method == Method::Pooled || o.method == method))
+        if (iequals(o.ingredient, ingredient))
         {
             ++n;
         }
@@ -509,7 +505,7 @@ int CurveSet::count(const std::string &ingredient, Method method) const
 
 std::string proxy_curve_for(const std::string &ingredient, const CurveSet &curves)
 {
-    if (curves.fit(ingredient, Method::Pooled))
+    if (curves.fit(ingredient))
     {
         return {};
     }
@@ -532,13 +528,13 @@ std::string proxy_curve_for(const std::string &ingredient, const CurveSet &curve
         {
             continue;
         }
-        if (f.preferred && curves.fit(f.preferred, Method::Pooled))
+        if (f.preferred && curves.fit(f.preferred))
         {
             return f.preferred;
         }
         for (const std::string &n : curves.ingredients())
         {
-            if (std::regex_search(n, f.word) && curves.fit(n, Method::Pooled))
+            if (std::regex_search(n, f.word) && curves.fit(n))
             {
                 return n;
             }

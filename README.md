@@ -148,13 +148,13 @@ discards uploads and returns to the bundled set.
 method,ingredient,g,oz
 robot,romaine,86,20
 robot,kale,73,25
-hand,mexican rice,150,11
 ```
 
 - `ingredient`, `g`, `oz` are required, in any order and any case.
   `mass`/`grams`/`mass_g` and `volume`/`ounces`/`volume_oz`/`fl_oz` also work.
 - `ml` may be supplied instead of `oz` and is converted on import.
-- `method` is optional and defaults to `robot`.
+- `method` is optional and defaults to `robot`. Rows marked `hand` are skipped, and the
+  upload says how many: curves are robot-only, as production is.
 - Names match loosely, so `kale`, `Kale` and `Massaged Kale` land in one bucket.
 - An ingredient not seen before gets a curve of its own once it has two points at
   different masses. One point is not a curve, and the app says so rather than
@@ -186,9 +186,9 @@ that zero surcharge reproduces `K·g^p` exactly gives
 No loaded bowls were ever measured, so this is an extrapolation from the unloaded
 curves' own curvature, and load transfer 1.0 is its upper bound.
 
-Robot and hand measurements are fitted separately. Hand-filled bowls hold about 5.8%
-more volume at equal mass (p = 0.002), concentrated in the greens — kale +13%,
-romaine +6%, rice unchanged — so pooling is available but a poor idea for kale.
+Curves are robot-only. Hand-filled bowls held about 5.8% more volume at equal mass,
+concentrated in the greens, and production is robot-filled, so hand-filled
+measurements are skipped.
 
 ## Tests
 
@@ -326,7 +326,7 @@ measurements, mappings or settings:
 ```
 
 It writes one row per production ingredient spelling (as customizations and the Catalog
-name it), with the Robot-method curve the window would choose; a flat rate is written as
+name it), with the curve the window would choose; a flat rate is written as
 `k = rate / 100`, `p = 1`. An ingredient has one curve whichever brands serve it. Where
 brands disagree (one cups an ingredient another dispenses), the dispensed curve is kept
 and the disagreement is printed. The defaults also carry the fit share, minimum share and
