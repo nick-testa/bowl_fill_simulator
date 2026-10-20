@@ -2522,14 +2522,28 @@ bool MainWindow::row_edited(const QString &name) const
 /// how the portion compares with what was measured.
 QString MainWindow::ingredient_tip(const BowlItem &it) const
 {
+    const CurveChoice choice = choose_curve(it.name, it.kind, curves_);
     QString tip = QString("%1 \u00B7 curve: %2")
-                      .arg(capitalised(qs(to_string(it.kind))),
-                           qs(describe(choose_curve(it.name, it.kind, curves_))));
-    const std::string proxy = proxy_curve_for(it.name, curves_);
-    if (const Fit *f = curves_.fit(proxy.empty() ? it.name : proxy)) {
-        tip += QString("\nFit: %1 = %2\u00B7g^%3, R\u00B2 %4, n=%5, measured %6\u2013%7 g")
-                   .arg(units::suffix()).arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
-                   .arg(fmt(f->r2, 2)).arg(f->n).arg(std::round(f->lo_g)).arg(std::round(f->hi_g));
+                      .arg(capitalised(qs(to_string(it.kind))), qs(describe(choice)));
+    // The curve the simulation actually uses: its own, its pool group's typical curve, or
+    // the relative it borrows. A composite or flat rate has no single fit to show.
+    const Fit *f = nullptr;
+    if (choice.source == CurveSource::Own)
+        f = curves_.fit(it.name);
+    else if (choice.source == CurveSource::Group && !choice.from.empty())
+        f = curves_.group_fit(choice.from.front());
+    else if (choice.source == CurveSource::Family && !choice.from.empty())
+        f = curves_.fit(choice.from.front());
+    if (f) {
+        if (choice.source == CurveSource::Group)
+            tip += QString("\nGroup curve: %1 = %2\u00B7g^%3, from %4 measured ingredient%5, %6\u2013%7 g")
+                       .arg(units::suffix()).arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
+                       .arg(f->n).arg(f->n == 1 ? "" : "s")
+                       .arg(std::round(f->lo_g)).arg(std::round(f->hi_g));
+        else
+            tip += QString("\nFit: %1 = %2\u00B7g^%3, R\u00B2 %4, n=%5, measured %6\u2013%7 g")
+                       .arg(units::suffix()).arg(fmt(units::scale_k(f->K), 3)).arg(fmt(f->p, 3))
+                       .arg(fmt(f->r2, 2)).arg(f->n).arg(std::round(f->lo_g)).arg(std::round(f->hi_g));
         if (it.start_g < f->lo_g * 0.8 || it.max_g > f->hi_g * 1.25)
             tip += "\nThe portion runs outside the measured range.";
     }
