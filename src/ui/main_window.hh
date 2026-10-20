@@ -273,6 +273,9 @@ private:
     QWidget *volume_fields_ = nullptr;
     QWidget *floor_fields_ = nullptr;   ///< the weight floor, hidden under Volume Fill
     QDoubleSpinBox *fit_pct_ = nullptr;
+    /// Reporting only: the overfill chance a bowl is held to in the panel and the brand
+    /// report. Volume Fill still decides with fit_pct_.
+    QDoubleSpinBox *risk_pct_ = nullptr;
     QDoubleSpinBox *min_pct_ = nullptr;
 
     // Controls

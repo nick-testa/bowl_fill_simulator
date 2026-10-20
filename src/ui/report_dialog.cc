@@ -80,8 +80,8 @@ QTableWidgetItem *cell(const QString &text, const QColor &fg,
 }  // namespace
 
 ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
-                           QWidget *parent)
-    : QDialog(parent), audit_(audit)
+                           double risk_limit, QWidget *parent)
+    : QDialog(parent), audit_(audit), risk_limit_(risk_limit)
 {
     setWindowTitle(QString("Recipe feasibility — %1").arg(qs(audit_.brand)));
     setStyleSheet(theme::stylesheet());
@@ -199,7 +199,8 @@ void ReportDialog::populate()
             QTableWidgetItem *c = cell(p < 1 && p > 0 ? QString("<1%")
                                        : p > 99 && p < 100 ? QString(">99%")
                                                            : QString("%1%").arg(std::round(p)),
-                                       fg, Qt::AlignRight);
+                                       u.p_over_room > risk_limit_ ? theme::palette().over : fg,
+                                       Qt::AlignRight);
             const double ml = CurveSet::kMlPerFlOz;
             c->setToolTip(QString("80% of bowls: %1 to %2 ml (median %3 ml) against %4 ml of "
                                   "food room; %5% over the rim")

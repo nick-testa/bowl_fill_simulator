@@ -1235,8 +1235,22 @@ QWidget *MainWindow::build_settings()
 
     // ---- Dispense ---------------------------------------------------------
     {
-        auto [v, page] = add_page("Dispense", "How far the robot misses its targets.");
+        auto [v, page] = add_page("Dispense", "How far the robot misses its targets, and the "
+                                              "overfill chance bowls are reported against.");
 
+        v->addWidget(section_label("Overfill risk"));
+        risk_pct_ = make_spin(1, 50, 1, 0);
+        risk_pct_->setSuffix(" %");
+        risk_pct_->setValue(QSettings().value("report/overfill_risk_pct", 10).toDouble());
+        risk_pct_->setToolTip("The chance of overfilling the food room a bowl may have before "
+                              "it is flagged, in the bowl panel and the brand report. For "
+                              "reporting only: Volume Fill still fills to its fit target.");
+        connect(risk_pct_, &QDoubleSpinBox::valueChanged, this, [this](double val) {
+            QSettings().setValue("report/overfill_risk_pct", val);
+            recompute();
+        });
+        v->addWidget(field("Flag bowls more likely than this to overfill", risk_pct_));
+        track_spin(page, risk_pct_, [] { return 10.0; });
 
         v->addWidget(section_label("Dispense variation"));
         const DispenseVariation def;
@@ -2626,18 +2640,23 @@ void MainWindow::update_fill_note(const SimResult &r)
         return v < 1 && v > 0 ? QString("&lt;1%") : v > 99 && v < 100 ? QString("&gt;99%")
                                                                     : QString("%1%").arg(std::round(v));
     };
-    const QColor tone = u.p_over_room >= 0.5 ? pal.over : u.p_over_room >= 0.2 ? pal.mass : pal.accent;
+    const double limit = risk_pct_ ? risk_pct_->value() / 100 : 0.10;
+    const bool over_limit = u.p_over_room > limit;
+    const QColor tone = over_limit ? pal.over : u.p_over_room > limit / 2 ? pal.mass : pal.accent;
     fill_note_->setText(
         QString("%1 (80% of bowls: %2 to %3)<br>"
-                "<span style='color:%4'><b>%5</b> chance of overfilling the food room</span> · "
-                "<b>%6</b> of going over the rim")
+                "<span style='color:%4'><b>%5</b> chance of overfilling the food room (%6 the "
+                "%7 limit)</span> · <b>%8</b> of going over the rim")
             .arg(median, rel(u.p10_oz), rel(u.p90_oz), tone.name(), pct(u.p_over_room),
-                 pct(u.p_over_rim))
+                 over_limit ? "over" : "within", pct(limit), pct(u.p_over_rim))
         + mound_line(r));
     fill_note_->setToolTip(
         QString("Food room %1 (the bowl less cups and chunk clearance); rim %2.\n"
-                "Spread: each ingredient's bowl-to-bowl scatter, the uncertainty of its curve, "
-                "and the dispense variation in Settings, added as independent.")
+                "Spread: for each ingredient, how far a bowl from a batch never measured lands "
+                "from its curve (batch-to-batch variation, the curve's own uncertainty and bowl "
+                "scatter, from the fitted curves), plus the dispense variation in Settings, "
+                "added as independent. The limit is set under Settings \u2192 Dispense and is "
+                "for reporting only.")
             .arg(units::volume(u.room_oz, true), units::volume(u.rim_oz, true)));
 }
 
@@ -3684,16 +3703,24 @@ void MainWindow::show_report()
         QString("%1 bowl · %2 curves · %3 sauce cup%4 charged against capacity in both "
                 "models · adaptive target %5% · volume fill within %6% of the food room, "
                 "stepping down to %7% · each recipe uses the floor its own ingredients "
-                "match.")
+                "match. Overfill odds above the %8% limit are flagged; %9 of %10 recipes "
+                "exceed it under Volume Fill.")
             .arg(units::volume(units::to_oz(capacity_->value()), true))
             .arg("robot")
             .arg(sauce_cup_count())
             .arg(sauce_cup_count() == 1 ? "" : "s")
             .arg(std::round(target_fill_->value()))
             .arg(std::round(fit_pct_->value()))
-            .arg(std::round(min_pct_->value()));
+            .arg(std::round(min_pct_->value()))
+            .arg(std::round(risk_pct_->value()))
+            .arg(std::count_if(audit.rows.begin(), audit.rows.end(),
+                               [&](const RecipeAudit &r) {
+                                   return !r.customer_built && r.volume.sim.fill.valid
+                                          && r.volume.sim.fill.p_over_room > risk_pct_->value() / 100;
+                               }))
+            .arg(audit.rows.size());
 
-    ReportDialog dialog(audit, assumptions, this);
+    ReportDialog dialog(audit, assumptions, risk_pct_->value() / 100, this);
     connect(&dialog, &ReportDialog::recipe_chosen, this,
             [this, m](const QString &recipe) { select(qs(m->brand), recipe); });
     connect(&dialog, &ReportDialog::full_report_requested, this, [this, m] {

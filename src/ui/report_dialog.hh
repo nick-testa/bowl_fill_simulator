@@ -18,7 +18,9 @@ class ReportDialog : public QDialog {
     Q_OBJECT
 
 public:
-    ReportDialog(const BrandAudit &audit, const QString &assumptions, QWidget *parent = nullptr);
+    /// Overfill odds above `risk_limit` are shown in the warning colour.
+    ReportDialog(const BrandAudit &audit, const QString &assumptions, double risk_limit = 0.10,
+                 QWidget *parent = nullptr);
 
 signals:
     /// A recipe the user wants to open in the simulator.
@@ -31,6 +33,7 @@ private:
     void show_detail(int row);
 
     BrandAudit audit_;
+    double risk_limit_ = 0.10;
     QTableWidget *table_ = nullptr;
     QLabel *detail_ = nullptr;
 };

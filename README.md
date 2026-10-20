@@ -236,6 +236,10 @@ say so): the old fit stays in use, and any ingredient it does not cover uses lea
 squares until refitted. With no JSON at all the header shows **Curves not fitted**, and
 every curve is least squares with no batch term.
 
+**Overfill risk.** Settings → Dispense sets the overfill chance bowls are flagged at
+(10% by default), in the bowl panel and the brand report. It is for reporting only:
+Volume Fill still decides with its fit target.
+
 The model, its priors and what partial pooling does to each ingredient are walked
 through in `curve_model_selection.ipynb` (sections 10 and 11).
 
