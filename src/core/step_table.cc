@@ -92,6 +92,15 @@ std::vector<StepRow> step_table(const Menu &menu,
             }
             row.step_ml = ml_at(item, row.portion_g + row.step_g) - ml_at(item, row.portion_g);
             row.step_g_for_target = grams_for_ml(item, row.portion_g, target_ml);
+            row.catalog_k = item.has_curve ? item.K : item.flat_oz_per_100g / 100.0;
+            row.catalog_p = item.has_curve ? item.p : 1.0;
+            for (const MenuName &n : menu.names)
+            {
+                if (n.name == name && n.kind != "sauce")
+                {
+                    append_unique(row.catalog_names, n.raw);
+                }
+            }
             rows.push_back(row);
         }
     }
@@ -102,12 +111,12 @@ std::string step_table_csv(const std::string &brand, const std::vector<StepRow> 
 {
     const std::string target = general(target_ml);
     std::string out = std::format("brand,ingredient,kind,curve,portion_g,ml_per_g,g_per_ml,next_g_adds_ml,"
-                                  "step_g,step_adds_ml,step_g_for_{}_ml\n",
+                                  "step_g,step_adds_ml,step_g_for_{}_ml,catalog_k,catalog_p\n",
                                   target);
     for (const StepRow &r : rows)
     {
         const bool portion = r.portion_g > 0;
-        out += std::format("{},{},{},{},{},{},{},{},{},{},{}\n",
+        out += std::format("{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
                            csv_escape(brand),
                            csv_escape(r.ingredient),
                            to_string(r.kind),
@@ -118,7 +127,27 @@ std::string step_table_csv(const std::string &brand, const std::vector<StepRow> 
                            fixed(r.marginal_ml_per_g, 3),
                            fixed(r.step_g, 2),
                            fixed(r.step_ml, 2),
-                           fixed(r.step_g_for_target, 2));
+                           fixed(r.step_g_for_target, 2),
+                           r.catalog_k,
+                           r.catalog_p);
+    }
+    return out;
+}
+
+std::string catalog_curves_tsv(const std::vector<StepRow> &rows)
+{
+    std::string out = "ingredient_name\tkind\tk\tp\n";
+    for (const StepRow &r : rows)
+    {
+        std::string kind = to_string(r.kind);
+        if (!kind.empty())
+        {
+            kind[0] = static_cast<char>(kind[0] - 'a' + 'A');
+        }
+        for (const std::string &n : r.catalog_names)
+        {
+            out += std::format("{}\t{}\t{}\t{}\n", n, kind, r.catalog_k, r.catalog_p);
+        }
     }
     return out;
 }

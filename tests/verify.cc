@@ -1560,6 +1560,27 @@ int main()
         for (const StepRow &x : rows)
             if (x.ingredient == "Romaine Base") row = &x;
         expect_true("romaine has a row", row != nullptr);
+
+        // The Catalog k and p shown per row are exactly what the export writes for every
+        // production spelling the row stands for, so they can be copied into the Catalog.
+        {
+            const VolumeFillExport ex = export_volume_fill(loaded.menus, curves, SimSettings{}, VolumeFillSettings{});
+            int compared = 0, matched = 0;
+            for (const StepRow &x : rows)
+                for (const std::string &raw : x.catalog_names)
+                    for (const VolumeFillRow &e : ex.rows)
+                        if (e.ingredient_name == raw) {
+                            ++compared;
+                            matched += e.k == x.catalog_k && e.p == x.catalog_p;
+                        }
+            expect_true("each row names the production spellings it stands for",
+                        row && !row->catalog_names.empty());
+            expect_true(std::format("Catalog k and p match the export ({} of {})", matched, compared),
+                        compared > 0 && matched == compared);
+            const std::string tsv = catalog_curves_tsv(rows);
+            expect_true("the Catalog copy has one line per spelling, with its kind",
+                        tsv.starts_with("ingredient_name\tkind\tk\tp\n") && tsv.find("\tBase\t") != std::string::npos);
+        }
         if (row) {
             expect_near("ml per g is the portion's volume over its mass", row->ml_per_g,
                         r.volume_oz(row->portion_g) * kMl / row->portion_g, 1e-9);
@@ -1576,7 +1597,8 @@ int main()
         const std::vector<std::string> lines =
             nonempty_lines(step_table_csv("Farmstand", rows, 20));
         expect_near("CSV has a header and one line per row", lines.size(), rows.size() + 1, 0.01);
-        expect_true("the header names the target", lines.front().ends_with("step_g_for_20_ml"));
+        expect_true("the header names the target", lines.front().find(",step_g_for_20_ml,") != std::string::npos
+                    && lines.front().ends_with(",catalog_k,catalog_p"));
         bool rectangular = true;
         for (const std::string &line : lines)
             if (csv_fields(line) != csv_fields(lines.front())) rectangular = false;

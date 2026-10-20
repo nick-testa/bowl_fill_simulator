@@ -1652,15 +1652,26 @@ QWidget *MainWindow::build_settings()
             if (!write_text(ss(path), csv()))
                 QMessageBox::warning(this, "Could not save", "Could not write " + path);
         });
+        auto *catalog = new QPushButton("Copy Catalog k, p");
+        catalog->setToolTip("Copy each production spelling's k and p, as the Catalog's "
+                            "volume_curve takes them (tab-separated: ingredient_name, kind, k, p). "
+                            "The same values --export-volume-fill writes.");
+        connect(catalog, &QPushButton::clicked, this, [this] {
+            const Menu *m = menu();
+            if (!m) return;
+            QApplication::clipboard()->setText(
+                qs(catalog_curves_tsv(step_table(*m, curves_, step_target_ml_->value()))));
+        });
         auto *row = new QHBoxLayout;
         row->setSpacing(space::sm);
         row->addWidget(field("Volume per step", step_target_ml_));
         row->addStretch(1);
+        row->addWidget(catalog, 0, Qt::AlignBottom);
         row->addWidget(copy, 0, Qt::AlignBottom);
         row->addWidget(save, 0, Qt::AlignBottom);
         v->addLayout(row);
 
-        step_table_ = new QTableWidget(0, 10);
+        step_table_ = new QTableWidget(0, 12);
         step_table_->setObjectName("breakdown");
         step_table_->setShowGrid(false);
         step_table_->verticalHeader()->setVisible(false);
@@ -2788,14 +2799,20 @@ void MainWindow::update_step_table()
     const std::vector<StepRow> rows = step_table(*m, curves_, target);
 
     step_table_->setHorizontalHeaderLabels(
-        {"Ingredient", "Kind", "Curve", "Portion", "ml per g", "g per ml", "Next g adds",
+        {"Ingredient", "Kind", "Curve", "Catalog k", "Catalog p", "Portion", "ml per g", "g per ml",
+         "Next g adds",
          "Step now", "Step adds", QString("Step for %1 ml").arg(target, 0, 'g', 4)});
     const QStringList tips = {
         "",
         "",
         "Where the mass-to-volume curve comes from. Measured is this ingredient's own "
-        "readings; borrowed is a relative's; composite averages every measured curve of "
-        "its kind; flat is a fixed rate with nothing measured behind it.",
+        "readings (fitted with the rest when the fitted curves are loaded); group is its pool "
+        "group's typical curve; borrowed is a relative's; composite averages every measured "
+        "curve of its kind; flat is a fixed rate with nothing measured behind it.",
+        "The Catalog volume_curve k: fl oz at 1 g, exactly what --export-volume-fill writes. "
+        "A flat rate is written as k = rate / 100 with p = 1. Hover a value for full precision "
+        "and the production spellings it applies to.",
+        "The Catalog volume_curve p (the exponent), exactly what --export-volume-fill writes",
         "The menu portion, where the ramp starts",
         "Volume of the portion over its mass",
         "Mass per ml of the portion: the inverse of ml per g",
@@ -2829,17 +2846,27 @@ void MainWindow::update_step_table()
         // An estimate is shown as one, like the estimates on the bowl.
         if (r.source != CurveSource::Own) curve->setForeground(pal.ink_soft);
         step_table_->setItem(i, 2, curve);
-        step_table_->setItem(i, 3, cell(portion ? grams(r.portion_g) : "—", true));
-        step_table_->setItem(i, 4, cell(portion ? QString::number(r.ml_per_g, 'f', 2) : "—", true));
-        step_table_->setItem(i, 5, cell(portion ? QString::number(r.g_per_ml, 'f', 2) : "—", true));
-        step_table_->setItem(i, 6, cell(ml(r.marginal_ml_per_g), true));
-        step_table_->setItem(i, 7, cell(r.step_g > 0 ? grams(r.step_g) : "—", true));
-        step_table_->setItem(i, 8, cell(r.step_g > 0 ? ml(r.step_ml) : "—", true));
+        const QString catalog_tip = QString("k = %1, p = %2 (fl oz at 1 g)\nCatalog name%3: %4")
+                                        .arg(qs(std::format("{}", r.catalog_k)), qs(std::format("{}", r.catalog_p)))
+                                        .arg(r.catalog_names.size() == 1 ? "" : "s")
+                                        .arg(qs(join(r.catalog_names, ", ")));
+        auto *k = cell(QString::number(r.catalog_k, 'g', 6), true);
+        auto *p = cell(QString::number(r.catalog_p, 'f', 4), true);
+        k->setToolTip(catalog_tip);
+        p->setToolTip(catalog_tip);
+        step_table_->setItem(i, 3, k);
+        step_table_->setItem(i, 4, p);
+        step_table_->setItem(i, 5, cell(portion ? grams(r.portion_g) : "—", true));
+        step_table_->setItem(i, 6, cell(portion ? QString::number(r.ml_per_g, 'f', 2) : "—", true));
+        step_table_->setItem(i, 7, cell(portion ? QString::number(r.g_per_ml, 'f', 2) : "—", true));
+        step_table_->setItem(i, 8, cell(ml(r.marginal_ml_per_g), true));
+        step_table_->setItem(i, 9, cell(r.step_g > 0 ? grams(r.step_g) : "—", true));
+        step_table_->setItem(i, 10, cell(r.step_g > 0 ? ml(r.step_ml) : "—", true));
         auto *suggested = cell(QString("%1 g").arg(r.step_g_for_target, 0, 'f', 2), true);
         QFont bold = suggested->font();
         bold.setBold(true);
         suggested->setFont(bold);
-        step_table_->setItem(i, 9, suggested);
+        step_table_->setItem(i, 11, suggested);
     }
     const int header = step_table_->horizontalHeader()->sizeHint().height();
     step_table_->setFixedHeight(header + step_table_->verticalHeader()->defaultSectionSize()
