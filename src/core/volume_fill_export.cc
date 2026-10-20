@@ -45,23 +45,6 @@ std::string kind_enumerator(const std::string &kind)
     return "Topping";
 }
 
-/// Where a curve came from, in words a Catalog editor can act on.
-std::string curve_source(const CurveChoice &c)
-{
-    switch (c.source)
-    {
-    case CurveSource::Own:
-        return "measured";
-    case CurveSource::Family:
-        return "borrowed from " + join(c.from, ", ");
-    case CurveSource::Composite:
-        return "composite of " + join(c.from, ", ");
-    case CurveSource::Flat:
-        return "flat-rate placeholder";
-    }
-    return {};
-}
-
 bool same_curve(const VolumeFillRow &a, const VolumeFillRow &b)
 {
     return a.kind == b.kind && a.k == b.k && a.p == b.p && a.piece_height_mm == b.piece_height_mm;
@@ -100,7 +83,6 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                 row.k = item.has_curve ? item.K : item.flat_oz_per_100g / 100.0;
                 row.p = item.has_curve ? item.p : 1.0;
                 row.piece_height_mm = item.piece_height_mm;
-                row.source = curve_source(choose_curve(ing->name, ing->kind, curves, method));
             }
 
             const auto [it, added] = rows.try_emplace(n.raw, row);
@@ -223,7 +205,6 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                           {"k", r.k},
                                           {"p", r.p},
                                           {"piece_height_mm", r.piece_height_mm},
-                                          {"source", r.source},
                                           {"brands", r.brands}};
     }
     nlohmann::ordered_json manifest = {

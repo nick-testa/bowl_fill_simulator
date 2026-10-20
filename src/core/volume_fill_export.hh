@@ -29,7 +29,6 @@ struct VolumeFillRow
     double k = 0.0;   ///< fl oz at 1 g; a flat rate is k = rate / 100 with p = 1
     double p = 1.0;
     double piece_height_mm = 0.0;
-    std::string source; ///< "measured", "borrowed from ...", "composite of ...", "flat-rate placeholder"
     std::vector<std::string> brands;
 };
 

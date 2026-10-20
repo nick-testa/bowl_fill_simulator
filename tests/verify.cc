@@ -1523,10 +1523,10 @@ int main()
                 expect_true("an ingredient lists every brand that serves it", row.brands.size() >= 2);
             }
         expect_near("an ingredient has one curve whichever brands serve it", rice_rows, 1, 0.01);
-        bool flat_ok = true;
+        bool curves_ok = true;
         for (const VolumeFillRow &row : ex.rows)
-            if (row.source == "flat-rate placeholder") flat_ok = flat_ok && row.p == 1.0 && row.k > 0;
-        expect_true("a flat rate is written as a curve with p = 1", flat_ok);
+            if (row.kind != "Sauce") curves_ok = curves_ok && row.k > 0 && row.p > 0;
+        expect_true("every dispensed ingredient gets a usable curve", curves_ok);
         expect_true("the manifest lists curves and sauces apart",
                     ex.manifest.find("\"volume_curves\"") != std::string::npos
                         && ex.manifest.find("\"sauces\"") != std::string::npos);
