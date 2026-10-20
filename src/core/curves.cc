@@ -1,5 +1,6 @@
 #include "curves.hh"
 
+#include "menu_model.hh"
 #include "text.hh"
 
 #include <algorithm>
@@ -341,6 +342,7 @@ bool CurveSet::load_csv(const std::string &path,
 
         Observation o;
         o.ingredient = canonical_ingredient(cells[col.at("ingredient")]);
+        o.batch = path.substr(path.find_last_of("/\\") + 1);
         const std::optional<double> g = parse_double(cells[col.at("g")]);
         const std::optional<double> oz = parse_double(cells[col.at("oz")]);
         o.grams = g.value_or(0.0);
@@ -439,6 +441,73 @@ void CurveSet::refit()
     {
         fits_[ingredient] = fit_power_law(pts, space_);
     }
+
+    // Fitted curves, with R^2 and the measured range read off this ingredient's points.
+    fitted_fits_.clear();
+    group_fits_.clear();
+    auto as_fit = [](const FittedCurve &c) {
+        Fit f;
+        f.K = c.K;
+        f.p = c.p;
+        f.n = c.n;
+        f.lo_g = c.lo_g;
+        f.hi_g = c.hi_g;
+        f.rel_sd = c.scatter_rel_sd;
+        f.new_batch_rel_sd = c.new_batch_rel_sd;
+        f.fitted = true;
+        f.valid = c.K > 0 && c.p > 0;
+        return f;
+    };
+    for (const FittedCurve &c : fitted_.ingredients)
+    {
+        Fit f = as_fit(c);
+        if (auto b = buckets.find(display_.count(to_lower(c.name)) ? display_.at(to_lower(c.name)) : c.name);
+            b != buckets.end() && b->second.size() > 1)
+        {
+            double mean = 0, ss_tot = 0, ss_res = 0;
+            for (const Observation *o : b->second)
+            {
+                mean += o->ounces;
+            }
+            mean /= b->second.size();
+            for (const Observation *o : b->second)
+            {
+                ss_tot += (o->ounces - mean) * (o->ounces - mean);
+                ss_res += (o->ounces - f.volume_oz(o->grams)) * (o->ounces - f.volume_oz(o->grams));
+            }
+            f.r2 = ss_tot > 0 ? 1.0 - ss_res / ss_tot : 0.0;
+        }
+        fitted_fits_[to_lower(c.name)] = f;
+    }
+    for (const FittedCurve &c : fitted_.groups)
+    {
+        if (c.n > 0)
+        {
+            group_fits_[to_lower(c.name)] = as_fit(c);
+        }
+    }
+}
+
+void CurveSet::set_fitted(FittedCurves fitted)
+{
+    fitted_ = std::move(fitted);
+    refit();
+}
+
+void CurveSet::set_groups(std::map<std::string, std::string> groups)
+{
+    groups_ = std::move(groups);
+}
+
+std::string CurveSet::group_of(const std::string &ingredient) const
+{
+    return pooling_group(ingredient, groups_);
+}
+
+const Fit *CurveSet::group_fit(const std::string &group) const
+{
+    auto g = group_fits_.find(to_lower(group));
+    return g != group_fits_.end() && g->second.valid ? &g->second : nullptr;
 }
 
 void CurveSet::set_fit_space(FitSpace space)
@@ -467,6 +536,10 @@ void CurveSet::reset_to_builtin(const std::string &builtin_csv_path)
 
 const Fit *CurveSet::fit(const std::string &ingredient) const
 {
+    if (auto f = fitted_fits_.find(to_lower(ingredient)); f != fitted_fits_.end() && f->second.valid)
+    {
+        return &f->second;
+    }
     auto d = display_.find(to_lower(ingredient));
     if (d == display_.end())
     {

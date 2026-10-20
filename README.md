@@ -162,11 +162,12 @@ robot,kale,73,25
 
 ## The model
 
-**Mass to volume** is `oz = K · g^p`, fitted by OLS on log-log. A straight line fits
-the measured bowls about as well but only by carrying an intercept — 7.3 oz of kale
-at zero grams — so the power law is the honest form. `p < 1` is compaction: each
-added gram buys less volume than the one before it. Romaine sits at 0.94, nearly
-proportional; kale and rice at about 0.72.
+**Mass to volume** is `oz = K · g^p` per ingredient. A straight line fits the measured
+bowls about as well but only by carrying an intercept (volume at zero grams), so the
+power law is the honest form; `p < 1` is compaction, each added gram buying less volume
+than the one before it. The curves come from the fitted file described under
+[Fitted curves](#fitted-curves); without it, each ingredient is fitted alone by least
+squares on the volume itself.
 
 **The ramp** mirrors `maybe_apply_dynamic_portion_alogithm`: every ingredient still
 under its `max_dispense_weight_g` takes one `step_increment_g` per pass, stopping
@@ -390,8 +391,10 @@ without a release with `volume_fill_fit_share` or `volume_fill_min_share`, as fr
 
 - Proteins and toppings have **no measurements**. They use a flat oz/100 g, editable
   per ingredient, and are treated as incompressible.
-- White Rice and Brown Rice and Lentils have no curve of their own and borrow
-  Mexican Rice's, flagged in the UI as a proxy.
+- Ingredients with no measurements take their pool group's typical curve (or, with no
+  fitted curves, borrow a relative's or a composite), flagged in the UI as estimates.
+- The batch-to-batch spread is learned from only the few ingredients measured on more
+  than one day, so it is loosely known; measuring more batches narrows every range.
 - The bundled menu dumps are a 2026-09-17 snapshot and already trail production:
   romaine's cap is now 80 g and its minimum 15 g, and Cowgirl's kale cap is 80 g.
   Re-pull before drawing conclusions from the exact numbers.

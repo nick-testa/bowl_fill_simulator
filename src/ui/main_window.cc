@@ -1,6 +1,7 @@
 #include "main_window.hh"
 
 #include "core/bowl_data.hh"
+#include "core/fitted_curves.hh"
 #include "core/manual_entry.hh"
 #include "core/measurements.hh"
 #include "core/step_table.hh"
@@ -567,6 +568,7 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     if (!load_piece_heights(ss(pieces_path()), pieces_, &map_err)) load_warnings_ << qs(map_err);
     if (!load_mound_slopes(ss(mounds_path()), mound_slopes_, &map_err)) load_warnings_ << qs(map_err);
     if (!load_roll_off(ss(rolloff_path()), roll_off_, &map_err)) load_warnings_ << qs(map_err);
+    if (!load_ingredient_groups(ss(groups_path()), groups_, &map_err)) load_warnings_ << qs(map_err);
     LoadResult loaded = load_menus(ss(asset_dir_ + "/menus"), &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
     load_warnings_ << qsl(loaded.warnings);
@@ -712,6 +714,14 @@ QWidget *MainWindow::build_header()
     connect(issues_, &QPushButton::clicked, this, &MainWindow::show_issues);
     h->addWidget(issues_);
 
+    // Loud on purpose: least-squares or out-of-date curves change every number shown.
+    fit_state_ = new QPushButton;
+    fit_state_->setObjectName("issues");
+    fit_state_->setCursor(Qt::PointingHandCursor);
+    fit_state_->setVisible(false);
+    connect(fit_state_, &QPushButton::clicked, this, &MainWindow::show_fit_state);
+    h->addWidget(fit_state_);
+
     estimates_ = new QPushButton;
     estimates_->setObjectName("estimates");
     estimates_->setCursor(Qt::PointingHandCursor);
@@ -761,6 +771,35 @@ QWidget *MainWindow::build_header()
     connect(theme_, &QPushButton::clicked, this, &MainWindow::toggle_theme);
     h->addWidget(theme_);
     return header;
+}
+
+void MainWindow::show_fit_state()
+{
+    QMessageBox box(this);
+    box.setWindowTitle("Fitted curves");
+    box.setIcon(QMessageBox::Warning);
+    box.setText(fit_message_);
+    box.setInformativeText(QString("From the project folder, run:\n\n    %1\n\nthen press Reload under "
+                                   "Settings \u2192 Measurements (or restart). The fit takes about a minute "
+                                   "and needs Python with the project's dev dependencies (uv sync).")
+                               .arg(qs(refit_command())));
+    box.exec();
+}
+
+void MainWindow::load_fitted()
+{
+    FittedCurves fitted;
+    std::string err;
+    if (!load_fitted_curves(ss(asset_dir_ + "/data/fitted_curves.json"), fitted, &err))
+        fit_message_ = qs(err);
+    curves_.set_fitted(fitted);
+    const FitStatus status = fit_status(curves_);
+    if (err.empty()) fit_message_ = qs(fit_status_message(status, curves_.fitted()));
+    if (!fit_state_) return;
+    fit_state_->setVisible(!fit_message_.isEmpty());
+    fit_state_->setText(status.state == FitState::Stale ? "Fitted curves out of date"
+                                                        : "Curves not fitted");
+    fit_state_->setToolTip(fit_message_);
 }
 
 void MainWindow::show_issues()
@@ -2041,6 +2080,11 @@ QString MainWindow::mounds_path() const
     return asset_dir_ + "/data/ingredient_mounds.csv";
 }
 
+QString MainWindow::groups_path() const
+{
+    return asset_dir_ + "/data/ingredient_groups.csv";
+}
+
 QString MainWindow::rolloff_path() const
 {
     return asset_dir_ + "/data/ingredient_rolloff.csv";
@@ -2069,18 +2113,20 @@ void MainWindow::update_mapping_note()
 void MainWindow::show_mappings()
 {
     const std::vector<Menu> loaded = loaded_menus();
-    MappingDialog dialog(loaded, name_maps_, pieces_, mound_slopes_, roll_off_,
+    MappingDialog dialog(loaded, name_maps_, pieces_, mound_slopes_, roll_off_, groups_,
                          brand_->currentData().toString(), this);
     if (dialog.exec() != QDialog::Accepted) return;
     const NameMappings next = dialog.mappings();
     const PieceHeights next_pieces = dialog.pieces();
     const MoundSlopes next_slopes = dialog.slopes();
     const RollOffAngles next_rolls = dialog.rolls();
+    const IngredientGroups next_groups = dialog.groups();
     std::string err;
     if (!save_name_mappings(ss(mappings_path()), next, &err)
         || !save_piece_heights(ss(pieces_path()), next_pieces, &err)
         || !save_mound_slopes(ss(mounds_path()), next_slopes, &err)
-        || !save_roll_off(ss(rolloff_path()), next_rolls, &err)) {
+        || !save_roll_off(ss(rolloff_path()), next_rolls, &err)
+        || (next_groups != groups_ && !save_ingredient_groups(ss(groups_path()), next_groups, &err))) {
         QMessageBox::warning(this, "Could not save ingredients", qs(err));
         return;
     }
@@ -2088,6 +2134,9 @@ void MainWindow::show_mappings()
     pieces_ = next_pieces;
     mound_slopes_ = next_slopes;
     roll_off_ = next_rolls;
+    const bool regroup = next_groups != groups_;
+    groups_ = next_groups;
+    if (regroup) reload_measurements();   // new groups make the fitted curves out of date
     reload_menus();
 }
 
@@ -3603,6 +3652,15 @@ void MainWindow::update_curve_note()
                          measurements_.folder_missing
                              ? QString("The folder does not exist yet; upload a file to create it.")
                              : QString("Not loaded: %1.").arg(bad.join(", ")));
+    const FittedCurves &fc = curves_.fitted();
+    if (fc.loaded)
+        text += QString(" Curves fitted together (hierarchical Bayesian, %1): a new batch typically "
+                        "shifts volume by \u00B1%2%; ingredients with no measurements take their pool "
+                        "group's typical curve.")
+                    .arg(qs(fc.fitted_at.substr(0, 10)))
+                    .arg(std::round(fc.batch_rel_sd * 100));
+    if (!fit_message_.isEmpty())
+        text += QString(" <span style='color:%1'>%2</span>").arg(theme::palette().over.name(), fit_message_.toHtmlEscaped());
     curve_note_->setText(text);
 }
 
@@ -3673,7 +3731,9 @@ QStringList MainWindow::reload_measurements()
     options.empty_bowl_ml = empty_bowl_ml_->value();
     options.backfill = backfill_->isChecked();
     options.drop_impossible = drop_impossible_->isChecked();
+    curves_.set_groups(groups_);
     measurements_ = load_measurements(ss(measurements_dir()), curves_, options);
+    load_fitted();
     // Fitted for information only, never applied: the model can only squash bases
     // whose own curve compacts (p < 1), so with camera-fitted curves the fit often
     // rests on one or two bowls. Compression and load transfer stay as set.

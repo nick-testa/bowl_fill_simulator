@@ -207,9 +207,9 @@ Each ingredient was dispensed at several weights and scanned with a depth camera
 measure its volume. That gives a curve: "50 g of romaine takes this much space,
 100 g takes this much". The curves are not straight lines: many foods pack down
 under their own weight, so the second 50 g takes less extra room than the first.
-Ingredients that haven't been measured yet borrow from a close relative (e.g. one
-rice for another) or from the average of their category (e.g. all measured
-proteins).
+The curves are fitted together, so an ingredient measured only a few times leans on
+similar ingredients (grains on grains, proteins on proteins), and one that hasn't been
+measured at all takes its group's typical curve.
 
 ### Bowl, lid and sauce cups
 
@@ -236,8 +236,10 @@ side-on photos.
 
 ### Ranges, not single numbers
 
-Real bowls vary. The robot misses its targets by a few grams, and the same weight of
-lettuce fluffs up differently each time. So instead of one prediction, the simulator
+Real bowls vary. The robot misses its targets by a few grams, the same weight of
+lettuce fluffs up differently each time, and every batch of food is a little different
+(about ±15% so far). Production always fills from a batch nobody has measured, so the
+ranges allow for that. So instead of one prediction, the simulator
 gives:
 
 - the **typical bowl** (the median),

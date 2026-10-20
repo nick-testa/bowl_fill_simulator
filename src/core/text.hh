@@ -76,5 +76,7 @@ bool read_lines(const std::string &path, std::vector<std::string> &lines);
 
 /// Writes `text` to `path`, replacing it. False when it cannot be written.
 bool write_text(const std::string &path, std::string_view text);
+/// One CSV field, quoted only when it has to be (a comma, a quote, or edge spaces).
+std::string csv_field(const std::string &s);
 
 } // namespace bowlfill

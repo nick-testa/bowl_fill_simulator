@@ -28,6 +28,8 @@ std::string curve_label(CurveSource source)
     {
     case CurveSource::Own:
         return "measured";
+    case CurveSource::Group:
+        return "group";
     case CurveSource::Family:
         return "borrowed";
     case CurveSource::Composite:

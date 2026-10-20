@@ -1,5 +1,6 @@
 #include "core/measurements.hh"
 #include "core/feasibility.hh"
+#include "core/fitted_curves.hh"
 #include "core/step_table.hh"
 #include "core/sweep.hh"
 #include "core/volume_fill_export.hh"
@@ -98,15 +99,21 @@ bowlfill::DispenseVariation configured_dispense()
     return d;
 }
 
-/// The measurement store the window loads, data/measurements. Reports files that
-/// could not be read, and the squash fitted from the mixed bowls on file. Like the
-/// window, the reports never apply that fit; they use the default settings.
-/// False when there is nothing to fit curves from.
+/// The measurement store the window loads, data/measurements, with the pool groups and
+/// fitted curves the window uses. Reports files that could not be read, the state of the
+/// fitted curves (unless `quiet_fit`), and the squash fitted from the mixed bowls on
+/// file. Like the window, the reports never apply that fit; they use the default
+/// settings. False when there is nothing to fit curves from.
 bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
-                     bowlfill::SquashFit *squash)
+                     bowlfill::SquashFit *squash, bool quiet_fit = false)
 {
     using namespace bowlfill;
     QTextStream err(stderr);
+    IngredientGroups groups;
+    std::string group_err;
+    if (!load_ingredient_groups(ss(asset_dir + "/data/ingredient_groups.csv"), groups, &group_err))
+        err << qs(group_err) << "\n";
+    curves.set_groups(groups);
     const QSettings prefs;
     MeasurementOptions options;
     options.empty_bowl_ml =
@@ -120,8 +127,31 @@ bool load_cli_curves(const QString &asset_dir, bowlfill::CurveSet &curves,
         err << "no usable measurements in " << asset_dir << kMeasurementsDir << "\n";
         return false;
     }
+    FittedCurves fitted;
+    std::string fit_err;
+    if (!load_fitted_curves(ss(asset_dir + "/data/fitted_curves.json"), fitted, &fit_err))
+        err << qs(fit_err) << "\n";
+    curves.set_fitted(fitted);
+    if (!quiet_fit)
+        if (const std::string note = fit_status_message(fit_status(curves), curves.fitted()); !note.empty())
+            err << qs(note) << "\n";
     *squash = fit_squash(ms.bowls, curves);
     return true;
+}
+
+/// Writes the points the curves rest on, for tools/fit_curves.py.
+int run_export_fit_input(const QString &asset_dir, const QString &path)
+{
+    using namespace bowlfill;
+    CurveSet curves;
+    SquashFit squash;
+    if (!load_cli_curves(asset_dir, curves, &squash, true)) return 2;
+    std::string err;
+    if (!write_fit_input(ss(path), curves, &err)) {
+        QTextStream(stderr) << qs(err) << "\n";
+        return 2;
+    }
+    return 0;
 }
 
 /// Headless feasibility audit, so the culinary team's report can be regenerated in a
@@ -466,6 +496,12 @@ int main(int argc, char **argv)
                                         "Catalog's volume_curve fields as JSON.",
                                         "file");
     parser.addOption(catalog_manifest);
+    QCommandLineOption export_fit("export-fit-input",
+                                  "Write the single-ingredient points the curves rest on (with their "
+                                  "pool groups and batches) for tools/fit_curves.py, and exit. "
+                                  "\"-\" writes to stdout.",
+                                  "file");
+    parser.addOption(export_fit);
     parser.process(app);
     const QString asset_dir = parser.isSet(assets) ? QDir(parser.value(assets)).absolutePath()
                                                    : default_asset_dir();
@@ -477,6 +513,9 @@ int main(int argc, char **argv)
                              parser.isSet(max_pro) ? parser.value(max_pro).toInt() : -1,
                              parser.isSet(sauces) ? parser.value(sauces).toInt() : -1,
                              parser.isSet(volume_only));
+
+    if (parser.isSet(export_fit))
+        return run_export_fit_input(asset_dir, parser.value(export_fit));
 
     if (parser.isSet(export_vf))
         return run_export_volume_fill(asset_dir, parser.value(export_vf),

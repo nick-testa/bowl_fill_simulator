@@ -131,7 +131,7 @@ Backfill fit_backfill(const std::vector<std::pair<double, double>> &reference, c
     double g_max = 0;
     for (const auto &[g, oz] : reference)
     {
-        c.add({"reference", g, oz});
+        c.add({"reference", g, oz, {}});
         g_max = std::max(g_max, g);
     }
     c.refit();
@@ -268,8 +268,9 @@ MeasurementSet load_measurements(const std::string &dir, CurveSet &curves, const
                 std::format("{} impossible reading{} ignored", dropped_here, dropped_here == 1 ? "" : "s");
             mf.problem = mf.problem.empty() ? note : mf.problem + "; " + note;
         }
-        for (const Observation &o : single_ingredient_points(sheet))
+        for (Observation o : single_ingredient_points(sheet))
         {
+            o.batch = set.files[index].name;
             curves.add(o);
         }
         for (const std::string &n : sheet.ingredients)

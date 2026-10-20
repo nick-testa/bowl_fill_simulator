@@ -1108,15 +1108,6 @@ std::string field_at(const std::vector<std::string> &fields, int i)
     return i >= 0 && i < static_cast<int>(fields.size()) ? fields[i] : std::string();
 }
 
-std::string csv_field(const std::string &s)
-{
-    if (s.find(',') == std::string::npos && s.find('"') == std::string::npos && trim(s) == s)
-    {
-        return s;
-    }
-    return '"' + replace_all(s, "\"", "\"\"") + '"';
-}
-
 } // namespace
 
 bool load_name_mappings(const std::string &path, NameMappings &out, std::string *error)
@@ -1336,6 +1327,118 @@ bool load_roll_off(const std::string &path, RollOffAngles &out, std::string *err
 bool save_roll_off(const std::string &path, const RollOffAngles &angles, std::string *error)
 {
     return save_named_numbers(path, "roll_off_deg", angles, error);
+}
+
+const std::vector<std::string> kAutomaticGroups = {"grain", "green", "protein", "topping"};
+
+std::string automatic_group(const std::string &name)
+{
+    switch (kind_of(name))
+    {
+    case Kind::Base:
+    {
+        const std::string family = family_of(name);
+        return family.empty() ? "grain" : family;
+    }
+    case Kind::Protein:
+        return "protein";
+    case Kind::Topping:
+        return is_sauce(name) ? "sauce" : "topping";
+    }
+    return "topping";
+}
+
+std::string pooling_group(const std::string &name, const IngredientGroups &groups)
+{
+    for (const auto &[listed, group] : groups)
+    {
+        if (iequals(listed, name))
+        {
+            return group;
+        }
+    }
+    return automatic_group(name);
+}
+
+bool load_ingredient_groups(const std::string &path, IngredientGroups &out, std::string *error)
+{
+    std::error_code ec;
+    if (!fs::exists(path, ec))
+    {
+        return true;
+    }
+    std::vector<std::string> lines;
+    if (!read_lines(path, lines))
+    {
+        if (error)
+        {
+            *error = std::format("could not open {}", path);
+        }
+        return false;
+    }
+    IngredientGroups read;
+    int col_name = -1, col_group = -1;
+    for (const std::string &raw_line : lines)
+    {
+        const std::string line = trim(raw_line);
+        if (line.empty() || line.starts_with('#'))
+        {
+            continue;
+        }
+        const std::vector<std::string> f = split_csv(line);
+        if (col_name < 0)
+        {
+            for (int i = 0; i < static_cast<int>(f.size()); ++i)
+            {
+                const std::string h = to_lower(trim(f[i]));
+                if (h == "ingredient")
+                {
+                    col_name = i;
+                }
+                else if (h == "group")
+                {
+                    col_group = i;
+                }
+            }
+            if (col_name < 0 || col_group < 0)
+            {
+                if (error)
+                {
+                    *error = std::format("{}: the header must name ingredient and group", path);
+                }
+                return false;
+            }
+            continue;
+        }
+        const std::string name = trim(field_at(f, col_name));
+        const std::string group = to_lower(trim(field_at(f, col_group)));
+        if (!name.empty() && !group.empty())
+        {
+            read[name] = group;
+        }
+    }
+    out = std::move(read);
+    return true;
+}
+
+bool save_ingredient_groups(const std::string &path, const IngredientGroups &groups, std::string *error)
+{
+    std::string out = "# Pooling groups for the fitted curves (tools/fit_curves.py). Ingredients in a group share a\n"
+                      "# typical curve. Unlisted ingredients take their automatic group: grain, green, protein or topping.\n"
+                      "ingredient,group\n";
+    for (const auto &[name, group] : groups)
+    {
+        out += csv_field(name) + ',' + csv_field(group) + '\n';
+    }
+    if (!write_text(path, out))
+    {
+        if (error)
+        {
+            *error = std::format("could not write {}", path);
+        }
+        return false;
+    }
+    return true;
 }
 
 bool save_name_mappings(const std::string &path, const NameMappings &mappings, std::string *error)

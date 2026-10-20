@@ -223,6 +223,26 @@ using RollOffAngles = std::map<std::string, double>;
 bool load_roll_off(const std::string &path, RollOffAngles &out, std::string *error = nullptr);
 bool save_roll_off(const std::string &path, const RollOffAngles &angles, std::string *error = nullptr);
 
+///
+/// Pooling groups for the fitted (Bayesian) curves: ingredients in a group share a
+/// typical curve, so one with few or no measurements borrows from the others in
+/// proportion to how little its own data say. Stored in data/ingredient_groups.csv as
+/// ingredient,group, keyed by the name in use (names match regardless of case).
+/// Unlisted ingredients take their automatic group: grain, green, protein or topping.
+///
+using IngredientGroups = std::map<std::string, std::string>;
+
+/// The groups an ingredient falls into when nobody has set one, in display order.
+extern const std::vector<std::string> kAutomaticGroups;
+
+bool load_ingredient_groups(const std::string &path, IngredientGroups &out, std::string *error = nullptr);
+bool save_ingredient_groups(const std::string &path, const IngredientGroups &groups, std::string *error = nullptr);
+
+/// grain or green for a base (by family), protein, topping, or sauce.
+std::string automatic_group(const std::string &name);
+/// The listed group if there is one, otherwise the automatic group.
+std::string pooling_group(const std::string &name, const IngredientGroups &groups);
+
 /// The name a menu spelling is offered under, with prep and version words dropped:
 /// "White Jasmine Rice retherm v11" -> "White Jasmine Rice". The same cleaning the
 /// loader applies, for data typed straight from station or menu labels.

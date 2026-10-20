@@ -108,6 +108,7 @@ private slots:
     void show_csv_help();
     void show_report();
     void show_issues();
+    void show_fit_state();
     void show_mappings();
     void toggle_theme();
     void set_units(bool metric);
@@ -130,8 +131,11 @@ private:
     QStringList reload_measurements();
     QString store_and_reload(const QString &path, QStringList *problems);
     void update_curve_note();
+    /// Loads data/fitted_curves.json into the curves and updates the header warning.
+    void load_fitted();
     QString pieces_path() const;
     QString mounds_path() const;
+    QString groups_path() const;
     QString rolloff_path() const;
     /// An ingredient's own mound slope, or -1 to take the default.
     double mound_slope_for(const QString &name) const;
@@ -301,9 +305,12 @@ private:
     QLabel *capacity_label_ = nullptr;
     QPushButton *about_ = nullptr;
     QPushButton *issues_ = nullptr;   ///< shown only when the menus carry data issues
+    QPushButton *fit_state_ = nullptr; ///< shown when fitted curves are missing or out of date
+    QString fit_message_;              ///< why, for the header button and the curve note
     QStringList menu_issues_;
     NameMappings name_maps_;           ///< data/ingredient_aliases.csv
     PieceHeights pieces_;              ///< data/ingredient_pieces.csv
+    IngredientGroups groups_;          ///< data/ingredient_groups.csv
     MoundSlopes mound_slopes_;         ///< data/ingredient_mounds.csv
     RollOffAngles roll_off_;           ///< data/ingredient_rolloff.csv
     QCheckBox *heights_ = nullptr;     ///< judge fit by height under the lid

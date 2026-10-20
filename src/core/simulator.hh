@@ -421,6 +421,7 @@ constexpr double kFlatToppingRate = 4.5;
 enum class CurveSource
 {
     Own,
+    Group,     ///< its pool group's typical curve, from the fitted curves
     Family,
     Composite,
     Flat

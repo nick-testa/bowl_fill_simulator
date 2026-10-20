@@ -8,6 +8,7 @@
 #include "core/measurements.hh"
 #include "core/curves.hh"
 #include "core/feasibility.hh"
+#include "core/fitted_curves.hh"
 #include "core/manual_entry.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
@@ -1157,7 +1158,7 @@ int main()
         auto fit_of = [](const std::vector<std::pair<double, double>> &pts, FitSpace space) {
             CurveSet c;
             c.set_fit_space(space);
-            for (const auto &[g, oz] : pts) c.add({"probe", g, oz});
+            for (const auto &[g, oz] : pts) c.add({"probe", g, oz, {}});
             c.refit();
             const Fit *f = c.fit("probe");
             return f ? *f : Fit{};
@@ -1238,11 +1239,11 @@ int main()
         // Al Pastor has far more readings; each must still count once.
         const double kOz = CurveSet::kMlPerFlOz;
         for (double g = 50; g <= 200; g += 5)
-            c.add({"Chicken Al Pastor", g, 1.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"Suadero Beef", g, 2.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"test beans", g, 9.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"Mexican Slaw", g, 3.0 * g / kOz});
-        for (double g : {50.0, 200.0}) c.add({"white rice", g, 1.5 * g / kOz});
+            c.add({"Chicken Al Pastor", g, 1.0 * g / kOz, {}});
+        for (double g : {50.0, 200.0}) c.add({"Suadero Beef", g, 2.0 * g / kOz, {}});
+        for (double g : {50.0, 200.0}) c.add({"test beans", g, 9.0 * g / kOz, {}});
+        for (double g : {50.0, 200.0}) c.add({"Mexican Slaw", g, 3.0 * g / kOz, {}});
+        for (double g : {50.0, 200.0}) c.add({"white rice", g, 1.5 * g / kOz, {}});
         c.refit();
 
         std::vector<std::string> members;
@@ -1339,7 +1340,7 @@ int main()
         CurveSet c;
         for (int i = 0; i < 20; ++i) {
             const double g = 50 + 10 * i;
-            c.add({"slaw", g, 0.1 * g * (i % 2 ? 1.1 : 0.9)});
+            c.add({"slaw", g, 0.1 * g * (i % 2 ? 1.1 : 0.9), {}});
         }
         c.refit();
         const Fit *f = c.fit("slaw");
@@ -1383,8 +1384,8 @@ int main()
         // Readings 5% either side of their curves, so ranges have width.
         for (double g : {50.0, 100.0, 150.0, 200.0, 250.0, 300.0}) {
             const double wiggle = (static_cast<int>(g) / 50) % 2 ? 1.05 : 0.95;
-            m.add({"Chicken Al Pastor", g, wiggle * g / 30.0});
-            m.add({"Suadero Beef", g, wiggle * g / 20.0});
+            m.add({"Chicken Al Pastor", g, wiggle * g / 30.0, {}});
+            m.add({"Suadero Beef", g, wiggle * g / 20.0, {}});
         }
         m.refit();
         const CurveChoice own = choose_curve("Suadero Beef", Kind::Protein, m);
@@ -1452,8 +1453,8 @@ int main()
                   to_lower(proxy_curve_for("White Jasmine Rice", curves)), "white rice");
 
         CurveSet couscous;
-        couscous.add({"lemon couscous", 109, 98 / CurveSet::kMlPerFlOz});
-        couscous.add({"lemon couscous", 183, 213 / CurveSet::kMlPerFlOz});
+        couscous.add({"lemon couscous", 109, 98 / CurveSet::kMlPerFlOz, {}});
+        couscous.add({"lemon couscous", 183, 213 / CurveSet::kMlPerFlOz, {}});
         couscous.refit();
         expect_eq("plain couscous borrows lemon couscous", proxy_curve_for("Couscous", couscous),
                   "lemon couscous");
@@ -1719,6 +1720,102 @@ int main()
         expect_true("an empty entry is empty", ManualEntry{}.empty() && !entry.empty());
         expect_true("an empty entry still builds",
                     manual_entry_menu(loaded.menus, ManualEntry{}).ingredients.empty());
+    }
+
+    std::printf("\nPool groups and fitted curves\n");
+    {
+        expect_eq("rice pools with the grains", automatic_group("white rice"), "grain");
+        expect_eq("romaine pools with the greens", automatic_group("Romaine Base"), "green");
+        expect_eq("a chicken pools with the proteins", automatic_group("Guajillo Cumin Chicken"), "protein");
+        expect_eq("a salsa pools with the toppings", automatic_group("Pico de Gallo"), "topping");
+        const IngredientGroups set_by_hand = {{"Lemon Couscous", "grain"}, {"Sweet Potato", "dense topping"}};
+        expect_eq("a listed group wins, whatever the case", pooling_group("lemon couscous", set_by_hand), "grain");
+        expect_eq("a user's own group", pooling_group("sweet potato", set_by_hand), "dense topping");
+
+        const fs::path root = temp_path("bowlfill-verify-fit");
+        fs::remove_all(root);
+        fs::create_directories(root);
+        const std::string groups_path = (root / "ingredient_groups.csv").string();
+        IngredientGroups round_trip;
+        expect_true("groups save and load back",
+                    save_ingredient_groups(groups_path, set_by_hand)
+                        && load_ingredient_groups(groups_path, round_trip) && round_trip == set_by_hand);
+        IngredientGroups none;
+        expect_true("a missing groups file is not an error",
+                    load_ingredient_groups((root / "absent.csv").string(), none) && none.empty());
+
+        // Fit input: the points the curves rest on, without the calibration reference.
+        CurveSet c;
+        for (double g : {60.0, 120.0, 180.0}) c.add({"white rice", g, 1.8 * g / CurveSet::kMlPerFlOz, "day1.csv"});
+        for (double g : {80.0, 160.0}) c.add({"Guajillo Cumin Chicken", g, 1.2 * g / CurveSet::kMlPerFlOz, "day1.csv"});
+        for (double g : {50.0, 100.0}) c.add({"test beans", g, g / CurveSet::kMlPerFlOz, "beans.csv"});
+        c.refit();
+        const std::string input = fit_input_csv(c);
+        expect_true("fit input has the expected header", input.starts_with("ingredient,group,batch,g,ml\n"));
+        expect_true("fit input leaves the calibration reference out", input.find("test beans") == std::string::npos);
+        expect_true("fit input carries group and batch",
+                    input.find("white rice,grain,day1.csv,60.000,108.000") != std::string::npos);
+        const std::string print = fit_fingerprint(input);
+        expect_eq("the same data gives the same fingerprint", fit_fingerprint(fit_input_csv(c)), print);
+        c.set_groups({{"white rice", "rice only"}});
+        expect_true("regrouping changes the fingerprint", fit_fingerprint(fit_input_csv(c)) != print);
+        c.set_groups({});
+
+        // Without fitted curves everything is least squares, as before.
+        expect_true("no fitted file means Missing", fit_status(c).state == FitState::Missing);
+        FittedCurves absent;
+        expect_true("a missing fitted file is not an error",
+                    load_fitted_curves((root / "absent.json").string(), absent) && !absent.loaded);
+
+        const double kOz = CurveSet::kMlPerFlOz;
+        const std::string json = std::format(
+            R"({{"schema": 1, "fitted_at": "2026-10-20T12:00:00-04:00", "fit_input_fingerprint": "{}",
+                "batch_rel_sd": 0.15, "diagnostics": {{"divergences": 0, "max_rhat": 1.004}},
+                "ingredients": [
+                  {{"name": "white rice", "group": "grain", "k_oz": {}, "p": 1.0, "n": 3, "batches": 1,
+                    "lo_g": 60, "hi_g": 180, "scatter_rel_sd": 0.05, "new_batch_rel_sd": 0.20}},
+                  {{"name": "Guajillo Cumin Chicken", "group": "protein", "k_oz": {}, "p": 1.1, "n": 2,
+                    "batches": 1, "lo_g": 80, "hi_g": 160, "scatter_rel_sd": 0.08, "new_batch_rel_sd": 0.22}}],
+                "groups": [
+                  {{"name": "grain", "k_oz": {}, "p": 1.0, "n": 1, "new_batch_rel_sd": 0.30}},
+                  {{"name": "protein", "k_oz": {}, "p": 1.1, "n": 1, "new_batch_rel_sd": 0.35}}]}})",
+            print, 1.75 / kOz, 0.5 / kOz, 1.6 / kOz, 0.55 / kOz);
+        const std::string json_path = (root / "fitted_curves.json").string();
+        expect_true("fitted curves file written", write_file(json_path, json));
+        FittedCurves fitted;
+        std::string why;
+        expect_true("fitted curves load", load_fitted_curves(json_path, fitted, &why) && fitted.loaded);
+        expect_near("two fitted ingredients", fitted.ingredients.size(), 2, 0.01);
+        expect_near("batch spread read", fitted.batch_rel_sd, 0.15, 1e-9);
+        c.set_fitted(fitted);
+        expect_true("fitted on these points means Current", fit_status(c).state == FitState::Current);
+
+        const Fit *rice = c.fit("White Rice");
+        expect_true("a fitted ingredient uses its fitted curve",
+                    rice && rice->fitted && std::fabs(rice->K - 1.75 / kOz) < 1e-12);
+        const CurveChoice own = choose_curve("white rice", Kind::Base, c);
+        expect_true("its spread is the new-batch spread, curve uncertainty included",
+                    own.source == CurveSource::Own && std::fabs(own.rel_sd - 0.20) < 1e-12 && own.rel_se == 0);
+        const CurveChoice lentils = choose_curve("Brown Rice and Lentils", Kind::Base, c);
+        expect_true("an unmeasured grain takes the grain group's typical curve",
+                    lentils.source == CurveSource::Group && std::fabs(lentils.K - 1.6 / kOz) < 1e-12
+                        && std::fabs(lentils.rel_sd - 0.30) < 1e-12);
+        expect_true("a group with nothing measured falls to the flat rate",
+                    choose_curve("Pico de Gallo", Kind::Topping, c).source == CurveSource::Flat);
+
+        // New measurements after the fit: still fitted where covered, flagged, and the
+        // new ingredient uses least squares until refitted.
+        for (double g : {40.0, 80.0}) c.add({"Mexican Slaw", g, 3.0 * g / kOz, "day2.csv"});
+        c.refit();
+        const FitStatus stale = fit_status(c);
+        expect_true("measurements added since the fit mean Stale", stale.state == FitState::Stale);
+        expect_eq("the new ingredient is named as unfitted", join(stale.unfitted, ", "), "Mexican Slaw");
+        expect_true("it uses least squares meanwhile", c.fit("Mexican Slaw") && !c.fit("Mexican Slaw")->fitted);
+        expect_true("the stale message says how to refit",
+                    fit_status_message(stale, c.fitted()).find(refit_command()) != std::string::npos);
+        expect_true("a bad file is refused", !write_file(json_path, "{not json") ||
+                                                 !load_fitted_curves(json_path, fitted, &why));
+        fs::remove_all(root);
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

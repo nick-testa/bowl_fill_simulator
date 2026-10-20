@@ -330,4 +330,13 @@ bool write_text(const std::string &path, std::string_view text)
     return static_cast<bool>(out);
 }
 
+std::string csv_field(const std::string &s)
+{
+    if (s.find(',') == std::string::npos && s.find('"') == std::string::npos && trim(s) == s)
+    {
+        return s;
+    }
+    return '"' + replace_all(s, "\"", "\"\"") + '"';
+}
+
 } // namespace bowlfill

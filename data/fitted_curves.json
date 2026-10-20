@@ -1,0 +1,263 @@
+{
+  "schema": 1,
+  "fitted_at": "2026-10-20T11:42:10-04:00",
+  "fit_input_fingerprint": "74d2aaf39516f869",
+  "model": "ml = A_i * (g/100)^p_i * exp(b_batch); log A_i ~ N(mu_A[group], tau_A); p_i ~ N(mu_p, tau_p); b ~ N(0, tau_batch); ml ~ N(curve, sigma_i)",
+  "priors": {
+    "mu_logA": {
+      "dist": "Normal",
+      "mu": 5.0106352940962555,
+      "sigma": 0.7,
+      "meaning": "typical ml at 100 g, per group"
+    },
+    "tau_A": {
+      "dist": "HalfNormal",
+      "sigma": 0.5,
+      "meaning": "spread of sizes within a group (log)"
+    },
+    "mu_p": {
+      "dist": "Normal",
+      "mu": 1.0,
+      "sigma": 0.2,
+      "meaning": "typical exponent"
+    },
+    "tau_p": {
+      "dist": "HalfNormal",
+      "sigma": 0.15,
+      "meaning": "spread of exponents between foods"
+    },
+    "tau_batch": {
+      "dist": "HalfNormal",
+      "sigma": 0.15,
+      "meaning": "batch-to-batch shift (log)"
+    },
+    "sigma": {
+      "dist": "HalfNormal",
+      "sigma": 40.0,
+      "meaning": "bowl-to-bowl scatter, ml"
+    }
+  },
+  "diagnostics": {
+    "divergences": 0,
+    "max_rhat": 1.01,
+    "min_ess_bulk": 1102.0,
+    "draws": 4000
+  },
+  "batch_rel_sd": 0.14674282009928263,
+  "ingredients": [
+    {
+      "name": "Chicken Al Pastor",
+      "group": "protein",
+      "k_oz": 0.025235884679725686,
+      "k_ml": 0.7463141816117084,
+      "p": 1.073026616847666,
+      "p_94": [
+        0.9296333195248668,
+        1.2061483600316574
+      ],
+      "n": 4,
+      "batches": 1,
+      "lo_g": 105.0,
+      "hi_g": 181.0,
+      "ref_g": 122.5,
+      "scatter_rel_sd": 0.05625741765368997,
+      "new_batch_rel_sd": 0.23010811031893266
+    },
+    {
+      "name": "Guajillo Cumin Chicken",
+      "group": "protein",
+      "k_oz": 0.023414745217955026,
+      "k_ml": 0.6924566599015984,
+      "p": 1.1216009409569663,
+      "p_94": [
+        1.0680132981390498,
+        1.1747810963747838
+      ],
+      "n": 32,
+      "batches": 1,
+      "lo_g": 60.3,
+      "hi_g": 330.6,
+      "ref_g": 145.5,
+      "scatter_rel_sd": 0.07186118777401225,
+      "new_batch_rel_sd": 0.21924683360330727
+    },
+    {
+      "name": "Mexican Slaw",
+      "group": "topping",
+      "k_oz": 0.06635781610689388,
+      "k_ml": 1.9624348363401647,
+      "p": 1.049720094944786,
+      "p_94": [
+        0.9496733526808968,
+        1.1609675920815126
+      ],
+      "n": 6,
+      "batches": 1,
+      "lo_g": 34.0,
+      "hi_g": 94.0,
+      "ref_g": 66.0,
+      "scatter_rel_sd": 0.0503743655685321,
+      "new_batch_rel_sd": 0.2170026281269829
+    },
+    {
+      "name": "Pineapple-Cucumber Salad",
+      "group": "topping",
+      "k_oz": 0.03450967890563674,
+      "k_ml": 1.0205730093082308,
+      "p": 1.0500403483553777,
+      "p_94": [
+        0.8396024247817809,
+        1.2696048223628147
+      ],
+      "n": 5,
+      "batches": 1,
+      "lo_g": 39.0,
+      "hi_g": 67.0,
+      "ref_g": 57.0,
+      "scatter_rel_sd": 0.1562817743061418,
+      "new_batch_rel_sd": 0.3054988224310321
+    },
+    {
+      "name": "Romaine Base",
+      "group": "green",
+      "k_oz": 0.10003420592073872,
+      "k_ml": 2.958364546058179,
+      "p": 1.0932320151630288,
+      "p_94": [
+        0.9661841018931339,
+        1.24297669537122
+      ],
+      "n": 42,
+      "batches": 2,
+      "lo_g": 39.0,
+      "hi_g": 100.4,
+      "ref_g": 71.94999999999999,
+      "scatter_rel_sd": 0.15279345121199994,
+      "new_batch_rel_sd": 0.2432105776939553
+    },
+    {
+      "name": "Suadero Beef",
+      "group": "protein",
+      "k_oz": 0.01990687800567804,
+      "k_ml": 0.5887166451980006,
+      "p": 1.1617897296152053,
+      "p_94": [
+        0.9770040062711476,
+        1.383253531451167
+      ],
+      "n": 6,
+      "batches": 1,
+      "lo_g": 56.0,
+      "hi_g": 170.0,
+      "ref_g": 119.0,
+      "scatter_rel_sd": 0.08937857080580891,
+      "new_batch_rel_sd": 0.22390033639678306
+    },
+    {
+      "name": "lemon couscous",
+      "group": "grain",
+      "k_oz": 0.04443903976860831,
+      "k_ml": 1.3142192563260509,
+      "p": 1.0080803821346638,
+      "p_94": [
+        0.9717203675455229,
+        1.044784985618503
+      ],
+      "n": 47,
+      "batches": 2,
+      "lo_g": 44.8,
+      "hi_g": 204.5,
+      "ref_g": 111.8,
+      "scatter_rel_sd": 0.04979157612919157,
+      "new_batch_rel_sd": 0.20923158911306156
+    },
+    {
+      "name": "white rice",
+      "group": "grain",
+      "k_oz": 0.07569620373281531,
+      "k_ml": 2.2386039188614366,
+      "p": 0.9642710151039927,
+      "p_94": [
+        0.9383987948751924,
+        0.9906339214012249
+      ],
+      "n": 48,
+      "batches": 2,
+      "lo_g": 56.0,
+      "hi_g": 383.0,
+      "ref_g": 205.8,
+      "scatter_rel_sd": 0.03306665998211304,
+      "new_batch_rel_sd": 0.18759022015753604
+    }
+  ],
+  "groups": [
+    {
+      "name": "protein",
+      "k_oz": 0.03025937018005285,
+      "k_ml": 0.8948763785624239,
+      "p": 1.0622446236736174,
+      "members": [
+        "Chicken Al Pastor",
+        "Guajillo Cumin Chicken",
+        "Suadero Beef"
+      ],
+      "n": 3,
+      "batches": 2,
+      "lo_g": 56.0,
+      "hi_g": 330.6,
+      "ref_g": 133.5,
+      "scatter_rel_sd": 0.0724990587445037,
+      "new_batch_rel_sd": 0.6366022903828557
+    },
+    {
+      "name": "grain",
+      "k_oz": 0.04036454259496534,
+      "k_ml": 1.1937219937089978,
+      "p": 1.0622446236736174,
+      "members": [
+        "lemon couscous",
+        "white rice"
+      ],
+      "n": 2,
+      "batches": 4,
+      "lo_g": 44.8,
+      "hi_g": 383.0,
+      "ref_g": 148.4,
+      "scatter_rel_sd": 0.0414291180556523,
+      "new_batch_rel_sd": 0.5618090795843693
+    },
+    {
+      "name": "topping",
+      "k_oz": 0.044698054860154574,
+      "k_ml": 1.321879246793028,
+      "p": 1.0622446236736174,
+      "members": [
+        "Mexican Slaw",
+        "Pineapple-Cucumber Salad"
+      ],
+      "n": 2,
+      "batches": 2,
+      "lo_g": 34.0,
+      "hi_g": 94.0,
+      "ref_g": 57.0,
+      "scatter_rel_sd": 0.10332806993733695,
+      "new_batch_rel_sd": 0.5571319779468343
+    },
+    {
+      "name": "green",
+      "k_oz": 0.09244703675449246,
+      "k_ml": 2.733985174424507,
+      "p": 1.0622446236736174,
+      "members": [
+        "Romaine Base"
+      ],
+      "n": 1,
+      "batches": 2,
+      "lo_g": 39.0,
+      "hi_g": 100.4,
+      "ref_g": 71.94999999999999,
+      "scatter_rel_sd": 0.15279345121199994,
+      "new_batch_rel_sd": 0.5653878872103345
+    }
+  ]
+}

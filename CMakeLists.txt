@@ -57,6 +57,7 @@ add_library(bowlfill_core STATIC
   src/core/menu_loader.cc
   src/core/manual_entry.cc
   src/core/curves.cc
+  src/core/fitted_curves.cc
   src/core/simulator.cc
   src/core/adaptive.cc
   src/core/feasibility.cc

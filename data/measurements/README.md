@@ -25,7 +25,11 @@ are taken as given, since they may come from other methods.
 weight from a trusted bench scale. When a row has one, its ingredient weights (from
 the robot's puck, which drifts) are scaled in proportion so they add up to it.
 
-**Curve fitting.** Each ingredient's curve, ml = K·g^p, is fitted by least squares
+**Curve fitting.** The curves are fitted together by `tools/fit_curves.py` into
+`data/fitted_curves.json` (see the main README's *Fitted curves*); each file here
+counts as one batch. Rerun it after changing this folder; until then the app flags
+the fitted curves as out of date. Without that file, each ingredient's curve,
+ml = K·g^p, is fitted by least squares
 on the volume itself, so a few ml of camera error weighs the same at 20 g as at
 400 g instead of dominating the small portions.
 

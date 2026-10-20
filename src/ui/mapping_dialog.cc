@@ -26,7 +26,7 @@ namespace {
 
 namespace space = theme::space;
 
-enum Column { kBrand, kRaw, kMapsTo, kKind, kPiece, kSlope, kRoll, kColumns };
+enum Column { kBrand, kRaw, kMapsTo, kKind, kGroup, kPiece, kSlope, kRoll, kColumns };
 enum Show { kAll, kMapped, kUnmapped };
 
 /// Cell widgets fill their cell edge to edge; this insets one so rows breathe.
@@ -62,7 +62,8 @@ QString capitalised(QString s)
 
 MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                              const PieceHeights &pieces, const MoundSlopes &slopes,
-                             const RollOffAngles &rolls, const QString &brand,
+                             const RollOffAngles &rolls, const IngredientGroups &groups,
+                             const QString &brand,
                              QWidget *parent)
     : QDialog(parent)
 {
@@ -86,7 +87,9 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
         "A <i>Mound slope</i> sets how steeply an ingredient piles when mounding is "
         "shown; leave it on <i>Default</i> to use the default slope in Settings \u2192 Mounding & chunks. "
         "Give chunky pieces that roll off a mound a <i>Roll-off</i> angle: they roll down "
-        "anything steeper and ring the mound's foot instead of piling on top.");
+        "anything steeper and ring the mound's foot instead of piling on top. "
+        "A <i>Pool group</i> sets which ingredients share a typical curve in the fitted "
+        "curves; type a new name to start a group of your own.");
     blurb->setObjectName("lead");
     blurb->setWordWrap(true);
     v->addWidget(blurb);
@@ -123,7 +126,8 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 
     table_ = new QTableWidget(static_cast<int>(rows_.size()), kColumns);
     table_->setHorizontalHeaderLabels(
-        {"Brand", "Name in menu", "Maps to", "Kind", "Piece height", "Mound slope", "Roll-off"});
+        {"Brand", "Name in menu", "Maps to", "Kind", "Pool group", "Piece height", "Mound slope",
+         "Roll-off"});
     table_->setShowGrid(false);
     table_->verticalHeader()->setVisible(false);
     table_->verticalHeader()->setDefaultSectionSize(40);
@@ -136,16 +140,18 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     h->setSectionResizeMode(kRaw, QHeaderView::Stretch);
     h->setSectionResizeMode(kMapsTo, QHeaderView::Fixed);
     h->setSectionResizeMode(kKind, QHeaderView::Fixed);
+    h->setSectionResizeMode(kGroup, QHeaderView::Fixed);
     h->setSectionResizeMode(kPiece, QHeaderView::Fixed);
     h->setSectionResizeMode(kSlope, QHeaderView::Fixed);
     h->setSectionResizeMode(kRoll, QHeaderView::Fixed);
     table_->setColumnWidth(kMapsTo, 280);
     table_->setColumnWidth(kKind, 170);
+    table_->setColumnWidth(kGroup, 190);
     table_->setColumnWidth(kPiece, 170);
     table_->setColumnWidth(kSlope, 130);
     table_->setColumnWidth(kRoll, 110);
     v->addWidget(table_, 1);
-    populate(current, pieces, slopes, rolls);
+    populate(current, pieces, slopes, rolls, groups);
 
     // ---- footer -----------------------------------------------------------
     auto *foot = new QHBoxLayout;
@@ -184,8 +190,15 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 }
 
 void MappingDialog::populate(const NameMappings &current, const PieceHeights &pieces,
-                             const MoundSlopes &slopes, const RollOffAngles &rolls)
+                             const MoundSlopes &slopes, const RollOffAngles &rolls,
+                             const IngredientGroups &groups)
 {
+    // Every group on offer: the automatic ones, then any of the user's own.
+    QStringList group_names;
+    for (const std::string &g : kAutomaticGroups) group_names << qs(g);
+    for (const auto &[name, g] : groups)
+        if (!group_names.contains(qs(g))) group_names << qs(g);
+
     std::set<std::pair<std::string, std::string>> listed;
     for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
         const Row &row = rows_[r];
@@ -217,6 +230,18 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         kind->setToolTip("Sauce keeps an ingredient out of the topping pool; the simulator "
                          "counts sauce as cups.");
         table_->setCellWidget(r, kKind, in_cell(kind));
+
+        // Pool group, by the name in use. The first entry keeps the automatic group;
+        // typing a new name starts a group of its own.
+        auto *group = new QComboBox;
+        group->setEditable(true);
+        group->setInsertPolicy(QComboBox::NoInsert);
+        group->addItem(QString("Automatic"));   // labelled once the row's name is known
+        group->addItems(group_names);
+        group->setToolTip("Ingredients in a group share a typical curve, so one with few or no "
+                          "measurements borrows from the others. Shared by every row that maps "
+                          "to the same name.");
+        table_->setCellWidget(r, kGroup, in_cell(group));
 
         // Piece height, by the name in use. The lowest value means "no entry": a
         // protein then takes the placeholder, anything else smears.
@@ -281,6 +306,16 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
         }
         connect(roll, &QDoubleSpinBox::valueChanged, this,
                 [this, r] { sync_shared(r, kRoll); });
+        {
+            const QSignalBlocker block(group);
+            group->setItemText(0, QString("Automatic: %1").arg(qs(automatic_group(ss(name_at(r))))));
+            auto git = std::find_if(groups.begin(), groups.end(), [&](const auto &e) {
+                return QString::compare(qs(e.first), name_at(r), Qt::CaseInsensitive) == 0;
+            });
+            if (git != groups.end()) group->setCurrentText(qs(git->second));
+            else group->setCurrentIndex(0);
+        }
+        connect(group, &QComboBox::currentTextChanged, this, [this, r] { sync_group(r); });
 
         connect(maps, &QComboBox::currentTextChanged, this, &MappingDialog::refresh_state);
         connect(kind, &QComboBox::currentIndexChanged, this, &MappingDialog::refresh_state);
@@ -305,6 +340,44 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
             used = ss(name_at(r)) == name;
         if (!used) stale_rolls_[name] = deg;
     }
+    for (const auto &[name, g] : groups) {
+        bool used = false;
+        for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
+            used = QString::compare(name_at(r), qs(name), Qt::CaseInsensitive) == 0;
+        if (!used) stale_groups_[name] = g;
+    }
+}
+
+QString MappingDialog::group_at(int row) const
+{
+    QComboBox *group = combo_in(table_, row, kGroup);
+    const QString text = group ? group->currentText().trimmed().toLower() : QString();
+    return text.startsWith("automatic") ? QString() : text;
+}
+
+void MappingDialog::sync_group(int row)
+{
+    // A group belongs to the ingredient, not the spelling, like a piece height.
+    const QString name = name_at(row);
+    QComboBox *source = combo_in(table_, row, kGroup);
+    if (!source) return;
+    for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
+        if (r != row && name_at(r) == name)
+            if (QComboBox *g = combo_in(table_, r, kGroup)) {
+                const QSignalBlocker block(g);
+                g->setCurrentText(source->currentText());
+            }
+}
+
+IngredientGroups MappingDialog::groups() const
+{
+    IngredientGroups out = stale_groups_;
+    for (int r = 0; r < static_cast<int>(rows_.size()); ++r) {
+        const QString g = group_at(r);
+        if (g.isEmpty() || ss(g) == automatic_group(ss(name_at(r)))) continue;
+        out[ss(name_at(r))] = ss(g);
+    }
+    return out;
 }
 
 double MappingDialog::piece_at(int row) const

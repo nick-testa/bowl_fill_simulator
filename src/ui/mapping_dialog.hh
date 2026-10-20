@@ -27,7 +27,8 @@ class MappingDialog : public QDialog {
 public:
     MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                   const PieceHeights &pieces, const MoundSlopes &slopes,
-                  const RollOffAngles &rolls, const QString &brand = {},
+                  const RollOffAngles &rolls, const IngredientGroups &groups,
+                  const QString &brand = {},
                   QWidget *parent = nullptr);
 
     /// What to save: only rows that differ from the automatic name or set a kind,
@@ -40,6 +41,9 @@ public:
     MoundSlopes slopes() const;
     /// Roll-off angles by name in use, likewise.
     RollOffAngles rolls() const;
+    /// Pooling groups by name in use: every row given a group other than its automatic
+    /// one, plus saved groups for names no row maps to any more.
+    IngredientGroups groups() const;
 
 private:
     struct Row {
@@ -47,7 +51,10 @@ private:
     };
 
     void populate(const NameMappings &current, const PieceHeights &pieces,
-                  const MoundSlopes &slopes, const RollOffAngles &rolls);
+                  const MoundSlopes &slopes, const RollOffAngles &rolls,
+                  const IngredientGroups &groups);
+    QString group_at(int row) const;   ///< empty for "automatic"
+    void sync_group(int row);
     double piece_at(int row) const;   ///< -1 for "default"
     void sync_piece(int row);
     void sync_shared(int row, int column);
@@ -66,6 +73,7 @@ private:
     PieceHeights stale_pieces_;
     MoundSlopes stale_slopes_;
     RollOffAngles stale_rolls_;
+    IngredientGroups stale_groups_;
     QStringList names_;    ///< every name in use, offered by the "Maps to" boxes
 
     QComboBox *show_ = nullptr;

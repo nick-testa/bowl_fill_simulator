@@ -1,0 +1,4 @@
+# Pooling groups for the fitted curves (tools/fit_curves.py). Ingredients in a group share a
+# typical curve. Unlisted ingredients take their automatic group: grain, green, protein or topping.
+ingredient,group
+lemon couscous,grain

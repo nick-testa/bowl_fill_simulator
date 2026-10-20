@@ -714,7 +714,7 @@ Fit composite_curve(Kind kind, const CurveSet &curves, std::vector<std::string> 
         {
             oz += f->volume_oz(g);
         }
-        avg.add({"composite", g, oz / fits.size()});
+        avg.add({"composite", g, oz / fits.size(), {}});
     }
     avg.refit();
     if (const Fit *f = avg.fit("composite"))
@@ -769,8 +769,34 @@ CurveChoice choose_curve(const std::string &name, Kind kind, const CurveSet &cur
         c.source = CurveSource::Own;
         c.K = f->K;
         c.p = f->p;
-        c.rel_sd = scatter(*f);
-        c.rel_se = c.rel_sd / std::sqrt(std::max(1, f->n));
+        if (f->fitted && f->new_batch_rel_sd > 0)
+        {
+            // A fitted curve's spread already holds its own uncertainty and the batch.
+            c.rel_sd = f->new_batch_rel_sd;
+            c.rel_se = 0.0;
+        }
+        else
+        {
+            c.rel_sd = scatter(*f);
+            c.rel_se = c.rel_sd / std::sqrt(std::max(1, f->n));
+        }
+        return c;
+    }
+    // With fitted curves, an unmeasured ingredient takes its pool group's typical curve,
+    // and its spread says how far the group's members differ. A group with nothing
+    // measured falls to the flat rate: there is nothing to lean on.
+    if (curves.fitted().loaded)
+    {
+        const std::string group = curves.group_of(name);
+        if (const Fit *g = curves.group_fit(group))
+        {
+            c.source = CurveSource::Group;
+            c.K = g->K;
+            c.p = g->p;
+            c.from = {group};
+            c.rel_sd = g->new_batch_rel_sd > 0 ? g->new_batch_rel_sd : kFlatRateRelSd;
+            c.rel_se = 0.0;
+        }
         return c;
     }
     if (const std::string proxy = proxy_curve_for(name, curves); !proxy.empty())
@@ -806,6 +832,8 @@ std::string describe(const CurveChoice &choice)
     {
     case CurveSource::Own:
         return "own measurements";
+    case CurveSource::Group:
+        return "typical " + join(choice.from, ", ") + " curve";
     case CurveSource::Family:
         return "borrows " + join(choice.from, ", ");
     case CurveSource::Composite:
