@@ -228,7 +228,7 @@ bool save_roll_off(const std::string &path, const RollOffAngles &angles, std::st
 /// typical curve, so one with few or no measurements borrows from the others in
 /// proportion to how little its own data say. Stored in data/ingredient_groups.csv as
 /// ingredient,group, keyed by the name in use (names match regardless of case).
-/// Unlisted ingredients take their automatic group: grain, green, protein or topping.
+/// Unlisted ingredients take their automatic group: grain, green, protein, topping or sauce.
 ///
 using IngredientGroups = std::map<std::string, std::string>;
 

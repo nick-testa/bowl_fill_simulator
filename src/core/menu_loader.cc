@@ -1480,7 +1480,7 @@ bool load_ingredient_groups(const std::string &path, IngredientGroups &out, std:
 bool save_ingredient_groups(const std::string &path, const IngredientGroups &groups, std::string *error)
 {
     std::string out = "# Pooling groups for the fitted curves (tools/fit_curves.py). Ingredients in a group share a\n"
-                      "# typical curve. Unlisted ingredients take their automatic group: grain, green, protein or topping.\n"
+                      "# typical curve. Unlisted ingredients take their automatic group: grain, green, protein, topping or sauce.\n"
                       "ingredient,group\n";
     for (const auto &[name, group] : groups)
     {

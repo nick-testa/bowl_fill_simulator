@@ -14,7 +14,7 @@ namespace bowlfill
 /// reads back data/fitted_curves.json:
 ///
 ///     ./build/bowl-fill-simulator --export-fit-input fit_input.csv
-///     uv run tools/fit_curves.py fit_input.csv data/fitted_curves.json
+///     uv run tools/fit_curves.py fit_input.csv --out data/fitted_curves.json
 ///
 /// (tools/fit_curves.py does both when run with no arguments.) The input carries a
 /// fingerprint, which the fit copies into its output, so the app can tell when the

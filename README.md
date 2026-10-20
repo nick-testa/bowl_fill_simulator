@@ -216,7 +216,8 @@ The curves are fitted **together**, as one hierarchical Bayesian model
 **Pool groups** are set per ingredient in `data/ingredient_groups.csv`
 (`ingredient,group`), or in the Ingredients dialog's *Pool group* column, where typing a
 new name starts a group. Unlisted ingredients take an automatic group: `grain` or
-`green` for a base, `protein`, or `topping`.
+`green` for a base, `protein`, `topping`, or `sauce` for a sauce (a sauce is a cup, so its
+group never gets a curve). Names match whatever their case.
 
 **Refitting.** After adding measurements or changing groups, run
 
