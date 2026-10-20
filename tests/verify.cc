@@ -1509,6 +1509,22 @@ int main()
         VolumeFillSettings vf;
         vf.fit_share = 0.85;
         const VolumeFillExport ex = export_volume_fill(loaded.menus, curves, settings, vf);
+
+        // Only active brands reach lab37: a deprecated menu's spellings and curves stay out.
+        const VolumeFillExport only = export_volume_fill(loaded.menus, curves, settings, vf,
+                                                         {"casa condesa", "No Such Brand"});
+        expect_eq("an active list exports just those brands (any case)", join(only.brands, ", "), "Casa Condesa");
+        expect_true("the other brands are reported as left out",
+                    std::find(only.skipped.begin(), only.skipped.end(), "Farmstand") != only.skipped.end());
+        expect_eq("a listed brand with no menu is reported", join(only.missing, ", "), "No Such Brand");
+        bool all_casa = !only.rows.empty();
+        for (const VolumeFillRow &row : only.rows)
+            all_casa = all_casa && row.brands == std::vector<std::string>{"Casa Condesa"};
+        expect_true("every exported row comes from an active brand", all_casa);
+        expect_true("the generated file names its brands",
+                    only.source.find("// Brands: Casa Condesa (") != std::string::npos);
+        expect_true("no active list means every brand", ex.skipped.empty() && ex.brands.size() > 1);
+
         const Ingredient &romaine = *farmstand->find("Romaine Base");
         const BowlItem r = make_item(romaine, curves);
         std::string spelling;

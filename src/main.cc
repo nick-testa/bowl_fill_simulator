@@ -215,8 +215,17 @@ int run_export_volume_fill(const QString &asset_dir, const QString &path, const 
     settings.geometry = configured_geometry(false);
     settings.compress = true;
     settings.load_transfer = 1.0;
+    std::vector<std::string> active;
+    std::string active_err;
+    if (!load_active_brands(ss(asset_dir + "/data/active_brands.csv"), active, &active_err))
+        err << qs(active_err) << "\n";
     const VolumeFillExport ex =
-        export_volume_fill(loaded.menus, curves, settings, configured_volume_fill());
+        export_volume_fill(loaded.menus, curves, settings, configured_volume_fill(), active);
+    err << "brands: " << qs(join(ex.brands, ", ")) << "\n";
+    if (!ex.skipped.empty())
+        err << "left out (not in data/active_brands.csv): " << qs(join(ex.skipped, ", ")) << "\n";
+    for (const std::string &b : ex.missing)
+        err << "data/active_brands.csv lists \"" << qs(b) << "\", but no menu has that brand\n";
     for (const std::string &c : ex.conflicts) err << "brands disagree: " << qs(c) << "\n";
     if (!write_text(ss(path), ex.source)) {
         err << "could not write " << path << "\n";

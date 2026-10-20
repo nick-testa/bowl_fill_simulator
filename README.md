@@ -378,6 +378,12 @@ measurements, mappings or settings:
     --catalog-manifest volume_fill_catalog.json
 ```
 
+Only the brands listed in `data/active_brands.csv` are exported, so menus kept in `menus/`
+for reference (deprecated brands) never put their spellings or curves into lab37. The
+export names the brands it wrote and the ones it left out; delete the file to export
+every brand. Each row's k and p are also shown under Settings → Volume per gram
+(*Catalog k*, *Catalog p*, and *Copy Catalog k, p*) for updating the Catalog by hand.
+
 It writes one row per production ingredient spelling (as customizations and the Catalog
 name it), with the curve the window would choose; a flat rate is written as
 `k = rate / 100`, `p = 1`. An ingredient has one curve whichever brands serve it. Where

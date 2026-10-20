@@ -1348,6 +1348,48 @@ std::string automatic_group(const std::string &name)
     return "topping";
 }
 
+bool load_active_brands(const std::string &path, std::vector<std::string> &out, std::string *error)
+{
+    out.clear();
+    std::error_code ec;
+    if (!fs::exists(path, ec))
+    {
+        return true;
+    }
+    std::vector<std::string> lines;
+    if (!read_lines(path, lines))
+    {
+        if (error)
+        {
+            *error = std::format("could not open {}", path);
+        }
+        return false;
+    }
+    bool header = false;
+    for (const std::string &raw : lines)
+    {
+        const std::string line = trim(raw);
+        if (line.empty() || line.starts_with('#'))
+        {
+            continue;
+        }
+        const std::string brand = trim(field_at(split_csv(line), 0));
+        if (!header)
+        {
+            header = true;
+            if (iequals(brand, "brand"))
+            {
+                continue;
+            }
+        }
+        if (!brand.empty())
+        {
+            out.push_back(brand);
+        }
+    }
+    return true;
+}
+
 std::string pooling_group(const std::string &name, const IngredientGroups &groups)
 {
     for (const auto &[listed, group] : groups)

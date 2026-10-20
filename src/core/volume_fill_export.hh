@@ -36,13 +36,19 @@ struct VolumeFillExport
 {
     std::vector<VolumeFillRow> rows;    ///< sorted by ingredient name
     std::vector<std::string> conflicts; ///< one line per spelling brands disagree on
+    std::vector<std::string> brands;    ///< the brands exported
+    std::vector<std::string> skipped;   ///< brands left out as not active
+    std::vector<std::string> missing;   ///< active brands with no menu loaded
     std::string source;                 ///< volume_fill_curves.cc
     std::string manifest;               ///< JSON for the Catalog's volume_curve fields
 };
 
+/// `active_brands` (data/active_brands.csv) limits the export to those brands, so a
+/// deprecated menu's spellings and curves never reach lab37; empty exports every brand.
 VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                     const CurveSet &curves,
                                     const SimSettings &settings,
-                                    const VolumeFillSettings &vf);
+                                    const VolumeFillSettings &vf,
+                                    const std::vector<std::string> &active_brands = {});
 
 } // namespace bowlfill

@@ -55,9 +55,21 @@ bool same_curve(const VolumeFillRow &a, const VolumeFillRow &b)
 VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                     const CurveSet &curves,
                                     const SimSettings &settings,
-                                    const VolumeFillSettings &vf)
+                                    const VolumeFillSettings &vf,
+                                    const std::vector<std::string> &active_brands)
 {
     VolumeFillExport out;
+    auto active = [&](const std::string &brand) {
+        return active_brands.empty() || std::any_of(active_brands.begin(), active_brands.end(),
+                                                    [&](const std::string &a) { return iequals(a, brand); });
+    };
+    for (const std::string &a : active_brands)
+    {
+        if (std::none_of(menus.begin(), menus.end(), [&](const Menu &m) { return iequals(m.brand, a); }))
+        {
+            out.missing.push_back(a);
+        }
+    }
     std::map<std::string, VolumeFillRow> rows; // keyed by the production spelling, so sorted
     for (const Menu &menu : menus)
     {
@@ -65,6 +77,12 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
         {
             continue;
         }
+        if (!active(menu.brand))
+        {
+            out.skipped.push_back(menu.brand);
+            continue;
+        }
+        out.brands.push_back(menu.brand);
         for (const MenuName &n : menu.names)
         {
             VolumeFillRow row;
@@ -137,6 +155,10 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
          "// To change the fit target or step-down floor for one brand without a release, set\n"
          "// volume_fill_fit_share or volume_fill_min_share on its dynamic_portion_increases entry\n"
          "// (see menu_mappings.rbuf); those override the values here.\n"
+         "//\n"
+         "// Brands: " +
+         join(out.brands, ", ") +
+         " (the simulator's data/active_brands.csv).\n"
          "\n"
          "#include \"lab37/orders/volume_fill_algorithm.hh\"\n"
          "\n"
@@ -207,7 +229,7 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                                           {"brands", r.brands}};
     }
     nlohmann::ordered_json manifest = {
-        {"volume_curves", ingredients}, {"sauces", sauces}, {"conflicts", out.conflicts}};
+        {"brands", out.brands}, {"volume_curves", ingredients}, {"sauces", sauces}, {"conflicts", out.conflicts}};
     out.manifest = manifest.dump(2) + "\n";
     return out;
 }

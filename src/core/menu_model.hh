@@ -238,6 +238,11 @@ extern const std::vector<std::string> kAutomaticGroups;
 bool load_ingredient_groups(const std::string &path, IngredientGroups &out, std::string *error = nullptr);
 bool save_ingredient_groups(const std::string &path, const IngredientGroups &groups, std::string *error = nullptr);
 
+/// The brands in active use, one per line under a "brand" header (data/active_brands.csv).
+/// Deprecated menus can stay in menus/ for reference; exports to lab37 leave them out. A
+/// missing file is not an error and leaves `out` empty, which means every brand.
+bool load_active_brands(const std::string &path, std::vector<std::string> &out, std::string *error = nullptr);
+
 /// grain or green for a base (by family), protein, topping, or sauce.
 std::string automatic_group(const std::string &name);
 /// The listed group if there is one, otherwise the automatic group.
