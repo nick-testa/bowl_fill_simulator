@@ -1653,10 +1653,10 @@ QWidget *MainWindow::build_settings()
             if (!write_text(ss(path), csv()))
                 QMessageBox::warning(this, "Could not save", "Could not write " + path);
         });
-        auto *catalog = new QPushButton("Copy Catalog k, p");
-        catalog->setToolTip("Copy each production spelling's k and p, as the Catalog's "
-                            "volume_curve takes them (tab-separated: ingredient_name, kind, k, p). "
-                            "The same values --export-volume-fill writes.");
+        auto *catalog = new QPushButton("Copy Catalog curves");
+        catalog->setToolTip("Copy each production spelling's curve as the Catalog's volume_curve "
+                            "takes it (tab-separated: ingredient_name, kind, ml_at_1_g, "
+                            "volume_exponent). The same values --export-volume-fill writes.");
         connect(catalog, &QPushButton::clicked, this, [this] {
             const Menu *m = menu();
             if (!m) return;
@@ -2884,7 +2884,7 @@ void MainWindow::update_step_table()
     const std::vector<StepRow> rows = step_table(*m, curves_, target);
 
     step_table_->setHorizontalHeaderLabels(
-        {"Ingredient", "Kind", "Curve", "Catalog k", "Catalog p", "Portion", "ml per g", "g per ml",
+        {"Ingredient", "Kind", "Curve", "ml at 1 g", "Exponent", "Portion", "ml per g", "g per ml",
          "Next g adds",
          "Step now", "Step adds", QString("Step for %1 ml").arg(target, 0, 'g', 4)});
     const QStringList tips = {
@@ -2894,10 +2894,11 @@ void MainWindow::update_step_table()
         "readings (fitted with the rest when the fitted curves are loaded); group is its pool "
         "group's typical curve; borrowed is a relative's; composite averages every measured "
         "curve of its kind; flat is a fixed rate with nothing measured behind it.",
-        "The Catalog volume_curve k: fl oz at 1 g, exactly what --export-volume-fill writes. "
-        "A flat rate is written as k = rate / 100 with p = 1. Hover a value for full precision "
-        "and the production spellings it applies to.",
-        "The Catalog volume_curve p (the exponent), exactly what --export-volume-fill writes",
+        "The Catalog volume_curve ml_at_1_g: the volume of 1 g, in ml, exactly what "
+        "--export-volume-fill writes. A flat rate is written as its ml per 100 g / 100 with "
+        "exponent 1. Hover a value for full precision and the production spellings it applies to.",
+        "The Catalog volume_curve volume_exponent: how volume grows with mass (1 is "
+        "proportional; below 1 the ingredient compacts), exactly what --export-volume-fill writes",
         "The menu portion, where the ramp starts",
         "Volume of the portion over its mass",
         "Mass per ml of the portion: the inverse of ml per g",
@@ -2931,12 +2932,13 @@ void MainWindow::update_step_table()
         // An estimate is shown as one, like the estimates on the bowl.
         if (r.source != CurveSource::Own) curve->setForeground(pal.ink_soft);
         step_table_->setItem(i, 2, curve);
-        const QString catalog_tip = QString("k = %1, p = %2 (fl oz at 1 g)\nCatalog name%3: %4")
-                                        .arg(qs(std::format("{}", r.catalog_k)), qs(std::format("{}", r.catalog_p)))
+        const QString catalog_tip = QString("ml_at_1_g = %1, volume_exponent = %2\nCatalog name%3: %4")
+                                        .arg(qs(std::format("{}", r.catalog_ml_at_1_g)),
+                                             qs(std::format("{}", r.catalog_volume_exponent)))
                                         .arg(r.catalog_names.size() == 1 ? "" : "s")
                                         .arg(qs(join(r.catalog_names, ", ")));
-        auto *k = cell(QString::number(r.catalog_k, 'g', 6), true);
-        auto *p = cell(QString::number(r.catalog_p, 'f', 4), true);
+        auto *k = cell(QString::number(r.catalog_ml_at_1_g, 'g', 6), true);
+        auto *p = cell(QString::number(r.catalog_volume_exponent, 'f', 4), true);
         k->setToolTip(catalog_tip);
         p->setToolTip(catalog_tip);
         step_table_->setItem(i, 3, k);

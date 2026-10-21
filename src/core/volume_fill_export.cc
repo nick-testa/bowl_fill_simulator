@@ -47,7 +47,8 @@ std::string kind_enumerator(const std::string &kind)
 
 bool same_curve(const VolumeFillRow &a, const VolumeFillRow &b)
 {
-    return a.kind == b.kind && a.k == b.k && a.p == b.p && a.piece_height_mm == b.piece_height_mm;
+    return a.kind == b.kind && a.ml_at_1_g == b.ml_at_1_g && a.volume_exponent == b.volume_exponent &&
+           a.piece_height_mm == b.piece_height_mm;
 }
 
 } // namespace
@@ -97,8 +98,9 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
                     continue; // never dispensed by weight, so nothing to predict
                 }
                 const BowlItem item = make_item(*ing, curves, kFlatProteinRate, kFlatToppingRate);
-                row.k = item.has_curve ? item.K : item.flat_oz_per_100g / 100.0;
-                row.p = item.has_curve ? item.p : 1.0;
+                // lab37 and the Catalog work in ml; the simulator's curves are in fl oz.
+                row.ml_at_1_g = (item.has_curve ? item.K : item.flat_oz_per_100g / 100.0) * CurveSet::kMlPerFlOz;
+                row.volume_exponent = item.has_curve ? item.p : 1.0;
                 row.piece_height_mm = item.piece_height_mm;
             }
 
@@ -194,7 +196,7 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
          "\n"
          "std::span<const VolumeFillCurve> volume_fill_curves()\n"
          "{\n"
-         "    // ingredient_name, kind, k, p, piece_height_mm\n"
+         "    // ingredient_name, kind, ml_at_1_g, volume_exponent, piece_height_mm\n"
          "    // clang-format off\n"
          "    static constexpr VolumeFillCurve curves[] = {\n";
     for (const VolumeFillRow &r : out.rows)
@@ -202,8 +204,8 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
         s += std::format("        {{{}, VolumeFillKind::{}, {}, {}, {}}},\n",
                          quoted(r.ingredient_name),
                          r.kind,
-                         num(r.k),
-                         num(r.p),
+                         num(r.ml_at_1_g),
+                         num(r.volume_exponent),
                          num(r.piece_height_mm));
     }
     s += "    };\n"
@@ -223,8 +225,8 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
             continue;
         }
         ingredients[r.ingredient_name] = {{"kind", r.kind},
-                                          {"k", r.k},
-                                          {"p", r.p},
+                                          {"ml_at_1_g", r.ml_at_1_g},
+                                          {"volume_exponent", r.volume_exponent},
                                           {"piece_height_mm", r.piece_height_mm},
                                           {"brands", r.brands}};
     }

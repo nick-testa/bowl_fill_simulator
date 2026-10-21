@@ -1530,9 +1530,14 @@ int main()
         std::string spelling;
         for (const MenuName &n : farmstand->names)
             if (n.name == "Romaine Base") spelling = n.raw;
-        expect_true("rows are keyed by the production spelling, with the window's curve",
-                    ex.source.find(std::format("{{\"{}\", VolumeFillKind::Base, {}, {}, 0}}", spelling, r.K, r.p))
+        expect_true("rows are keyed by the production spelling, with the window's curve in ml",
+                    ex.source.find(std::format("{{\"{}\", VolumeFillKind::Base, {}, {}, 0}}",
+                                               spelling, r.K * CurveSet::kMlPerFlOz, r.p))
                         != std::string::npos);
+        expect_true("the manifest names the fields as the Catalog does",
+                    ex.manifest.find("\"ml_at_1_g\"") != std::string::npos
+                        && ex.manifest.find("\"volume_exponent\"") != std::string::npos
+                        && ex.manifest.find("\"k\"") == std::string::npos);
         expect_true("sauces are cups, with no curve",
                     ex.source.find("{\"MintCilantro Chutney portion\", VolumeFillKind::Sauce, 0, 1, 0}")
                         != std::string::npos);
@@ -1545,7 +1550,7 @@ int main()
         expect_near("an ingredient has one curve whichever brands serve it", rice_rows, 1, 0.01);
         bool curves_ok = true;
         for (const VolumeFillRow &row : ex.rows)
-            if (row.kind != "Sauce") curves_ok = curves_ok && row.k > 0 && row.p > 0;
+            if (row.kind != "Sauce") curves_ok = curves_ok && row.ml_at_1_g > 0 && row.volume_exponent > 0;
         expect_true("every dispensed ingredient gets a usable curve", curves_ok);
         expect_true("the manifest lists curves and sauces apart",
                     ex.manifest.find("\"volume_curves\"") != std::string::npos
@@ -1587,15 +1592,17 @@ int main()
                     for (const VolumeFillRow &e : ex.rows)
                         if (e.ingredient_name == raw) {
                             ++compared;
-                            matched += e.k == x.catalog_k && e.p == x.catalog_p;
+                            matched += e.ml_at_1_g == x.catalog_ml_at_1_g
+                                       && e.volume_exponent == x.catalog_volume_exponent;
                         }
             expect_true("each row names the production spellings it stands for",
                         row && !row->catalog_names.empty());
-            expect_true(std::format("Catalog k and p match the export ({} of {})", matched, compared),
+            expect_true(std::format("Catalog curves match the export ({} of {})", matched, compared),
                         compared > 0 && matched == compared);
             const std::string tsv = catalog_curves_tsv(rows);
             expect_true("the Catalog copy has one line per spelling, with its kind",
-                        tsv.starts_with("ingredient_name\tkind\tk\tp\n") && tsv.find("\tBase\t") != std::string::npos);
+                        tsv.starts_with("ingredient_name\tkind\tml_at_1_g\tvolume_exponent\n")
+                            && tsv.find("\tBase\t") != std::string::npos);
         }
         if (row) {
             expect_near("ml per g is the portion's volume over its mass", row->ml_per_g,
@@ -1614,7 +1621,7 @@ int main()
             nonempty_lines(step_table_csv("Farmstand", rows, 20));
         expect_near("CSV has a header and one line per row", lines.size(), rows.size() + 1, 0.01);
         expect_true("the header names the target", lines.front().find(",step_g_for_20_ml,") != std::string::npos
-                    && lines.front().ends_with(",catalog_k,catalog_p"));
+                    && lines.front().ends_with(",catalog_ml_at_1_g,catalog_volume_exponent"));
         bool rectangular = true;
         for (const std::string &line : lines)
             if (csv_fields(line) != csv_fields(lines.front())) rectangular = false;

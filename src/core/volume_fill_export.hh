@@ -25,9 +25,9 @@ namespace bowlfill
 struct VolumeFillRow
 {
     std::string ingredient_name;
-    std::string kind; ///< "Base", "Protein", "Topping" or "Sauce"
-    double k = 0.0;   ///< fl oz at 1 g; a flat rate is k = rate / 100 with p = 1
-    double p = 1.0;
+    std::string kind;             ///< "Base", "Protein", "Topping" or "Sauce"
+    double ml_at_1_g = 0.0;       ///< volume of 1 g, in ml; a flat rate is its ml per 100 g / 100
+    double volume_exponent = 1.0; ///< how volume grows with mass; 1 for a flat rate
     double piece_height_mm = 0.0;
     std::vector<std::string> brands;
 };

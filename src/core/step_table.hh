@@ -41,11 +41,12 @@ struct StepRow
     /// The step that would add the target volume from the portion.
     double step_g_for_target = 0.0;
 
-    /// Its Catalog volume_curve, exactly as --export-volume-fill writes it: k in fl oz at
-    /// 1 g and p (a flat rate is k = rate / 100, p = 1), for each production spelling
-    /// the menu maps to this ingredient, which is what the Catalog is keyed by.
-    double catalog_k = 0.0;
-    double catalog_p = 1.0;
+    /// Its Catalog volume_curve, exactly as --export-volume-fill writes it: ml_at_1_g (the
+    /// volume of 1 g, in ml) and volume_exponent (a flat rate is its ml per 100 g / 100 with
+    /// exponent 1), for each production spelling the menu maps to this ingredient, which is
+    /// what the Catalog is keyed by.
+    double catalog_ml_at_1_g = 0.0;
+    double catalog_volume_exponent = 1.0;
     std::vector<std::string> catalog_names;
 };
 
@@ -64,8 +65,8 @@ std::vector<StepRow> step_table(const Menu &menu,
                                 double flat_topping_rate = kFlatToppingRate);
 
 /// The table as CSV, one row per ingredient, with a header naming the target volume.
-/// One row per production spelling: ingredient_name, kind, k, p, tab-separated, as the
-/// Catalog's volume_curve fields take them.
+/// One row per production spelling: ingredient_name, kind, ml_at_1_g, volume_exponent,
+/// tab-separated, as the Catalog's volume_curve fields take them.
 std::string catalog_curves_tsv(const std::vector<StepRow> &rows);
 
 std::string step_table_csv(const std::string &brand, const std::vector<StepRow> &rows, double target_ml);

@@ -382,8 +382,10 @@ measurements, mappings or settings:
 Only the brands listed in `data/active_brands.csv` are exported, so menus kept in `menus/`
 for reference (deprecated brands) never put their spellings or curves into lab37. The
 export names the brands it wrote and the ones it left out; delete the file to export
-every brand. Each row's k and p are also shown under Settings → Volume per gram
-(*Catalog k*, *Catalog p*, and *Copy Catalog k, p*) for updating the Catalog by hand.
+every brand. lab37 and the Catalog work in metric: each curve is written as `ml_at_1_g`
+(the volume of 1 g, in ml) and `volume_exponent` (how volume grows with mass), and the same
+values are shown under Settings → Volume per gram (*ml at 1 g*, *Exponent*, and *Copy
+Catalog curves*) for updating the Catalog by hand. Only the bowl's capacity stays in ounces.
 
 It writes one row per production ingredient spelling (as customizations and the Catalog
 name it), with the curve the window would choose; a flat rate is written as
