@@ -136,17 +136,13 @@ std::string step_table_csv(const std::string &brand, const std::vector<StepRow> 
 
 std::string catalog_curves_tsv(const std::vector<StepRow> &rows)
 {
-    std::string out = "ingredient_name\tkind\tml_at_1_g\tvolume_exponent\n";
+    std::string out = "ingredient_name\tcategory_name\tml_at_1_g\tvolume_exponent\n";
     for (const StepRow &r : rows)
     {
-        std::string kind = to_string(r.kind);
-        if (!kind.empty())
-        {
-            kind[0] = static_cast<char>(kind[0] - 'a' + 'A');
-        }
+        const std::string category = catalog_category(r.kind);
         for (const std::string &n : r.catalog_names)
         {
-            out += std::format("{}\t{}\t{}\t{}\n", n, kind, r.catalog_ml_at_1_g, r.catalog_volume_exponent);
+            out += std::format("{}\t{}\t{}\t{}\n", n, category, r.catalog_ml_at_1_g, r.catalog_volume_exponent);
         }
     }
     return out;

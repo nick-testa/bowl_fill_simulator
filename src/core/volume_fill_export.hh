@@ -25,7 +25,7 @@ namespace bowlfill
 struct VolumeFillRow
 {
     std::string ingredient_name;
-    std::string kind;             ///< "Base", "Protein", "Topping" or "Sauce"
+    std::string kind;             ///< "Base", "Protein", "Topping" or "Sauce" (a cup)
     double ml_at_1_g = 0.0;       ///< volume of 1 g, in ml; a flat rate is its ml per 100 g / 100
     double volume_exponent = 1.0; ///< how volume grows with mass; 1 for a flat rate
     double piece_height_mm = 0.0;
@@ -40,7 +40,7 @@ struct VolumeFillExport
     std::vector<std::string> skipped;   ///< brands left out as not active
     std::vector<std::string> missing;   ///< active brands with no menu loaded
     std::string source;                 ///< volume_fill_curves.cc
-    std::string manifest;               ///< JSON for the Catalog's volume_curve fields
+    std::string manifest;               ///< JSON for the Catalog's volume_curve and category_name fields
 };
 
 /// `active_brands` (data/active_brands.csv) limits the export to those brands, so a

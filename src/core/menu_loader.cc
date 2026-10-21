@@ -418,6 +418,20 @@ std::string to_string(Kind kind)
     return {};
 }
 
+std::string catalog_category(Kind kind)
+{
+    switch (kind)
+    {
+    case Kind::Base:
+        return "Base";
+    case Kind::Protein:
+        return "Protein";
+    case Kind::Topping:
+        return "Toppings";
+    }
+    return {};
+}
+
 std::string to_string(WeightSource source)
 {
     switch (source)

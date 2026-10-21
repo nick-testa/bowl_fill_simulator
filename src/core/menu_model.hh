@@ -20,6 +20,9 @@ enum class Kind
 
 std::string to_string(Kind kind);
 
+/// The lab37 Catalog category_name that gives Volume Fill this kind: Base, Protein or Toppings.
+std::string catalog_category(Kind kind);
+
 ///
 /// How an ingredient's portion weight was established. Anything below Slug is a
 /// guess and is surfaced to the user rather than passed off as configuration.

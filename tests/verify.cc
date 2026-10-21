@@ -1531,7 +1531,7 @@ int main()
         for (const MenuName &n : farmstand->names)
             if (n.name == "Romaine Base") spelling = n.raw;
         expect_true("rows are keyed by the production spelling, with the window's curve in ml",
-                    ex.source.find(std::format("{{\"{}\", VolumeFillKind::Base, {}, {}, 0}}",
+                    ex.source.find(std::format("{{\"{}\", {}, {}, 0}}",
                                                spelling, r.K * CurveSet::kMlPerFlOz, r.p))
                         != std::string::npos);
         expect_true("the manifest names the fields as the Catalog does",
@@ -1539,8 +1539,12 @@ int main()
                         && ex.manifest.find("\"volume_exponent\"") != std::string::npos
                         && ex.manifest.find("\"k\"") == std::string::npos);
         expect_true("sauces are cups, with no curve",
-                    ex.source.find("{\"MintCilantro Chutney portion\", VolumeFillKind::Sauce, 0, 1, 0}")
+                    ex.source.find("{.ingredient_name = \"MintCilantro Chutney portion\", .cup = true}")
                         != std::string::npos);
+        expect_true("the kind is left to the Catalog's category_name",
+                    ex.source.find("VolumeFillKind") == std::string::npos
+                        && ex.manifest.find("\"category_name\": \"Base\"") != std::string::npos
+                        && ex.manifest.find("\"kind\"") == std::string::npos);
         size_t rice_rows = 0;
         for (const VolumeFillRow &row : ex.rows)
             if (row.ingredient_name == "White Jasmine Rice retherm v11") {
@@ -1600,8 +1604,8 @@ int main()
             expect_true(std::format("Catalog curves match the export ({} of {})", matched, compared),
                         compared > 0 && matched == compared);
             const std::string tsv = catalog_curves_tsv(rows);
-            expect_true("the Catalog copy has one line per spelling, with its kind",
-                        tsv.starts_with("ingredient_name\tkind\tml_at_1_g\tvolume_exponent\n")
+            expect_true("the Catalog copy has one line per spelling, with its category",
+                        tsv.starts_with("ingredient_name\tcategory_name\tml_at_1_g\tvolume_exponent\n")
                             && tsv.find("\tBase\t") != std::string::npos);
         }
         if (row) {

@@ -196,14 +196,19 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
          "\n"
          "std::span<const VolumeFillCurve> volume_fill_curves()\n"
          "{\n"
-         "    // ingredient_name, kind, ml_at_1_g, volume_exponent, piece_height_mm\n"
+         "    // ingredient_name, ml_at_1_g, volume_exponent, piece_height_mm; a sauce is a cup. Whether\n"
+         "    // an ingredient is a base, protein or topping comes from its Catalog category_name.\n"
          "    // clang-format off\n"
          "    static constexpr VolumeFillCurve curves[] = {\n";
     for (const VolumeFillRow &r : out.rows)
     {
-        s += std::format("        {{{}, VolumeFillKind::{}, {}, {}, {}}},\n",
+        if (r.kind == "Sauce")
+        {
+            s += std::format("        {{.ingredient_name = {}, .cup = true}},\n", quoted(r.ingredient_name));
+            continue;
+        }
+        s += std::format("        {{{}, {}, {}, {}}},\n",
                          quoted(r.ingredient_name),
-                         r.kind,
                          num(r.ml_at_1_g),
                          num(r.volume_exponent),
                          num(r.piece_height_mm));
@@ -224,7 +229,7 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
             sauces.push_back({{"ingredient_name", r.ingredient_name}, {"brands", r.brands}});
             continue;
         }
-        ingredients[r.ingredient_name] = {{"kind", r.kind},
+        ingredients[r.ingredient_name] = {{"category_name", r.kind == "Topping" ? "Toppings" : r.kind},
                                           {"ml_at_1_g", r.ml_at_1_g},
                                           {"volume_exponent", r.volume_exponent},
                                           {"piece_height_mm", r.piece_height_mm},
