@@ -84,6 +84,12 @@ struct BowlItem
     double rel_sd = kAssumedRelSd;
     double curve_rel_se = 0.0;
 
+    /// Where it sits in the bowl, from the bottom: 0 greens, 1 other bases, 2 proteins, 3 toppings
+    /// (as lab37 stacks a bowl, whose dispense order is not known when it plans). Within a layer
+    /// no order is assumed. Below 0, the items stack in list order instead, as a measured bowl
+    /// was dispensed.
+    int layer = -1;
+
     double volume_oz(double grams) const;
     double marginal_oz_per_100g(double grams) const;
 };

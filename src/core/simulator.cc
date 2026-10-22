@@ -359,6 +359,11 @@ Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &
     // load; it keeps its measured volume. (Clamping the exponent to 0 instead would
     // collapse it to K*g even with nothing on top -- most of the volume of a camera-
     // fitted curve with p > 1.)
+    //
+    // M is what sits on top. In list order, that is every later item. With layers (see
+    // BowlItem::layer), it is everything in the layers above plus half of the rest of the item's
+    // own layer, whose order is not known: on average half of it lands on top.
+    const bool layered = std::all_of(items.begin(), items.end(), [](const BowlItem &it) { return it.layer >= 0; });
     auto loaded_oz = [&](size_t i, double g) {
         const BowlItem &it = items[i];
         if (!settings.compress || !it.has_curve || g <= 0 || it.p >= 1.0)
@@ -366,9 +371,16 @@ Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &
             return it.volume_oz(g);
         }
         double above = 0.0;
-        for (size_t j = i + 1; j < items.size(); ++j)
+        for (size_t j = layered ? 0 : i + 1; j < items.size() && j < grams.size(); ++j)
         {
-            above += grams[j];
+            if (!layered)
+            {
+                above += grams[j];
+            }
+            else if (j != i && items[j].layer >= it.layer)
+            {
+                above += grams[j] * (items[j].layer == it.layer ? 0.5 : 1.0);
+            }
         }
         const double e = it.p - 1.0; // negative here: the bed compacts
         return g * it.K * std::pow(2.0, e) * std::pow(g / 2.0 + settings.load_transfer * above, e);
@@ -857,6 +869,18 @@ BowlItem make_item(const Ingredient &ingredient,
     item.max_g = ingredient.max_dispense_weight_g;
     item.flat_oz_per_100g = ingredient.kind == Kind::Protein ? flat_protein_rate : flat_topping_rate;
     item.piece_height_mm = ingredient.piece_height_mm;
+    switch (ingredient.kind)
+    {
+    case Kind::Base:
+        item.layer = curves.group_of(ingredient.name) == "greens" ? 0 : 1;
+        break;
+    case Kind::Protein:
+        item.layer = 2;
+        break;
+    case Kind::Topping:
+        item.layer = 3;
+        break;
+    }
 
     const CurveChoice c = choose_curve(ingredient.name, ingredient.kind, curves);
     if (c.source != CurveSource::Flat)

@@ -1564,6 +1564,36 @@ int main()
         expect_true("Manual Entry is not a brand", ex.source.find("\"Manual Entry\"") == std::string::npos);
     }
 
+    std::printf("\nStacking layers, as lab37 stacks a bowl\n");
+    {
+        auto base = [](const char *name, double K, double p, int layer) {
+            BowlItem it;
+            it.name = name;
+            it.kind = Kind::Base;
+            it.has_curve = true;
+            it.K = K;
+            it.p = p;
+            it.layer = layer;
+            return it;
+        };
+        SimSettings s;
+        s.compress = true;
+        const BowlItem rice = base("Rice", 0.0452, 0.92, 1), couscous = base("Couscous", 0.06, 0.95, 1);
+        const double forward = bowl_frame({rice, couscous}, {230, 240}, s).ounces;
+        const double reversed = bowl_frame({couscous, rice}, {240, 230}, s).ounces;
+        expect_near("two bases in one layer give the same volume in either order", forward, reversed, 1e-12);
+        BowlItem rice_listed = rice, couscous_listed = couscous;
+        rice_listed.layer = couscous_listed.layer = -1;
+        expect_true("a measured bowl, in list order, still depends on its order",
+                    std::abs(bowl_frame({rice_listed, couscous_listed}, {230, 240}, s).ounces
+                             - bowl_frame({couscous_listed, rice_listed}, {240, 230}, s).ounces) > 1e-6);
+        const BowlItem romaine = base("Romaine", 0.1, 0.8, 0);
+        BowlItem romaine_grain = romaine;
+        romaine_grain.layer = 1;
+        expect_true("greens under the grains carry all of them, so the bowl is smaller",
+                    bowl_frame({rice, romaine}, {200, 60}, s).ounces < bowl_frame({rice, romaine_grain}, {200, 60}, s).ounces);
+    }
+
     std::printf("\nVolume per gram, for volume-proportional steps\n");
     {
         const double kMl = CurveSet::kMlPerFlOz;
