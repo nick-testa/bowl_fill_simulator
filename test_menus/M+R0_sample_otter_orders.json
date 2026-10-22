@@ -1,0 +1,409 @@
+{
+ "orders": [
+  {
+   "externalIdentifiers": {
+    "id": "mr2-1",
+    "friendlyId": "MR0-1",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Small: 170 rice, 133 chicken",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L1",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:150-cals:57eb8452-38bf-4e7d-8d73-6130d585db6a",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:40g-protein-320-cals:53e1db15-47f1-49ab-936b-0a7177ab7750",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:sour-cream:53f7a17f-78a6-4ebb-8363-71ddfa381b1b",
+       "name": "Sour Cream",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-16T17:01:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "mr2-2",
+    "friendlyId": "MR0-2",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Standard: 255 rice, 161 beef",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L2",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:jasmine-white-rice:68fc2e19-332f-4385-ab24-2e4892a5f469",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb::5398f871-966a-4b3f-8d68-ab7229ce19f0",
+       "name": "Suadero Beef [Cooked]",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:sour-cream:53f7a17f-78a6-4ebb-8363-71ddfa381b1b",
+       "name": "Sour Cream",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-16T17:02:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "mr2-3",
+    "friendlyId": "MR0-3",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Medium: 280 Mexican rice, 200 al pastor",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L3",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:250-cals:ffa46dcd-e1c5-4f45-8f9e-13c81af2bb59",
+       "name": "Mexican Rice [Retherm]",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:60g-protein-480-cals:95659533-ce82-4f8f-b999-bacca5110777",
+       "name": "Chicken Al Pastor [Cooked]",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:sour-cream:53f7a17f-78a6-4ebb-8363-71ddfa381b1b",
+       "name": "Sour Cream",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-16T17:03:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "mr2-4",
+    "friendlyId": "MR0-4",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Two meats: 220 rice, 100 carnitas, 100 guajillo, 2 sour creams",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L4",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:200-cals:6abe1dc8-57df-498d-962d-b2cbf72d4bf2",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:more-pork-carnitas-3-5oz:669794e9-a973-4a76-80e8-8c1980659cd5",
+       "name": "Pork Carnitas Cooked v11",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:more-slow-roasted-chicken-3-5oz:9bbf0430-89e8-40f9-a9da-9b57fb93a9bd",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 2,
+       "id": "mb:sour-cream:53f7a17f-78a6-4ebb-8363-71ddfa381b1b",
+       "name": "Sour Cream",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-16T17:04:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "mr2-5",
+    "friendlyId": "MR0-5",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Large: 390 rice, 232 beef, 2 sour creams",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L5",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:350-cals:c7f88168-4a9e-42e0-8c00-d9b0bdca70f8",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:70g-protein-550-cals:3751e49d-3949-4ad6-820b-3252306d9bce",
+       "name": "Suadero Beef [Cooked]",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 2,
+       "id": "mb:sour-cream:53f7a17f-78a6-4ebb-8363-71ddfa381b1b",
+       "name": "Sour Cream",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-16T17:05:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  }
+ ]
+}

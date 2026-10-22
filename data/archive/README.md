@@ -29,3 +29,23 @@ goes on, so these bowls stay out. `curve_model_selection.ipynb` section 9 analys
 ## mass_to_volume_2026-09_original.csv
 
 The original September curve set (robot- and hand-filled bowls), kept for reference.
+
+## bowl_data_20261021_1_romaine.csv: Romaine Base, 2026-10-21 (set aside 2026-10-22)
+
+The romaine rows of `measurements/bowl_data_20261021_1.csv` (the session's Garlic Green
+Beans stay in). They read about 9 ml/g, twice the 4-4.6 ml/g of 2026-10-07 and
+2026-10-09, consistently from 5 g to 81 g. Kept in, they tripled the fitted
+batch-to-batch spread (±10% to ±30%), which is shared by every ingredient and so roughly
+doubled every predicted range, and pulled the shared romaine curve up about 20%.
+
+That day's romaine was prepped "the old way" by a different chef and was a few days old
+(possibly drier), and it was the first session dispensed by the closed-loop PID dispense
+instead of the g/deg auger rotation. The dispenser had not been cleaned after the green
+beans. The scan setup was the usual one, and the puck is not the cause: the green beans
+of the same session read 1.19 ml/g, which would be impossibly dense if the masses were low.
+The September sheet's robot romaine read about 7 ml/g, so romaine may really vary this
+much with prep.
+
+**Bring it back** once a same-batch test (PID against g/deg dispense, then usual against
+old-way prep) shows which caused it, ideally as its own romaine variant if production
+will see both preps.

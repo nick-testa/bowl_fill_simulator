@@ -1,0 +1,556 @@
+{
+ "orders": [
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-under-1",
+    "friendlyId": "UNDER-1",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Under: 170 White Rice, 100 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L1",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:150-cals:57eb8452-38bf-4e7d-8d73-6130d585db6a",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:more-slow-roasted-chicken-3-5oz:9bbf0430-89e8-40f9-a9da-9b57fb93a9bd",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-under-2",
+    "friendlyId": "UNDER-2",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Under: 170 White Rice, 133 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L2",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:150-cals:57eb8452-38bf-4e7d-8d73-6130d585db6a",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:40g-protein-320-cals:53e1db15-47f1-49ab-936b-0a7177ab7750",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-under-3",
+    "friendlyId": "UNDER-3",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Under: 220 White Rice, 100 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L3",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:200-cals:6abe1dc8-57df-498d-962d-b2cbf72d4bf2",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:more-slow-roasted-chicken-3-5oz:9bbf0430-89e8-40f9-a9da-9b57fb93a9bd",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-over-1",
+    "friendlyId": "OVER-1",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Over: 390 White Rice, 232 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L4",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:350-cals:c7f88168-4a9e-42e0-8c00-d9b0bdca70f8",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:70g-protein-550-cals:60899ed0-e74f-4fb6-9749-c61fbc539da7",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-over-2",
+    "friendlyId": "OVER-2",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Over: 390 White Rice, 200 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L5",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:350-cals:c7f88168-4a9e-42e0-8c00-d9b0bdca70f8",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:60g-protein-480-cals:1afc519b-d3d7-4660-8738-6b20df8ed85d",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-over-3",
+    "friendlyId": "OVER-3",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Over: 333 White Rice, 232 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L6",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:300-cals:522bcd3c-7c11-4a4a-9edf-dce655b0ad51",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:70g-protein-550-cals:60899ed0-e74f-4fb6-9749-c61fbc539da7",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-over-4",
+    "friendlyId": "OVER-4",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Over: 390 White Rice, 170 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L7",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:350-cals:c7f88168-4a9e-42e0-8c00-d9b0bdca70f8",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:slow-roasted-chicken-6oz:e47286a2-a6c2-4c7d-a887-12b6a8b926d7",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  },
+  {
+   "externalIdentifiers": {
+    "id": "vf-spread-over-5",
+    "friendlyId": "OVER-5",
+    "source": "test"
+   },
+   "currencyCode": "USD",
+   "status": "",
+   "items": [
+    {
+     "quantity": 1,
+     "id": "mb:meat-rice:95af5e4e-b825-4758-ab60-5110c7ebd91a",
+     "name": "Over: 278 White Rice, 232 Guajillo",
+     "note": "",
+     "categoryId": "",
+     "categoryName": "",
+     "lineItemId": "L8",
+     "stationId": "",
+     "price": 0,
+     "modifiers": [
+      {
+       "quantity": 1,
+       "id": "mb:250-cals:effcd2cd-694a-4aab-98a7-fc0bcb58ab97",
+       "name": "White Rice",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      },
+      {
+       "quantity": 1,
+       "id": "mb:70g-protein-550-cals:60899ed0-e74f-4fb6-9749-c61fbc539da7",
+       "name": "Guajillo  Cumin Chicken cooked",
+       "price": 0,
+       "groupName": "",
+       "groupId": "",
+       "lineItemId": "",
+       "stationId": ""
+      }
+     ]
+    }
+   ],
+   "orderTotal": {
+    "subtotal": 0,
+    "claimedSubtotal": 0,
+    "discount": 0,
+    "tax": 0,
+    "tip": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "couponCode": ""
+   },
+   "orderedAt": "2026-10-19T17:00:00Z",
+   "customer": {
+    "name": "VF Test",
+    "phone": "",
+    "phoneCode": "",
+    "email": ""
+   },
+   "customerNote": "",
+   "fulfillmentInfo": {
+    "pickupTime": "",
+    "deliveryTime": "",
+    "fulfillmentMode": "PICKUP",
+    "schedulingType": "",
+    "courierStatus": ""
+   }
+  }
+ ]
+}
