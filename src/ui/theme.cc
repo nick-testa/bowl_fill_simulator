@@ -104,7 +104,28 @@ QFont mono(Text role)
     return f;
 }
 
+namespace {
+std::map<QString, QColor> &chosen_colours()
+{
+    static std::map<QString, QColor> chosen;   // keyed in lower case
+    return chosen;
+}
+}  // namespace
+
+void set_food_colours(const std::map<QString, QColor> &chosen)
+{
+    chosen_colours().clear();
+    for (const auto &[name, colour] : chosen)
+        if (colour.isValid()) chosen_colours()[name.toLower()] = colour;
+}
+
 QColor food_colour(const QString &ingredient, int kind)
+{
+    const auto it = chosen_colours().find(ingredient.toLower());
+    return it != chosen_colours().end() ? it->second : automatic_food_colour(ingredient, kind);
+}
+
+QColor automatic_food_colour(const QString &ingredient, int kind)
 {
     // Most specific first: "Mexican Rice" before "rice", "Chicken Salad" before
     // "chicken". Colours are the food's, nudged only where two would be invisible on
@@ -191,6 +212,8 @@ QString stylesheet()
     QString css = R"(
 QWidget { background: @ground; color: @ink; font-family: "@sans"; font-size: @bodypx; }
 QScrollArea, QScrollArea > QWidget > QWidget { background: @ground; border: none; }
+/* A scrolling area inside a panel shows the panel through it. */
+QScrollArea#panelScroll, QScrollArea#panelScroll > QWidget > QWidget { background: transparent; }
 QLabel, QCheckBox, QRadioButton { background: transparent; }
 QWidget#clear { background: transparent; }
 
@@ -244,6 +267,8 @@ QPushButton:hover, QToolButton:hover { border-color: @ruleStrong; }
 QPushButton#primary { background: @accent; color: @panel; border-color: @accent;
                       font-weight: 600; }
 QPushButton#primary:hover { background: @accentHover; border-color: @accentHover; }
+QPushButton#primary:disabled { background: @sunk; color: @inkFaint; border-color: @rule;
+                               font-weight: 400; }
 QPushButton#quiet { background: transparent; border-color: transparent; color: @inkSoft; }
 QPushButton#quiet:hover { color: @ink; background: @sunk; }
 QPushButton#issues { background: @overSoft; border-color: @over; color: @over;

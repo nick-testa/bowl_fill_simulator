@@ -3,8 +3,8 @@
 /// from. Any drift here means the port changed behaviour, which is the one thing
 /// this rewrite must not do.
 ///
-#include "core/adaptive.hh"
 #include "core/bowl_data.hh"
+#include "core/costs.hh"
 #include "core/measurements.hh"
 #include "core/curves.hh"
 #include "core/feasibility.hh"
@@ -168,6 +168,10 @@ SimResult run_recipe(const Menu &menu, const std::string &recipe_name, const Cur
 int main()
 {
     const std::string assets = BOWLFILL_ASSET_DIR;
+    // The menus the checks below pin details of (brands, recipes, portions): a frozen
+    // snapshot, so pulling the current menus into menus/ never breaks them. The current
+    // menus are checked on their own at the end.
+    const std::string fixture_menus = assets + "/menus/archive/2026-10-14";
 
     std::printf("Curve fitting (robot arm, against the published power-law fits)\n");
     CurveSet curves;
@@ -200,10 +204,10 @@ int main()
         expect_near("Massaged Kale uses only robot bowls", k->n, 6, 0.01);
 
     std::printf("\nMenu loading\n");
-    LoadResult loaded = load_menus(assets + "/menus");
+    LoadResult loaded = load_menus(fixture_menus);
     for (const std::string &w : loaded.warnings) std::printf("  warn %s\n", w.c_str());
     for (const std::string &w : loaded.issues) std::printf("  issue %s\n", w.c_str());
-    // The menus folder grows with the brand refresh; the brands below must be there.
+    // The snapshot holds the active brands and the deprecated ones the checks below use.
     expect_true(std::format("at least 7 brands parsed ({})", loaded.menus.size()),
                 loaded.menus.size() >= 7);
 
@@ -271,7 +275,7 @@ int main()
         maps[{"Casa Condesa", "Guajillo  Cumin Chicken cooked"}] = {"Chicken Tex-Mex", ""};
         maps[{"M+R2", "Guajillo  Cumin Chicken cooked"}] = {"Chicken Tex-Mex", ""};
         maps[{"Casa Condesa", "Cotija portion"}] = {"", "sauce"};
-        const LoadResult mapped = load_menus(assets + "/menus", &maps);
+        const LoadResult mapped = load_menus(fixture_menus, &maps);
         const Menu *casa = by_brand(mapped.menus, "Casa Condesa");
         const Menu *mr2 = by_brand(mapped.menus, "M+R2");
         const Ingredient *tex = casa ? casa->find("Chicken Tex-Mex") : nullptr;
@@ -519,7 +523,7 @@ int main()
         }
     }
 
-    std::printf("\nAdaptive Dispense solver\n");
+    std::printf("\nIngredient costs\n");
     {
         CostTable costs;
         std::string cerr;
@@ -571,133 +575,15 @@ int main()
             std::printf("  FAIL a KitchenOS-priced bowl reads as complete\n");
         } else std::printf("  ok   a KitchenOS-priced bowl reads as complete\n");
 
-        // The tolerance table and the "4:1:2 ratio steps" are one requirement.
-        Tolerances t;
-        expect_near("base:protein ratio", t.base / t.protein, 4.0, 1e-9);
-        expect_near("topping:protein ratio", t.topping / t.protein, 2.0, 1e-9);
-
-        AdaptiveSettings as;
-        as.bowl_capacity_oz = 32.0;
-        as.sauce.cups = 2;
-        expect_near("two sauce cups in oz", as.sauce_volume_oz(), 4.734, 0.01);
-
-        auto recipe_items = [&](const Menu &m, const char *name) {
-            auto it = std::find_if(m.recipes.begin(), m.recipes.end(),
-                                   [&](const Recipe &r) { return r.name == name; });
-            return bowl_from_recipe(m, *it, curves);
-        };
-
-        // The target is a share of the food room, so cups lower it.
-        AdaptiveSettings no_cups = as;
-        no_cups.sauce.cups = 0;
-        expect_near("the target is a share of the food room",
-                    solve_adaptive(recipe_items(*pita, "The Oasis"), as, &costs)
-                        .settings.food_capacity_oz(),
-                    32.0 - 4.734, 0.01);
-
-        // Scenario 2: a bowl a little over the band is pulled back onto target. The
-        // Oasis is 27.9 oz nominal; with no cups the food room is the whole 32 oz, a
-        // 27.2 oz target. (The Cowgirl Bowl used to be the example, but without its
-        // sauces in the bowl it sits inside the band.)
-        std::vector<BowlItem> cow = recipe_items(*pita, "The Oasis");
-        AdaptiveResult ar = solve_adaptive(cow, no_cups, &costs);
-        expect_eq("oasis status", to_string(ar.status), "adjusted");
-        expect_near("oasis lands on target", ar.food_volume_oz,
-                    no_cups.target_fill * 32.0, 0.05);
-        ++checks;
-        if (ar.alpha >= 0) { ++failures; std::printf("  FAIL expected a reduction\n"); }
-        else std::printf("  ok   alpha negative (%.3f), a reduction\n", ar.alpha);
-
-        // Protein must move least and base most -- the point of the tolerance table.
-        double base_move = 0, protein_move = 0;
-        for (const AdaptiveItem &i : ar.items) {
-            if (i.kind == Kind::Base) base_move = std::fabs(i.delta_pct());
-            if (i.kind == Kind::Protein) protein_move = std::fabs(i.delta_pct());
-        }
-        ++checks;
-        if (protein_move > 5.001 || base_move > 20.001) {
-            ++failures;
-            std::printf("  FAIL tolerance exceeded: base %.1f%%, protein %.1f%%\n",
-                        base_move, protein_move);
-        } else {
-            std::printf("  ok   within tolerance: base %.1f%%, protein %.1f%%\n",
-                        base_move, protein_move);
-        }
-        ++checks;
-        if (base_move <= protein_move) {
-            ++failures;
-            std::printf("  FAIL base should absorb more than protein\n");
-        } else {
-            std::printf("  ok   base absorbs %.1fx what protein does\n",
-                        base_move / protein_move);
-        }
-
-        // Scenario 1: a bowl already inside the visual band is left alone. The Ranch
-        // Salad's nominal is 34.5 oz, so a 48 oz bowl, 43.3 oz of food room after the
-        // cups, puts it at ~80%.
-        std::vector<BowlItem> ranch = recipe_items(*farmstand, "Farmstand Ranch Salad");
-        AdaptiveSettings wide = as;
-        wide.bowl_capacity_oz = 48.0;
-        AdaptiveResult none = solve_adaptive(ranch, wide, &costs);
-        expect_eq("wide bowl status", to_string(none.status), "no adjustment");
-        expect_near("wide bowl alpha", none.alpha, 0.0, 1e-9);
-        expect_near("wide bowl is untouched", none.food_volume_oz,
-                    none.nominal_volume_oz, 1e-9);
-
-        // Scenario 3: the tolerance bands are not wide enough to save this bowl.
-        // 34.5 oz nominal against a 27.2 oz target is a 21% cut; base can give 20%,
-        // protein 5%. The honest answer is a flagged underfill, not a fit.
-        AdaptiveResult hard = solve_adaptive(ranch, as, &costs);
-        expect_eq("ranch salad at 32 oz", to_string(hard.status),
-                  "still over at max reduction");
-        expect_near("ranch alpha pinned", hard.alpha, -1.0, 1e-9);
-        ++checks;
-        if (hard.food_volume_oz <= as.target_fill * 32.0) {
-            ++failures;
-            std::printf("  FAIL expected it to remain over target\n");
-        } else {
-            std::printf("  ok   best effort %.1f oz vs %.1f oz target -- flagged\n",
-                        hard.food_volume_oz, as.target_fill * 32.0);
-        }
-
-        // Raising the target must never lower the volume delivered.
-        double prev = -1;
-        bool monotone = true;
-        for (double t = 0.30; t <= 1.2001; t += 0.05) {
-            AdaptiveSettings s2 = as;
-            s2.band_low = 2.0;          // disable the dead band for this sweep
-            s2.band_high = 2.0;
-            s2.target_fill = t;
-            const double v = solve_adaptive(cow, s2, &costs).food_volume_oz;
-            if (v + 1e-9 < prev) monotone = false;
-            prev = v;
-        }
-        ++checks;
-        if (!monotone) { ++failures; std::printf("  FAIL volume not monotone in target\n"); }
-        else std::printf("  ok   delivered volume monotone in target\n");
-
-        // COGS is reported, never solved for.
-        AdaptiveSettings priced = no_cups;
-        priced.menu_price = 12.95;
-        AdaptiveResult pr = solve_adaptive(cow, priced, &costs);
-        ++checks;
-        if (pr.total_cost <= 0) { ++failures; std::printf("  FAIL no cost computed\n"); }
-        else std::printf("  ok   COGS %.1f%% of $%.2f (guardrail %.0f%%) -- %s\n",
-                         100 * pr.cogs_ratio(), priced.menu_price,
-                         100 * priced.cogs_target,
-                         pr.cogs_within_guardrail() ? "within" : "OVER");
-        expect_near("solving for volume ignores price",
-                    pr.food_volume_oz, ar.food_volume_oz, 1e-9);
+        SauceCups two;
+        two.cups = 2;
+        expect_near("two sauce cups in oz", two.volume_oz(), 4.734, 0.01);
     }
 
     std::printf("\nPer-brand feasibility audit\n");
     {
         SimSettings ls;
-        AdaptiveSettings as;
-        CostTable costs;
-        costs.load_csv(assets + "/data/ingredient_costs.csv");
-        const BrandAudit a =
-            audit_brand(*farmstand, curves, ls, as, &costs);
+        const BrandAudit a = audit_brand(*farmstand, curves, ls);
 
         expect_true("every recipe is audited",
                     a.rows.size() == farmstand->recipes.size());
@@ -728,8 +614,6 @@ int main()
             expect_true("Ranch Salad overflows as written",
                         ranch->legacy.verdict == Verdict::OverAtStart);
             expect_true("Ranch Salad is judged a complete bowl", ranch->complete_bowl);
-            expect_true("tolerances cannot rescue Ranch Salad",
-                        ranch->adaptive.status == AdaptiveStatus::StillOver);
         }
 
         const RecipeAudit *chili = row_named(a, "Chili Crisp Crunch Salad");
@@ -744,8 +628,7 @@ int main()
 
         // A partial template pins only a protein; judging it as a finished bowl would
         // report a false failure, so it is separated rather than counted as one.
-        const BrandAudit cow =
-            audit_brand(*cowgirl, curves, ls, as, &costs);
+        const BrandAudit cow = audit_brand(*cowgirl, curves, ls);
         const RecipeAudit *pollo = row_named(cow, "Pollo Verde Asado Bowl");
         expect_true("a one-ingredient template is flagged partial, not complete",
                     pollo && !pollo->complete_bowl && !pollo->customer_built);
@@ -758,7 +641,7 @@ int main()
         // (Hungry Cowboy used to fall short too, until the target was taken from the
         // food room, which the cups make smaller.)
         expect_true("partial shortfalls stay out of the brand's failure count",
-                    cow.partial == 7 && cow.legacy_short == 0 && cow.adaptive_short == 0);
+                    cow.partial == 7 && cow.legacy_short == 0);
 
         bool volume_ran = true;
         for (const RecipeAudit &r : a.rows)
@@ -949,17 +832,40 @@ int main()
         expect_near("simulate() finds the tallest chunk", sr.settings.chunk_height_mm, 20, 1e-9);
         expect_near("and judges the bowl against it", sr.settings.food_capacity_oz(),
                     food_capacity_oz(32, ss.sauce, g, 20), 1e-9);
-        AdaptiveSettings as;
-        as.geometry = g;
-        const AdaptiveResult ar = solve_adaptive({rice, chicken}, as, nullptr);
-        expect_near("adaptive charges the same overhead", ar.settings.sauce_volume_oz(),
-                    32.0 - food_capacity_oz(32, as.sauce, g, 20), 1e-9);
+    }
+
+    std::printf("\nGrams for a volume\n");
+    {
+        // A compacting base under a flat-rate topping: the base's volume depends on the
+        // topping's grams, so the inverse has to solve them together.
+        BowlItem base, topping;
+        base.kind = Kind::Base;
+        base.has_curve = true;
+        base.K = 0.5;
+        base.p = 0.8;
+        topping.kind = Kind::Topping;
+        topping.flat_oz_per_100g = 4.5;
+        const std::vector<BowlItem> items = {base, topping};
+        const std::vector<double> targets = {10.0, 3.0};
+
+        SimSettings on;
+        on.compress = true;
+        on.load_transfer = 1.0;
+        const Frame f = bowl_frame(items, grams_for_volumes(items, targets, on), on);
+        expect_near("compressed base lands on its volume", f.per_item_oz[0], targets[0], 1e-6);
+        expect_near("and the topping on its", f.per_item_oz[1], targets[1], 1e-6);
+
+        SimSettings off;
+        const std::vector<double> g = grams_for_volumes(items, targets, off);
+        expect_near("uncompressed, the base inverts its curve", g[0], std::pow(10.0 / 0.5, 1 / 0.8), 1e-4);
+        expect_near("and the topping its flat rate", g[1], 3.0 / 4.5 * 100, 1e-4);
+        expect_near("a zero volume is zero grams", grams_for_volumes(items, {0.0, 3.0}, on)[0], 0.0, 1e-12);
     }
 
     std::printf("\nPiece heights\n");
     {
         PieceHeights pieces{{"Chicken Tex-Mex", 25.0}, {"Beef Shawarma", 0.0}};
-        const LoadResult withp = load_menus(assets + "/menus", nullptr, &pieces);
+        const LoadResult withp = load_menus(fixture_menus, nullptr, &pieces);
         const Menu *cg = by_brand(withp.menus, "The Hungry Cowgirl");
         const Ingredient *tex = cg ? cg->find("Chicken Tex-Mex") : nullptr;
         const Ingredient *shaw = cg ? cg->find("Beef Shawarma") : nullptr;
@@ -1038,8 +944,7 @@ int main()
         SimSettings no_compress;
         no_compress.compress = false;
         const bool finished =
-            run_sweep({farmstand}, curves, no_compress, AdaptiveSettings{},
-                      nullptr, base_only, out, {}, &totals);
+            run_sweep({farmstand}, curves, no_compress, nullptr, base_only, out, {}, &totals);
         const std::string csv = out.str();
         expect_true("sweep runs to completion", finished);
         expect_near("rows emitted = rows planned", totals.at(0).rows, plan.rows(), 0.01);
@@ -1910,6 +1815,48 @@ int main()
         expect_true("a bad file is refused", !write_file(json_path, "{not json") ||
                                                  !load_fitted_curves(json_path, fitted, &why));
         fs::remove_all(root);
+    }
+
+    std::printf("\nCurrent menus (menus/), loaded as the app loads them\n");
+    {
+        std::string why;
+        NameMappings maps;
+        PieceHeights pieces;
+        expect_true("the name mappings load", load_name_mappings(assets + "/data/ingredient_aliases.csv", maps, &why));
+        expect_true("the piece heights load", load_piece_heights(assets + "/data/ingredient_pieces.csv", pieces, &why));
+        const LoadResult current = load_menus(assets + "/menus", &maps, &pieces);
+        expect_eq("every menu file reads and parses", join(current.warnings, "; "), "");
+        for (const std::string &w : current.issues) std::printf("  issue %s\n", w.c_str());
+
+        std::vector<std::string> active;
+        expect_true("the active brand list loads", load_active_brands(assets + "/data/active_brands.csv", active, &why));
+        auto sorted_lower = [](std::vector<std::string> names) {
+            for (std::string &n : names) n = to_lower(n);
+            std::sort(names.begin(), names.end());
+            return join(names, ", ");
+        };
+        std::vector<std::string> brands;
+        for (const Menu &m : current.menus) brands.push_back(m.brand);
+        expect_eq("menus/ holds exactly the active brands", sorted_lower(brands), sorted_lower(active));
+
+        const SimSettings ls;
+        for (const Menu &m : current.menus) {
+            expect_true(std::format("{} has ingredients and recipes", m.brand),
+                        !m.ingredients.empty() && !m.recipes.empty());
+            const BrandAudit a = audit_brand(m, curves, ls);
+            expect_near(std::format("{} audits every recipe", m.brand), a.rows.size(), m.recipes.size(), 0.01);
+        }
+
+        // What lab37's compiled curves are generated from: every active brand found, and
+        // a usable curve or a cup for everything the menus dispense.
+        const VolumeFillExport ex = export_volume_fill(current.menus, curves, SimSettings{}, VolumeFillSettings{}, active);
+        expect_eq("the export finds every active brand", join(ex.missing, ", "), "");
+        expect_eq("and leaves none out", join(ex.skipped, ", "), "");
+        std::vector<std::string> unusable;
+        for (const VolumeFillRow &row : ex.rows)
+            if (row.kind != "Sauce" && !(row.ml_at_1_g > 0 && row.volume_exponent > 0)) unusable.push_back(row.ingredient_name);
+        expect_eq("every dispensed ingredient has a usable curve", join(unusable, ", "), "");
+        for (const std::string &c : ex.conflicts) std::printf("  note %s\n", c.c_str());
     }
 
     std::printf("\n%d checks, %d failures\n", checks, failures);

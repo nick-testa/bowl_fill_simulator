@@ -1,5 +1,6 @@
 #pragma once
 
+#include "costs.hh"
 #include "feasibility.hh"
 
 #include <cstdint>
@@ -65,11 +66,6 @@ struct SweepTotals
 {
     std::int64_t rows = 0;
     std::int64_t legacy_fits = 0, legacy_over = 0, legacy_short = 0;
-    /// StillOver means "cannot be brought down to the fill target", which is not the
-    /// same as not fitting: a bowl held at 90% is both. `adaptive_over_bowl` is the
-    /// count that actually overflows.
-    std::int64_t adaptive_ok = 0, adaptive_over = 0, adaptive_short = 0;
-    std::int64_t adaptive_over_bowl = 0;
     /// Volume Fill: fits (filled to the limit or stepped down), everything at its max
     /// and still under the limit, or still over at its lowest.
     std::int64_t volume_fits = 0, volume_short = 0, volume_over = 0;
@@ -89,7 +85,6 @@ std::string sweep_csv_header();
 bool run_sweep(const std::vector<const Menu *> &menus,
                const CurveSet &curves,
                const SimSettings &legacy_settings,
-               const AdaptiveSettings &adaptive_settings,
                const CostTable *costs,
                const SweepLimits &limits,
                std::ostream &out,

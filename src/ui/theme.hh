@@ -4,6 +4,8 @@
 #include <QFont>
 #include <QString>
 
+#include <map>
+
 class QAbstractSpinBox;
 
 namespace bowlfill::theme {
@@ -66,6 +68,11 @@ QColor series_colour(const QString &ingredient);
 /// fallback for names with no match: 0 base, 1 protein, 2 topping.
 ///
 QColor food_colour(const QString &ingredient, int kind);
+/// The colour the name alone gives, whatever has been chosen for it.
+QColor automatic_food_colour(const QString &ingredient, int kind);
+/// Colours chosen for ingredients (by name in use, any case), which food_colour() gives
+/// in place of the automatic ones.
+void set_food_colours(const std::map<QString, QColor> &chosen);
 
 ///
 /// Makes a spin box a plain typed field: no arrow buttons, text inset like a line

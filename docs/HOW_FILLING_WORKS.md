@@ -1,8 +1,9 @@
-# How bowl filling works: dynamic portioning vs adaptive fill
+# How bowl filling works: legacy portioning vs volume fill
 
-A plain-language guide to the two ways the robot can decide how much food goes in a
-bowl, and what this simulator does to compare them. No maths background needed; the
-technical version is in the main [README](../README.md#two-dispense-models).
+**Dynamic Portioning** is the step where the robot adjusts a bowl's portions before it
+dispenses. This is a plain-language guide to the two ways it can do that, and what this
+simulator does to compare them. No maths background needed; the technical version is in
+the main [README](../README.md#dispense-models).
 
 ---
 
@@ -18,9 +19,9 @@ two methods below handle it very differently.
 
 ---
 
-## Method 1: Dynamic portioning (what runs today)
+## Method 1: Legacy portioning (what runs today)
 
-*In the app: **Dynamic portioning**, at the top of the window.*
+*In the app: **Dynamic Portioning → Legacy portioning**.*
 
 ### The idea
 
@@ -70,75 +71,11 @@ weight, the robot tops everything up a little at a time until it clears the floo
 
 ---
 
-## Method 2: Adaptive fill (the proposed replacement)
+## Method 2: Volume fill (the replacement)
 
-*In the app: **Adaptive fill**, at the top of the window.*
+*In the app: **Dynamic Portioning → Volume fill**.*
 
-### The idea
-
-Instead of aiming for a **weight**, aim for a **fill level**: food filling about
-**85% of the food room**. The food room is the space under the 32 oz fill line
-that's left once the sauce cups are in, so a bowl with two cups aims a little lower
-than one with none. Then adjust the recipe up or down, within limits, to land there.
-
-### Step by step
-
-1. **Predict how much space the recipe as written will take.** The simulator does
-   this using measured *mass-to-volume curves* for each ingredient (see "What makes
-   the predictions possible" below).
-2. **If it already looks right, leave it alone.** If the food comes in between
-   **75% and 85%** of the food room, nothing is adjusted. Most bowls should land here.
-3. **Otherwise, turn one dial.** There is a single "more / less" dial that adjusts
-   *every* ingredient at the same time, but each by a different amount:
-
-   | Ingredient type | Allowed to move | Why |
-   | --- | --- | --- |
-   | Base (rice, greens) | up to ±20% | Cheap and bulky: the best lever for volume |
-   | Protein | up to ±5% | What customers notice and pay for, so protected |
-   | Topping | up to ±10% | In between |
-
-   Turning the dial halfway means every ingredient moves halfway through *its own*
-   allowance: the base moves 10%, the protein 2.5%, the toppings 5%. The base always
-   moves four times as far as the protein, and toppings twice as far.
-4. **Set the dial so the bowl lands on 85%.** Because turning the dial up always
-   makes the bowl bigger, there is exactly one right setting, and it can be found
-   quickly and reliably.
-5. **If the dial runs out**, flag the bowl rather than break the rules:
-   - **Underfilled:** even at full "more", it can't reach 85%. It goes out a little
-     light, and is flagged.
-   - **Still over at max reduction:** even at full "less", it's too big. This means
-     the recipe itself needs changing, not the robot.
-
-   When in doubt it errs toward **underfilling**: a slightly light bowl is a better
-   failure than one that won't close.
-
-> **Analogy:** a single volume knob on a stereo with three speakers wired at
-> different strengths. One turn of the knob changes all three, but the bass (the
-> base) moves most and the vocals (the protein) barely move.
-
-### Cost
-
-Each bowl's ingredient cost is **reported** next to the menu price, against a target
-of 23% food cost. It is **not** used to decide the portions. The aim is to see the
-cost impact, not to optimise for it. *(The ingredient prices are placeholders for
-now.)*
-
-### Possible outcomes
-
-| What the app says | What it means |
-| --- | --- |
-| **No adjustment** | Already 75–85% of the food room; dispensed exactly as written |
-| **Adjusted** | Dialled up or down onto the 85% target |
-| **Underfilled** | Couldn't get up to 85% within the allowed limits |
-| **Still over at max reduction** | Too big even at the smallest allowed portions |
-
----
-
-## Method 3: Volume fill
-
-*In the app: **Volume fill**, at the top of the window.*
-
-Dynamic portioning steered by volume instead of weight. It works in the same small
+The same ramp steered by volume instead of weight. It works in the same small
 steps (`step_g`) the robot already uses, but it ignores the weight floor entirely
 and only asks whether the bowl fits. It recommends the same bowl whether or not a
 floor is set:
@@ -151,7 +88,10 @@ floor is set:
   down**, and nothing goes below a set share of its recipe portion (70% by
   default). If it still doesn't fit at that point, the bowl is flagged.
 
-"Fits" means within a set share of the food room (100% by default). Because real
+"Fits" means within a set share of the food room (100% by default; a menu can set its
+own, as BIG JERK and ORO do at 87%). The food room is the space under the 32 oz fill
+line that's left once the sauce cups are in, so a bowl with two cups fills a little
+lower than one with none. Because real
 bowls run a little heavier than their targets and vary bowl to bowl, a bowl that
 only just fits on paper still overfills fairly often. Lowering the fit target
 (say to 90%) leaves headroom; the overfill odds under the bowl show the effect.
@@ -160,39 +100,38 @@ only just fits on paper still overfills fairly often. Lowering the fit target
 
 ## Side by side
 
-| | Dynamic portioning | Adaptive fill |
+| | Legacy portioning | Volume fill |
 | --- | --- | --- |
-| Aims for | A minimum **weight** | A **fill level** (85% of the food room) |
+| Aims for | A minimum **weight** | As full as fits (a share of the food room) |
 | Looks at whether it fits? | No | Yes: that's the whole point |
-| How it adjusts | Adds a small step of everything, over and over | Turns one dial, once |
-| Can it make a bowl *smaller*? | No, only bigger | Yes |
-| Who moves most | Whatever has the biggest step size | The base, by design |
-| Protein protected? | No special treatment | Yes, it moves least (±5%) |
-| Bulky recipes | Can be pushed over the rim | Pulled back to fit |
-| Light, dense recipes | Topped up to the weight floor | Topped up toward 85%, within limits |
+| How it adjusts | Adds a small step of everything, over and over | The same steps, checked against the bowl before each one |
+| Can it make a bowl *smaller*? | No, only bigger | Yes, bases and toppings |
+| Protein protected? | No special treatment | Never stepped down |
+| Bulky recipes | Can be pushed over the rim | Stepped down to fit |
+| Light, dense recipes | Topped up to the weight floor | Topped up while it still fits |
 | Needs volume data? | No (that's its weakness) | Yes (that's its strength) |
 
 ---
 
 ## A worked example: Farmstand Pesto Chopped Salad
 
-As written, the recipe is **326 g**, which the simulator predicts takes about
-**25 oz** of space: comfortably inside the bowl.
+As written, the recipe is **254 g**, which the simulator predicts takes about
+**21 oz** of space: comfortably inside the bowl.
 
-**Dynamic portioning:** the menu's weight floor for this bowl is **365 g**, so the
-robot tops everything up until it passes 365 g. That extra ~40 g, much of it greens,
-grows the bowl to about **30.6 oz**, past the room left for food. The simulator
-puts the chance of an overfilled bowl at roughly **50/50**.
+**Legacy portioning:** the menu's weight floor for this bowl is **365 g**, so the
+robot tops everything up until it passes 365 g. That extra ~110 g, much of it greens,
+grows the bowl to about **30.5 oz**, past the room left for food. The simulator
+puts the chance of an overfilled bowl at roughly **64%**.
 
-**Adaptive fill:** it predicts the recipe as written fills about **82%** of the food
-room, inside the 75–85% "leave it alone" range, so it dispenses the recipe unchanged. The
-chance of overfilling drops to about **7%**.
+**Volume fill:** it tops the recipe up six steps, to **283 g** and about **25 oz**, and
+stops there because the next step would no longer fit. The chance of overfilling drops
+to about **30%**; lowering the fit target leaves more headroom.
 
-Same recipe, same robot: one method makes it overflow half the time, the other
-doesn't touch it.
+Same recipe, same robot: one method makes it overflow most of the time, the other
+stops while it still fits.
 
-*(Numbers from the simulator's feasibility report on 2026-10-12; they will move as
-more measurements come in.)*
+*(Numbers from the simulator's feasibility report on 2026-10-28, with Farmstand's last
+menu; they will move as more measurements come in.)*
 
 ---
 
@@ -258,12 +197,12 @@ measured mixed bowls land inside their predicted 80% range, which is about right
 
 **Why not just lower the weight floor?**
 The floor protects customers on dense bowls (rice-heavy bowls are small for their
-weight). Lowering it for everyone short-changes those bowls. Adaptive fill solves
+weight). Lowering it for everyone short-changes those bowls. Volume fill judges
 each bowl on its own terms.
 
-**Doesn't adaptive fill mean customers sometimes get less food?**
-Sometimes less *base*, mostly on bulky bowls that would otherwise overflow. Protein
-barely moves (±5% at most), and many bowls aren't touched at all.
+**Doesn't volume fill mean customers sometimes get less food?**
+Sometimes less *base* or topping, on bulky bowls that would otherwise overflow, and
+never below a set share of the recipe portion. Protein is never stepped down.
 
 **What if the volume predictions are wrong?**
 That's what the 80% range and the coverage check are for. The more ingredients get
@@ -271,16 +210,14 @@ measured, the tighter the ranges get. Unmeasured ingredients are flagged in the 
 so it's clear which numbers are estimates.
 
 **Where are these settings in the app?**
-- The **Dynamic portioning / Adaptive fill** switch is at the top of the window.
+- Press **Dynamic Portioning** to open the simulator on the bowl you are building;
+  the **Legacy portioning / Volume fill** switch is at its top.
 - Portions (start, step and max weight for each ingredient) are edited right in the
   finished-bowl table: click a shaded number and type.
-- The weight floor, or Adaptive fill's target, "leave alone" threshold and ±%
-  allowances, are in the left-hand panel under the recipe.
+- The weight floor, or Volume fill's fit target and step-down limit, are in the
+  left-hand panel under the recipe.
 - The bowl, lid and cup sizes, dispense variation, mounding, compression and
   measurement data are in **⚙ Settings**, top right.
-- **Saved scenario** (under the recipe) keeps a named set-up of a bowl, with its
-  ingredients and edits, in `data/scenarios`; **Export spec…** on the finished bowl
-  saves a one-page PDF of it for hand-off.
 - **ⓘ estimates** in the header lists everything the numbers rest on that hasn't
   been measured yet.
 
@@ -290,11 +227,11 @@ so it's clear which numbers are estimates.
 
 | Term | Meaning |
 | --- | --- |
-| **Weight floor** | The minimum weight a bowl must reach under dynamic portioning; set per bowl type by the menu |
+| **Weight floor** | The minimum weight a bowl must reach under legacy portioning; set per bowl type by the menu |
 | **Step** | The small amount added to an ingredient on each top-up pass |
 | **Fill line / functional fill** | 32 oz (946 ml): how full a bowl is meant to be; a little below the rim |
 | **Food room** | Space left for food once sauce cups (and any tall chunks) are accounted for |
-| **Tolerance / allowance** | How far adaptive fill may move an ingredient from its recipe portion |
+| **Fit target** | How full volume fill may make a bowl, as a share of the food room |
 | **Mass-to-volume curve** | Measured relationship between an ingredient's weight and the space it takes |
 | **80% range** | Where 8 out of 10 real bowls of this recipe are expected to land |
-| **COGS** | Cost of goods sold: ingredient cost as a share of the menu price |
+| **COGS** | Cost of goods sold: what the bowl's ingredients cost |

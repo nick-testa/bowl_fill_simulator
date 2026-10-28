@@ -399,6 +399,51 @@ Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &
     return f;
 }
 
+std::vector<double> grams_for_volumes(const std::vector<BowlItem> &items,
+                                      const std::vector<double> &target_oz,
+                                      const SimSettings &settings)
+{
+    std::vector<double> grams(items.size(), 0.0);
+    auto target = [&](size_t i) { return i < target_oz.size() ? std::max(0.0, target_oz[i]) : 0.0; };
+    // An item's volume grows with its own grams whatever lies on it, so each is found by
+    // bisection with the others held; a few rounds settle the load each base carries.
+    for (int round = 0; round < 20; ++round)
+    {
+        double moved = 0.0;
+        for (size_t i = 0; i < items.size(); ++i)
+        {
+            const double want = target(i);
+            std::vector<double> trial = grams;
+            auto volume = [&](double g) {
+                trial[i] = g;
+                return bowl_frame(items, trial, settings).per_item_oz[i];
+            };
+            double lo = 0.0, hi = 100.0;
+            if (want > 0)
+            {
+                while (volume(hi) < want && hi < 1e6)
+                {
+                    lo = hi;
+                    hi *= 2.0;
+                }
+                for (int k = 0; k < 60 && hi - lo > 1e-6; ++k)
+                {
+                    const double mid = 0.5 * (lo + hi);
+                    (volume(mid) < want ? lo : hi) = mid;
+                }
+            }
+            const double g = want > 0 ? 0.5 * (lo + hi) : 0.0;
+            moved = std::max(moved, std::fabs(g - grams[i]));
+            grams[i] = g;
+        }
+        if (moved < 1e-4)
+        {
+            break;
+        }
+    }
+    return grams;
+}
+
 SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings)
 {
     SimResult result;

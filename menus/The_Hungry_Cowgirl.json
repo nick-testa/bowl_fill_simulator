@@ -97,6 +97,214 @@ MAPPINGS:
       "ingredient_name": "Chicken Tex-Mex",
       "per_portion_weight_g": 95.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:1a13dbd2-09e7-4b76-ba69-05a90f698e3f"
+      ],
+      "ingredient_name": "White Jasmine Rice retherm v11",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tex-mex-seasoned-rice:a302c420-9436-4bf1-b7e0-ada686fcb97d"
+      ],
+      "ingredient_name": "Mexican Rice [Retherm]",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-tex-mex-chicken:3daa32e5-bdf2-46b4-a223-368e4aca6502"
+      ],
+      "ingredient_name": "Guajillo  Cumin Chicken cooked",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada:665f46ac-32dc-4797-be1d-88f45011c410"
+      ],
+      "ingredient_name": "Suadero Beef [Cooked]",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:9131689a-5cb6-43a6-8068-6a387e53766f"
+      ],
+      "ingredient_name": "Cilantro Crema Portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tex-mex-slow-roasted-chicken:f15724ec-cd5b-4c6e-aa50-2c23afcd4346"
+      ],
+      "ingredient_name": "Guajillo  Cumin Chicken cooked",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada:607d65a5-5cc8-4fff-b7ee-c9a4c8dbfbb0"
+      ],
+      "ingredient_name": "Suadero Beef [Cooked]",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pico-de-gallo:ee910c16-728a-43d7-bee3-ca709d2f5b6c"
+      ],
+      "ingredient_name": "Pico de Gallo",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:b6c770ec-e989-49f5-ac14-796522031008"
+      ],
+      "ingredient_name": "CHEESE CHEDDAR MONTEREY JACK BLEND SHREDDED",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:corn-salsa:4507d17a-2e27-4165-a787-a64c95480938"
+      ],
+      "ingredient_name": "Corn Salad Make 11",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-style-salsa-roja:13c4722c-aac3-4c77-99d1-7c37f38f7e93"
+      ],
+      "ingredient_name": "Cantina Salsa Roja portioned",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:704ac083-8a5c-48fe-b047-caba13ea389c"
+      ],
+      "ingredient_name": "Sour Cream portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chile-con-carne:3491952f-c14a-4b41-bc35-6cda86151346"
+      ],
+      "ingredient_name": "Beef Chile con Carne Dry retherm",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chile-con-carne:32197446-fd8a-40c5-a779-4115090f652b"
+      ],
+      "ingredient_name": "Beef Chile con Carne Dry retherm",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream-portion:9ad1410d-3b76-421a-9975-e1d3db302f51"
+      ],
+      "ingredient_name": "Sour Cream portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-salsa-roja-portioned:76d33016-b752-4170-ba53-57ed14601326"
+      ],
+      "ingredient_name": "Cantina Salsa Roja portioned",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:corn-salad-make-1-1:69b7499b-8ac9-4101-8535-ad47263ff53f"
+      ],
+      "ingredient_name": "Corn Salad Make 11",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:guajillo-cumin-chicken-cooked:9996a437-83fd-4a45-945a-75a81782db1a"
+      ],
+      "ingredient_name": "Guajillo  Cumin Chicken cooked",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:suadero-beef-cooked:96dd8d1d-5a2a-469b-a667-6a4e1724e855"
+      ],
+      "ingredient_name": "Suadero Beef [Cooked]",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mexican-rice-retherm:d38546b4-8afc-4190-b0ad-ad26a4d7602f"
+      ],
+      "ingredient_name": "Mexican Rice [Retherm]",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-monterey-jack-blend-shredded:9dbd0e91-1226-4d87-9860-7f9ef774c2c5"
+      ],
+      "ingredient_name": "CHEESE CHEDDAR MONTEREY JACK BLEND SHREDDED",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-monterey-jack-blend-shredded:9aeb5213-1a00-4f2a-89cb-07330555200d"
+      ],
+      "ingredient_name": "CHEESE CHEDDAR MONTEREY JACK BLEND SHREDDED",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:34dbc90e-a655-4d5b-991f-1a3657347c50"
+      ],
+      "ingredient_name": "Cilantro Crema Portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-style-salsa:436b0fe2-f356-4ca9-a366-2c44285a5716"
+      ],
+      "ingredient_name": "Cantina Salsa Roja portioned",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:127b2482-e995-4f2d-9749-2502530046a5"
+      ],
+      "ingredient_name": "Sour Cream portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:romaine:7692492a-6213-4de4-9c10-4ab751e42677"
+      ],
+      "ingredient_name": "Romaine Chop",
+      "per_portion_weight_g": 60.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "product_templates": [
@@ -191,6 +399,47 @@ MAPPINGS:
     },
     {
       "source_item_id": "mb:charred-broccoli-vegetarian-bowl:e99b4c93-ebbc-4a08-b23d-8179b604056b",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664",
+      "target_item_ids": [
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:romaine-chop",
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:guacachile-salsa-portion",
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:cilantro-crema-portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:slow-roasted-tex-mex-chicken-bowl:6b684a11-9f11-4773-87f2-b0646893a51b",
+      "target_item_ids": [
+        "mb-pt:mb:slow-roasted-tex-mex-chicken-bowl:6b684a11-9f11-4773-87f2-b0646893a51b:guajillo-cumin-chicken-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:steak-asada-bowl:806fdee8-1c64-4d7b-92f1-5069bdcd84ae",
+      "target_item_ids": [
+        "mb-pt:mb:steak-asada-bowl:806fdee8-1c64-4d7b-92f1-5069bdcd84ae:suadero-beef-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:chile-con-carne-bowl:c6abff62-ce4f-44d5-af8d-8375b3338948",
+      "target_item_ids": [
+        "mb-pt:mb:chile-con-carne-bowl:c6abff62-ce4f-44d5-af8d-8375b3338948:beef-chile-con-carne-dry-retherm"
+      ]
+    },
+    {
+      "source_item_id": "mb:basic-cowgirl-bowl:6991fab1-a63a-4e02-9f56-c01666d8e47b",
+      "target_item_ids": []
+    },
+    {
+      "source_item_id": "mb:the-hungry-cowgirl-bowl:de54d04a-4b62-4390-b863-c39320f9e2cb",
+      "target_item_ids": [
+        "mb-pt:mb:the-hungry-cowgirl-bowl:de54d04a-4b62-4390-b863-c39320f9e2cb:guajillo-cumin-chicken-cooked",
+        "mb-pt:mb:the-hungry-cowgirl-bowl:de54d04a-4b62-4390-b863-c39320f9e2cb:suadero-beef-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:build-your-own-cowgirl-bowl:8746e3ae-1f91-4a7f-9786-daa04c5280e5",
       "target_item_ids": []
     }
   ],
@@ -349,6 +598,70 @@ MAPPINGS:
       "removal_ingredient_names": [
         "Beef Shawarma"
       ]
+    },
+    {
+      "source_item_id": "mb:no-black-beans:69ec60c1-56ab-44dd-b5ab-b1b5f82efee9",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Black Beans"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-cantina-salsa-roja:a70f9fe1-70e7-4e92-8ab0-5d6567bafe07",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Cantina Salsa Roja portioned"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-sour-cream:bf790f85-419d-415c-bbf5-95e366a31f8b",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Sour Cream portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-corn:87dfea57-6b7a-463a-aecb-7959fa9e2e7f",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Corn Salad Make 11"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-cheese:3cd75829-9b78-43dc-95c2-7fd6e38d41a3",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Cheese"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-steak-asada:2d0e3120-5d4b-47ec-bbf1-001f19b187b8",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Suadero Beef [Cooked]"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-mexican-rice:d50efd51-b4fd-4e39-a93c-2541016bcb94",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Mexican Rice [Retherm]"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-slow-roasted-tex-mex-chicken:de034086-ce4d-4e2e-a482-b0a8000fdd82",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Guajillo  Cumin Chicken cooked"
+      ]
     }
   ],
   "ignored_product_ids": [
@@ -356,7 +669,9 @@ MAPPINGS:
     "mb:no-sauce:d5e3eb0b-c3a9-48d1-af02-3d6efde3302f",
     "mb:no-utensils:06948057-07f8-4d2b-8c58-dbe5c076469f",
     "mb:no-i-don-t-want-extra-protein:a071ed08-0c52-4f6a-a722-ea54db5c6290",
-    "mb:extra-steak:d0dc1cc2-39ec-4d3c-a6ca-c5dfe53a4339"
+    "mb:extra-steak:d0dc1cc2-39ec-4d3c-a6ca-c5dfe53a4339",
+    "mb:no-protein:c3121ded-3da1-4c3e-89ba-5f621d2a2124",
+    "mb:side-salsas-sauces:4bc15b9c-4b23-47e8-8574-e9efd5d8f265"
   ],
   "ignored_ingredient_ids": [
     "mb:no-base-please-a-47b7e2e55c2746b69ebed70819617057-53dd-1a172f49-5796-4e22-9704-34d16bceab6f:5d236456-6714-459f-91f1-4eb58a32b56d",
@@ -372,7 +687,9 @@ MAPPINGS:
     "mb:no-sauce:d5e3eb0b-c3a9-48d1-af02-3d6efde3302f",
     "mb:no-utensils:06948057-07f8-4d2b-8c58-dbe5c076469f",
     "mb:no-i-don-t-want-extra-protein:a071ed08-0c52-4f6a-a722-ea54db5c6290",
-    "mb:extra-steak:d0dc1cc2-39ec-4d3c-a6ca-c5dfe53a4339"
+    "mb:extra-steak:d0dc1cc2-39ec-4d3c-a6ca-c5dfe53a4339",
+    "mb:no-protein:c3121ded-3da1-4c3e-89ba-5f621d2a2124",
+    "mb:side-salsas-sauces:4bc15b9c-4b23-47e8-8574-e9efd5d8f265"
   ],
   "auxiliary_product_ids": [
     "mb:3-tortillas-a-47b7e2e55c2746b69ebed70819617057-8717-2600b16f-add5-4573-8378-113fbde0a2c7:ad32a71e-86ff-41a2-b9e8-5629b890dea0",
@@ -385,7 +702,6 @@ MAPPINGS:
     "mb:jarritos-pineapple-soda-a-47b7e2e55c2746b69ebed70819617057-2181-45e612d2-d29b-45fe-a0d3-b10d4a58a772:594fe845-37e3-4d75-8c92-fa49cd0ac84d",
     "mb:m-thc-coke-55356314-ad68-4908-afe8-9da057ca9ff8:9a429a16-ec75-464f-8157-de2f43e6b4b9",
     "mb:m-thc-noutensils-7d5cdec4-a245-4c57-9895-2357448ce7c5:d4174a22-4804-41aa-8443-d027411d9e5e",
-    "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345",
     "mb:m-thc-plusutensils-0218acb1-4f58-4b5e-97a6-a1ac0b9beff3:db79f8cd-c658-4fb6-968d-979a70b3e569",
     "mb:m-thc-salsaroja2-ad0dadd9-bc61-44bb-b950-4b230fa76674:8901af01-ab77-48e6-8174-19e226fb48bc",
     "mb:mexican-coke-a-47b7e2e55c2746b69ebed70819617057-ef3e-835b9c5c-429e-458a-8bdf-d91182de084e:9b9bf647-8ef0-400a-889b-09a1dbdaba08",
@@ -402,7 +718,6 @@ MAPPINGS:
     "mb:mexican-coke:01b088e6-5519-4f70-8588-6ea8e8733fc5",
     "mb:mexican-cornbread:fa5ec0f7-7666-4b2d-8356-fc7398968978",
     "mb:jarritos-pineapple-soda:644f84a1-3b1f-4a41-a6c2-0d37db0646c2",
-    "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01",
     "mb:tres-leches-cake-a-47b7e2e55c2746b69ebed70819617057-1524-81bd6149-d1a8-4da6-97ee-2010bf3c449b:1dc9311e-b817-4562-ad62-823b9e023c39",
     "mb:tres-leches-cake:8e9bed70-b0cb-439e-a294-c1a6b7c1d506",
     "mb:two-frito-bags-a-47b7e2e55c2746b69ebed70819617057-4cef-b7f7510f-384b-45d1-888d-4c013e8ddb8e:cda93d5a-2d8c-45e1-87c9-60bd0b1831ff",
@@ -488,7 +803,36 @@ MAPPINGS:
     "mb:churro-cookie:1733db77-1968-4353-8770-dfa1516e4542",
     "mb:mexican-coke:10567ef6-7259-4b76-bada-4d4bfd514c3f",
     "mb:pistachio-lemon-cookie:d2fe4988-6fec-4b8a-b99d-492d1a0f927a",
-    "mb:churro-cookie:36eada5e-6d3f-4612-9bde-d19204e6ca62"
+    "mb:churro-cookie:36eada5e-6d3f-4612-9bde-d19204e6ca62",
+    "mb:chips-salsa:a058de22-dd03-475c-a91e-27e5638d92c9",
+    "mb:chips-and-salsa:3ab96d7b-9dbd-4847-ab37-6b40d6bb0ddc",
+    "mb:chips-and-guacamole:e83633cd-6e62-4b59-b6f6-712294a5cd5b",
+    "mb:chips-and-queso:46803eb7-c802-4a5e-a8f7-c92b575d0358",
+    "mb:side-of-queso:4fe55477-e58d-41e0-bf55-3aa1ee79eac4",
+    "mb:side-of-guacamole:3fe9360d-da45-432b-9e45-a47da5d27a89",
+    "mb:side-of-chips:13f144d3-557b-4275-8cd4-fb8a037033ae",
+    "mb:chocolate-chip-brownie:96f35fa9-239e-404f-ac88-7b0b61bd9a97",
+    "mb:something-to-drink:f9061faf-3d8d-4d78-bf44-f3de765ba7f1",
+    "mb:cilantro-crema:69ee9472-b280-4b36-ad0c-eb570e77d247",
+    "mb:green-salsa-macha:c086bfe5-8844-4060-af3b-653c25fabd36",
+    "mb:cantina-salsa-roja:aaf8835f-7882-4f75-abcc-ed8a44017a18",
+    "mb:sour-cream:c0682b19-8882-4871-adbb-3def409fadcd",
+    "mb:citrus-vinaigrette:4a024513-06e6-43e9-a617-4ac8a89641ea",
+    "mb:bottled-water:c7119029-f15d-48dd-a722-1dbf32bb4bbb",
+    "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345",
+    "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01",
+    "mb:black-beans:e45853d2-3542-47a8-8ab7-349d1ccd0752",
+    "mb:cilantro-crema:ab67dd3b-419d-4a49-b69a-b48b54ad7ef4",
+    "mb:cantina-style-salsa-roja:043bebb0-cab8-4e17-b6fe-c56ff77abf03",
+    "mb:sour-cream:0f5378cf-1c7a-437f-b0c1-bdff6fdff29b",
+    "mb:just-chips:6de435f1-60e0-44c7-97d4-d7413fae13e3",
+    "mb:chips-guacamole:e1e1140f-958f-4dd2-a10b-286885340b48",
+    "mb:coca-cola:ab1e882d-bf0c-479d-9fe2-9286ecc3bc8c",
+    "mb:chips-side-of-queso:fd8db268-99a0-4ddd-a01f-58aeb4136a49",
+    "mb:black-beans-retherm-1-1:f41341e1-2f8e-4716-9713-d43ff39f54d7",
+    "mb:chocolate-chip-brownie:a00b4d15-37db-41df-9641-b78a5d4fa536",
+    "mb:black-beans-on-the-side:7bf039e4-ec43-4b50-8d62-d70f549d35d4",
+    "mb:yes-add-utensils:5ec8fab5-11d4-4513-b647-88ff1c1f52ed"
   ],
   "auxiliary_ingredient_ids": [
     "mb:3-tortillas-a-47b7e2e55c2746b69ebed70819617057-8717-2600b16f-add5-4573-8378-113fbde0a2c7:ad32a71e-86ff-41a2-b9e8-5629b890dea0",
@@ -501,7 +845,6 @@ MAPPINGS:
     "mb:jarritos-pineapple-soda-a-47b7e2e55c2746b69ebed70819617057-2181-45e612d2-d29b-45fe-a0d3-b10d4a58a772:594fe845-37e3-4d75-8c92-fa49cd0ac84d",
     "mb:m-thc-coke-55356314-ad68-4908-afe8-9da057ca9ff8:9a429a16-ec75-464f-8157-de2f43e6b4b9",
     "mb:m-thc-noutensils-7d5cdec4-a245-4c57-9895-2357448ce7c5:d4174a22-4804-41aa-8443-d027411d9e5e",
-    "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345",
     "mb:m-thc-plusutensils-0218acb1-4f58-4b5e-97a6-a1ac0b9beff3:db79f8cd-c658-4fb6-968d-979a70b3e569",
     "mb:m-thc-salsaroja2-ad0dadd9-bc61-44bb-b950-4b230fa76674:8901af01-ab77-48e6-8174-19e226fb48bc",
     "mb:mexican-coke-a-47b7e2e55c2746b69ebed70819617057-ef3e-835b9c5c-429e-458a-8bdf-d91182de084e:9b9bf647-8ef0-400a-889b-09a1dbdaba08",
@@ -518,7 +861,6 @@ MAPPINGS:
     "mb:mexican-coke:01b088e6-5519-4f70-8588-6ea8e8733fc5",
     "mb:mexican-cornbread:fa5ec0f7-7666-4b2d-8356-fc7398968978",
     "mb:jarritos-pineapple-soda:644f84a1-3b1f-4a41-a6c2-0d37db0646c2",
-    "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01",
     "mb:tres-leches-cake-a-47b7e2e55c2746b69ebed70819617057-1524-81bd6149-d1a8-4da6-97ee-2010bf3c449b:1dc9311e-b817-4562-ad62-823b9e023c39",
     "mb:tres-leches-cake:8e9bed70-b0cb-439e-a294-c1a6b7c1d506",
     "mb:two-frito-bags-a-47b7e2e55c2746b69ebed70819617057-4cef-b7f7510f-384b-45d1-888d-4c013e8ddb8e:cda93d5a-2d8c-45e1-87c9-60bd0b1831ff",
@@ -604,7 +946,36 @@ MAPPINGS:
     "mb:churro-cookie:1733db77-1968-4353-8770-dfa1516e4542",
     "mb:mexican-coke:10567ef6-7259-4b76-bada-4d4bfd514c3f",
     "mb:pistachio-lemon-cookie:d2fe4988-6fec-4b8a-b99d-492d1a0f927a",
-    "mb:churro-cookie:36eada5e-6d3f-4612-9bde-d19204e6ca62"
+    "mb:churro-cookie:36eada5e-6d3f-4612-9bde-d19204e6ca62",
+    "mb:chips-salsa:a058de22-dd03-475c-a91e-27e5638d92c9",
+    "mb:chips-and-salsa:3ab96d7b-9dbd-4847-ab37-6b40d6bb0ddc",
+    "mb:chips-and-guacamole:e83633cd-6e62-4b59-b6f6-712294a5cd5b",
+    "mb:chips-and-queso:46803eb7-c802-4a5e-a8f7-c92b575d0358",
+    "mb:side-of-queso:4fe55477-e58d-41e0-bf55-3aa1ee79eac4",
+    "mb:side-of-guacamole:3fe9360d-da45-432b-9e45-a47da5d27a89",
+    "mb:side-of-chips:13f144d3-557b-4275-8cd4-fb8a037033ae",
+    "mb:chocolate-chip-brownie:96f35fa9-239e-404f-ac88-7b0b61bd9a97",
+    "mb:something-to-drink:f9061faf-3d8d-4d78-bf44-f3de765ba7f1",
+    "mb:cilantro-crema:69ee9472-b280-4b36-ad0c-eb570e77d247",
+    "mb:green-salsa-macha:c086bfe5-8844-4060-af3b-653c25fabd36",
+    "mb:cantina-salsa-roja:aaf8835f-7882-4f75-abcc-ed8a44017a18",
+    "mb:sour-cream:c0682b19-8882-4871-adbb-3def409fadcd",
+    "mb:citrus-vinaigrette:4a024513-06e6-43e9-a617-4ac8a89641ea",
+    "mb:bottled-water:c7119029-f15d-48dd-a722-1dbf32bb4bbb",
+    "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345",
+    "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01",
+    "mb:black-beans:e45853d2-3542-47a8-8ab7-349d1ccd0752",
+    "mb:cilantro-crema:ab67dd3b-419d-4a49-b69a-b48b54ad7ef4",
+    "mb:cantina-style-salsa-roja:043bebb0-cab8-4e17-b6fe-c56ff77abf03",
+    "mb:sour-cream:0f5378cf-1c7a-437f-b0c1-bdff6fdff29b",
+    "mb:just-chips:6de435f1-60e0-44c7-97d4-d7413fae13e3",
+    "mb:chips-guacamole:e1e1140f-958f-4dd2-a10b-286885340b48",
+    "mb:coca-cola:ab1e882d-bf0c-479d-9fe2-9286ecc3bc8c",
+    "mb:chips-side-of-queso:fd8db268-99a0-4ddd-a01f-58aeb4136a49",
+    "mb:black-beans-retherm-1-1:f41341e1-2f8e-4716-9713-d43ff39f54d7",
+    "mb:chocolate-chip-brownie:a00b4d15-37db-41df-9641-b78a5d4fa536",
+    "mb:black-beans-on-the-side:7bf039e4-ec43-4b50-8d62-d70f549d35d4",
+    "mb:yes-add-utensils:5ec8fab5-11d4-4513-b647-88ff1c1f52ed"
   ],
   "product_rules": [
     {
@@ -616,7 +987,8 @@ MAPPINGS:
         "mb:white-rice:71b14b7e-1b90-4470-bc02-d7368b4063d0",
         "mb:mexican-rice:c578d6f1-4112-41c2-b604-8eeb08324c4e",
         "mb:mexican-rice:b5d17573-8116-4301-b4d4-e22f95c6411f",
-        "mb:massaged-kale:ae81a456-e340-4ce2-bcd6-8fddda14b1ed"
+        "mb:massaged-kale:ae81a456-e340-4ce2-bcd6-8fddda14b1ed",
+        "mb:tex-mex-seasoned-rice:a302c420-9436-4bf1-b7e0-ada686fcb97d"
       ]
     }
   ],
@@ -629,8 +1001,8 @@ MAPPINGS:
               "Romaine Base"
             ],
             "must_not_have": [
-              "White Rice",
-              "Mexican Rice"
+              "Mexican Rice [Retherm]",
+              "White Jasmine Rice retherm v11"
             ]
           },
           "filter_op": "ExactlyOne",
@@ -639,8 +1011,8 @@ MAPPINGS:
         {
           "ingredient_names": {
             "must_have": [
-              "White Rice",
-              "Mexican Rice"
+              "Mexican Rice [Retherm]",
+              "White Jasmine Rice retherm v11"
             ],
             "must_not_have": [
               "Romaine Base"
@@ -653,8 +1025,8 @@ MAPPINGS:
           "ingredient_names": {
             "must_have": [
               "Romaine Base",
-              "White Rice",
-              "Mexican Rice"
+              "Mexican Rice [Retherm]",
+              "White Jasmine Rice retherm v11"
             ],
             "must_not_have": []
           },
@@ -666,8 +1038,8 @@ MAPPINGS:
             "must_have": [],
             "must_not_have": [
               "Romaine Base",
-              "White Rice",
-              "Mexican Rice"
+              "Mexican Rice [Retherm]",
+              "White Jasmine Rice retherm v11"
             ]
           },
           "filter_op": "Any",
@@ -678,65 +1050,45 @@ MAPPINGS:
         {
           "ingredient_name": "Romaine Base",
           "step_increment_g": 3.5,
-          "max_dispense_weight_g": 100.0
+          "max_dispense_weight_g": 80.0
         },
         {
-          "ingredient_name": "Massaged Kale",
-          "step_increment_g": 3.5,
-          "max_dispense_weight_g": 100.0
-        },
-        {
-          "ingredient_name": "White Rice",
+          "ingredient_name": "White Jasmine Rice retherm v11",
           "step_increment_g": 3.2,
           "max_dispense_weight_g": 240.0
         },
         {
-          "ingredient_name": "Mexican Rice",
+          "ingredient_name": "Mexican Rice [Retherm]",
           "step_increment_g": 3.2,
           "max_dispense_weight_g": 240.0
         },
         {
-          "ingredient_name": "Chicken Tex-Mex",
+          "ingredient_name": "Guajillo  Cumin Chicken cooked",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 125.0
         },
         {
-          "ingredient_name": "Chicken Herby",
+          "ingredient_name": "Beef Chile con Carne Dry retherm",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 125.0
         },
         {
-          "ingredient_name": "Beef Shawarma",
+          "ingredient_name": "Suadero Beef [Cooked]",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 125.0
         },
         {
-          "ingredient_name": "Braised Beef",
+          "ingredient_name": "CHEESE CHEDDAR MONTEREY JACK BLEND SHREDDED",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 125.0
         },
         {
-          "ingredient_name": "Seared Pork",
-          "step_increment_g": 0.5,
-          "max_dispense_weight_g": 125.0
-        },
-        {
-          "ingredient_name": "Broccoli",
-          "step_increment_g": 0.5,
-          "max_dispense_weight_g": 125.0
-        },
-        {
-          "ingredient_name": "Black Beans",
-          "step_increment_g": 0.7,
-          "max_dispense_weight_g": 140.0
-        },
-        {
-          "ingredient_name": "Corn",
+          "ingredient_name": "Corn Salad Make 11",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 100.0
         },
         {
-          "ingredient_name": "Tomatoes",
+          "ingredient_name": "Pico de Gallo",
           "step_increment_g": 0.5,
           "max_dispense_weight_g": 100.0
         },
@@ -757,7 +1109,8 @@ MAPPINGS:
         "Cilantro Crema",
         "Salsa Macha",
         "Utensils"
-      ]
+      ],
+      "algorithm": "Legacy"
     }
   ],
   "recipes": [
@@ -817,22 +1170,6 @@ MAPPINGS:
         "mb:m-thc-coke-55356314-ad68-4908-afe8-9da057ca9ff8:9a429a16-ec75-464f-8157-de2f43e6b4b9"
       ],
       "recipe_id": "d07102da-dfd6-43f9-9c13-fb95ab57b5ff",
-      "per_portion_weight_g": 0.0,
-      "per_portion_minimum_weight_g": 0.0
-    },
-    {
-      "menu_item_ids": [
-        "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345"
-      ],
-      "recipe_id": "284a9780-ea5d-4a63-8eb5-c5ce3e5a0093",
-      "per_portion_weight_g": 0.0,
-      "per_portion_minimum_weight_g": 0.0
-    },
-    {
-      "menu_item_ids": [
-        "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01"
-      ],
-      "recipe_id": "bc3b425e-103b-4384-b9ce-df30fd6beccb",
       "per_portion_weight_g": 0.0,
       "per_portion_minimum_weight_g": 0.0
     },
@@ -1014,7 +1351,7 @@ MAPPINGS:
       ],
       "recipe_id": "216fc3f2-d8cc-41b1-8f2d-e8c550232195",
       "per_portion_weight_g": 52.0,
-      "per_portion_minimum_weight_g": 50.0
+      "per_portion_minimum_weight_g": 15.0
     },
     {
       "menu_item_ids": [
@@ -2114,22 +2451,6 @@ MAPPINGS:
     },
     {
       "menu_item_ids": [
-        "mb:standard:c00dcd6a-21e2-45ef-9704-d9f5acd418f3"
-      ],
-      "recipe_id": "b11406e8-dfb1-428a-8674-52cedc4cdf6e",
-      "per_portion_weight_g": 95.0,
-      "per_portion_minimum_weight_g": 0.0
-    },
-    {
-      "menu_item_ids": [
-        "mb:extra:22b08cc4-05fe-4f70-9d67-42ac0f604561"
-      ],
-      "recipe_id": "b11406e8-dfb1-428a-8674-52cedc4cdf6e",
-      "per_portion_weight_g": 190.0,
-      "per_portion_minimum_weight_g": 0.0
-    },
-    {
-      "menu_item_ids": [
         "mb:tex-mex-chicken:cfa41d0e-e003-4bbf-b04d-86482575d5d6"
       ],
       "recipe_id": "f79151ce-708f-4bd2-92c3-b19987bfb669",
@@ -2199,11 +2520,523 @@ MAPPINGS:
       "recipe_id": "596678fb-720e-44f4-94cc-ced80b19013b",
       "per_portion_weight_g": 0.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:96f35fa9-239e-404f-ac88-7b0b61bd9a97"
+      ],
+      "recipe_id": "01a118a1-e8d5-0214-647d-a01f930034dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:something-to-drink:f9061faf-3d8d-4d78-bf44-f3de765ba7f1"
+      ],
+      "recipe_id": "01a0e998-b6c7-755e-1526-717a1cfc04c1",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:1a13dbd2-09e7-4b76-ba69-05a90f698e3f"
+      ],
+      "recipe_id": "01a0cbae-040b-d479-cc33-d97157f6ed3d",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tex-mex-seasoned-rice:a302c420-9436-4bf1-b7e0-ada686fcb97d"
+      ],
+      "recipe_id": "01a0c652-6c70-6873-e288-ec12818c77f3",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-tex-mex-chicken:3daa32e5-bdf2-46b4-a223-368e4aca6502"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada:665f46ac-32dc-4797-be1d-88f45011c410"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:9131689a-5cb6-43a6-8068-6a387e53766f"
+      ],
+      "recipe_id": "01a0cc29-42fc-ba06-ee5b-fe579b6e9305",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:slow-roasted-tex-mex-chicken-bowl:6b684a11-9f11-4773-87f2-b0646893a51b:guajillo-cumin-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:steak-asada-bowl:806fdee8-1c64-4d7b-92f1-5069bdcd84ae:suadero-beef-cooked"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:tex-mex-slow-roasted-chicken:f15724ec-cd5b-4c6e-aa50-2c23afcd4346"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada:607d65a5-5cc8-4fff-b7ee-c9a4c8dbfbb0"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chips-and-guacamole:e83633cd-6e62-4b59-b6f6-712294a5cd5b"
+      ],
+      "recipe_id": "01a0d5e5-8da9-8521-0841-05c029a6d51c",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chips-and-queso:46803eb7-c802-4a5e-a8f7-c92b575d0358"
+      ],
+      "recipe_id": "01a0eefd-8a48-023d-9d15-69e81053a797",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:side-of-queso:4fe55477-e58d-41e0-bf55-3aa1ee79eac4"
+      ],
+      "recipe_id": "01a0dedd-0862-ac45-c572-5cc74397354f",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:side-of-guacamole:3fe9360d-da45-432b-9e45-a47da5d27a89"
+      ],
+      "recipe_id": "01a0deb6-b763-e696-23d3-4abc437bf22d",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:side-of-chips:13f144d3-557b-4275-8cd4-fb8a037033ae"
+      ],
+      "recipe_id": "01a0dac7-f3c7-9c72-6b7a-5493af1b3f0e",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:69ee9472-b280-4b36-ad0c-eb570e77d247"
+      ],
+      "recipe_id": "01a0cc29-42fc-ba06-ee5b-fe579b6e9305",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:green-salsa-macha:c086bfe5-8844-4060-af3b-653c25fabd36"
+      ],
+      "recipe_id": "01a0cb75-e224-2ac1-13d7-522557b1a683",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-salsa-roja:aaf8835f-7882-4f75-abcc-ed8a44017a18"
+      ],
+      "recipe_id": "01a0d05a-78ec-86e1-db84-b7ef531cd708",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:c0682b19-8882-4871-adbb-3def409fadcd"
+      ],
+      "recipe_id": "01a0d565-7bc7-e29c-c7b9-ed0e4f387b87",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:diet-coke-can-12-oz:82fa90ad-51f9-4007-a00f-9ccf6b2e50e9"
+      ],
+      "recipe_id": "019f193b-b005-6385-c0d9-ae812e3e5135",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:citrus-vinaigrette:4a024513-06e6-43e9-a617-4ac8a89641ea"
+      ],
+      "recipe_id": "01a0d0dc-ca4e-8988-8569-8c4fd6d326d2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:c7119029-f15d-48dd-a722-1dbf32bb4bbb"
+      ],
+      "recipe_id": "01a0e98c-3589-8242-d9ca-4a603222339b",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:m-thc-pineapplesoda-2dc4a0ef-df68-4b4f-895d-68230d61438f:e7db4744-87fb-4c9e-806f-be44cf9b8345"
+      ],
+      "recipe_id": "01a0e998-b6c7-755e-1526-717a1cfc04c1",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:b76da588-d08d-4773-9668-4dfa755e6c01"
+      ],
+      "recipe_id": "01a0e98c-3589-8242-d9ca-4a603222339b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans:e45853d2-3542-47a8-8ab7-349d1ccd0752"
+      ],
+      "recipe_id": "01a0d0a8-cc53-bf96-1884-8d4a798031dc",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pico-de-gallo:ee910c16-728a-43d7-bee3-ca709d2f5b6c"
+      ],
+      "recipe_id": "01a0d56f-4dd6-8c26-df2b-a469e72a337b",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheddar-cheese:b6c770ec-e989-49f5-ac14-796522031008"
+      ],
+      "recipe_id": "01a0d55b-a1eb-13e9-a396-cea2a4fe627f",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:corn-salsa:4507d17a-2e27-4165-a787-a64c95480938"
+      ],
+      "recipe_id": "01a0d071-ba17-e02c-a560-88436f544e57",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-style-salsa-roja:13c4722c-aac3-4c77-99d1-7c37f38f7e93"
+      ],
+      "recipe_id": "01a0d05a-78ec-86e1-db84-b7ef531cd708",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:704ac083-8a5c-48fe-b047-caba13ea389c"
+      ],
+      "recipe_id": "01a0d565-7bc7-e29c-c7b9-ed0e4f387b87",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:ab67dd3b-419d-4a49-b69a-b48b54ad7ef4"
+      ],
+      "recipe_id": "01a0cc29-42fc-ba06-ee5b-fe579b6e9305",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-style-salsa-roja:043bebb0-cab8-4e17-b6fe-c56ff77abf03"
+      ],
+      "recipe_id": "01a0d05a-78ec-86e1-db84-b7ef531cd708",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:0f5378cf-1c7a-437f-b0c1-bdff6fdff29b"
+      ],
+      "recipe_id": "01a0d565-7bc7-e29c-c7b9-ed0e4f387b87",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:just-chips:6de435f1-60e0-44c7-97d4-d7413fae13e3"
+      ],
+      "recipe_id": "01a0dac7-f3c7-9c72-6b7a-5493af1b3f0e",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chips-guacamole:e1e1140f-958f-4dd2-a10b-286885340b48"
+      ],
+      "recipe_id": "01a0d5e5-8da9-8521-0841-05c029a6d51c",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:ab1e882d-bf0c-479d-9fe2-9286ecc3bc8c"
+      ],
+      "recipe_id": "01a0eee5-5aaa-be2e-4a2c-eb59792e1d6f",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chips-side-of-queso:fd8db268-99a0-4ddd-a01f-58aeb4136a49"
+      ],
+      "recipe_id": "01a0eefd-8a48-023d-9d15-69e81053a797",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:chile-con-carne-bowl:c6abff62-ce4f-44d5-af8d-8375b3338948:beef-chile-con-carne-dry-retherm"
+      ],
+      "recipe_id": "01a0e94c-0f68-3d37-ddc3-1e21f14ba8ec",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chile-con-carne:3491952f-c14a-4b41-bc35-6cda86151346"
+      ],
+      "recipe_id": "01a0e94c-0f68-3d37-ddc3-1e21f14ba8ec",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chile-con-carne:32197446-fd8a-40c5-a779-4115090f652b"
+      ],
+      "recipe_id": "01a0e94c-0f68-3d37-ddc3-1e21f14ba8ec",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:no-mexican-rice:d50efd51-b4fd-4e39-a93c-2541016bcb94"
+      ],
+      "recipe_id": "01a0c652-6c70-6873-e288-ec12818c77f3",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:no-slow-roasted-tex-mex-chicken:de034086-ce4d-4e2e-a482-b0a8000fdd82"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream-portion:9ad1410d-3b76-421a-9975-e1d3db302f51"
+      ],
+      "recipe_id": "01a0d565-7bc7-e29c-c7b9-ed0e4f387b87",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-salsa-roja-portioned:76d33016-b752-4170-ba53-57ed14601326"
+      ],
+      "recipe_id": "01a0d05a-78ec-86e1-db84-b7ef531cd708",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:corn-salad-make-1-1:69b7499b-8ac9-4101-8535-ad47263ff53f"
+      ],
+      "recipe_id": "01a0d071-ba17-e02c-a560-88436f544e57",
+      "per_portion_weight_g": 40.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:guajillo-cumin-chicken-cooked:9996a437-83fd-4a45-945a-75a81782db1a"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:suadero-beef-cooked:96dd8d1d-5a2a-469b-a667-6a4e1724e855"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans-retherm-1-1:f41341e1-2f8e-4716-9713-d43ff39f54d7"
+      ],
+      "recipe_id": "01a0d0a8-cc53-bf96-1884-8d4a798031dc",
+      "per_portion_weight_g": 1.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mexican-rice-retherm:d38546b4-8afc-4190-b0ad-ad26a4d7602f"
+      ],
+      "recipe_id": "01a0c652-6c70-6873-e288-ec12818c77f3",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-monterey-jack-blend-shredded:9dbd0e91-1226-4d87-9860-7f9ef774c2c5"
+      ],
+      "recipe_id": "01a0d55b-a1eb-13e9-a396-cea2a4fe627f",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:a00b4d15-37db-41df-9641-b78a5d4fa536"
+      ],
+      "recipe_id": "01a118a1-e8d5-0214-647d-a01f930034dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:guacachile-salsa-portion"
+      ],
+      "recipe_id": "01a0c6ed-cb93-d31f-603b-a7dbf943c8cc",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:cilantro-crema-portion"
+      ],
+      "recipe_id": "01a0cc29-42fc-ba06-ee5b-fe579b6e9305",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-monterey-jack-blend-shredded:9aeb5213-1a00-4f2a-89cb-07330555200d"
+      ],
+      "recipe_id": "01a0d55b-a1eb-13e9-a396-cea2a4fe627f",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:black-beans-on-the-side:7bf039e4-ec43-4b50-8d62-d70f549d35d4"
+      ],
+      "recipe_id": "01a0d0a8-cc53-bf96-1884-8d4a798031dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cilantro-crema:34dbc90e-a655-4d5b-991f-1a3657347c50"
+      ],
+      "recipe_id": "01a0cc29-42fc-ba06-ee5b-fe579b6e9305",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cantina-style-salsa:436b0fe2-f356-4ca9-a366-2c44285a5716"
+      ],
+      "recipe_id": "01a0d05a-78ec-86e1-db84-b7ef531cd708",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sour-cream:127b2482-e995-4f2d-9749-2502530046a5"
+      ],
+      "recipe_id": "01a0d565-7bc7-e29c-c7b9-ed0e4f387b87",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:tex-mex-ensalada:70dbedc3-a6c2-42ea-b3b8-6831e46d4664:romaine-chop"
+      ],
+      "recipe_id": "01a10f73-e922-98ed-ae1d-32094c3cc1e5",
+      "per_portion_weight_g": 60.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-add-utensils:5ec8fab5-11d4-4513-b647-88ff1c1f52ed"
+      ],
+      "recipe_id": "01a118ac-431b-857a-2c6b-76189df11e43",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-hungry-cowgirl-bowl:de54d04a-4b62-4390-b863-c39320f9e2cb:guajillo-cumin-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:the-hungry-cowgirl-bowl:de54d04a-4b62-4390-b863-c39320f9e2cb:suadero-beef-cooked"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:romaine:7692492a-6213-4de4-9c10-4ab751e42677"
+      ],
+      "recipe_id": "01a10f73-e922-98ed-ae1d-32094c3cc1e5",
+      "per_portion_weight_g": 60.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "menu_package_version": {
-    "version_identifier": "mb:MgzaQFjGhesAeBJcomHpi4",
-    "last_modification_time": 1789597075136000000
+    "version_identifier": "mb:xa6IGh3w8DrNGSOKtWfrJN",
+    "last_modification_time": 1792537708367000000
   },
   "robot_brand_id": "kitchen-solutions"
 }

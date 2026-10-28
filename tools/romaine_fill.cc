@@ -2,7 +2,7 @@
 // everything else is held at its menu portion.
 //
 // For every protein and topping combination a brand admits, romaine is the free
-// variable and is solved for directly. The dynamic portion ramp is deliberately not
+// variable and is solved for directly. The legacy portioning ramp is deliberately not
 // modelled: these are recipes built from scratch, and the results are meant to inform
 // step values later, not to reproduce today's ramp.
 //
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     QCommandLineParser parser;
     parser.setApplicationDescription(
         "Solve for the romaine weight that fills each menu combination to a target "
-        "fraction of the bowl, with no dynamic portion ramp.");
+        "fraction of the bowl, with no legacy portioning ramp.");
     parser.addHelpOption();
     QCommandLineOption assets("assets", "Directory holding menus/ and data/.", "dir",
                               BOWLFILL_ASSET_DIR);

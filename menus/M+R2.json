@@ -513,6 +513,78 @@ MAPPINGS:
       "ingredient_name": "White Jasmine Rice retherm v11",
       "per_portion_weight_g": 255.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-cooked:721746bc-805c-49b6-9799-33b42efb9d11"
+      ],
+      "ingredient_name": "Jerk Chicken Cooked",
+      "per_portion_weight_g": 170.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-3-5oz:2455dad7-8238-467f-adf9-d08d951bf464"
+      ],
+      "ingredient_name": "Jerk Chicken Cooked",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-jack:7d675282-a9bc-4a4d-93bc-20619625dc21"
+      ],
+      "ingredient_name": "Cheese",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:romaine-chop:82c5e05e-8d7e-47ad-8c90-4523724050fe"
+      ],
+      "ingredient_name": "Romaine Chop",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-chicken-3oz:8776894c-32b1-4e1f-8c22-7f986db5ff12"
+      ],
+      "ingredient_name": "Guajillo  Cumin Chicken cooked",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-al-pastor-3oz:e636c0a6-a96d-4f04-84bb-524d5ae7b5df"
+      ],
+      "ingredient_name": "Chicken Al Pastor [Cooked]",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada-3oz:90119264-9147-415d-9c59-b24c65cb2f5a"
+      ],
+      "ingredient_name": "Suadero Beef [Cooked]",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pork-carnitas-cooked-v1-1:288d78bd-62cd-46d6-8479-1a2c3ce2edfd"
+      ],
+      "ingredient_name": "Pork Carnitas Cooked v11",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-3oz:6121047c-2c9a-4cc2-b2be-c7d41104107b"
+      ],
+      "ingredient_name": "Jerk Chicken Cooked",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "product_templates": [
@@ -555,6 +627,10 @@ MAPPINGS:
       "target_item_ids": [
         "mb-pt:mb:ground-beef-rice:ed2d2a76-1e1c-4e3a-812b-2b8ef3da8dff:beef-chile-con-carne-dry-retherm"
       ]
+    },
+    {
+      "source_item_id": "mb:half-half:3ff0dbee-0f30-47b8-9b88-837e8fd5e7d4",
+      "target_item_ids": []
     }
   ],
   "multi_product_templates": [],
@@ -2425,11 +2501,83 @@ MAPPINGS:
       "recipe_id": "01a118ac-431b-857a-2c6b-76189df11e43",
       "per_portion_weight_g": 0.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-cooked:721746bc-805c-49b6-9799-33b42efb9d11"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-3-5oz:2455dad7-8238-467f-adf9-d08d951bf464"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:cheese-cheddar-jack:7d675282-a9bc-4a4d-93bc-20619625dc21"
+      ],
+      "recipe_id": "019f193a-ec7c-9db9-206e-072c897fd97f",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:romaine-chop:82c5e05e-8d7e-47ad-8c90-4523724050fe"
+      ],
+      "recipe_id": "01a10f73-e922-98ed-ae1d-32094c3cc1e5",
+      "per_portion_weight_g": 30.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-chicken-3oz:8776894c-32b1-4e1f-8c22-7f986db5ff12"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chicken-al-pastor-3oz:e636c0a6-a96d-4f04-84bb-524d5ae7b5df"
+      ],
+      "recipe_id": "01a0c687-029c-2e68-4a09-60fbe26332a2",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:steak-asada-3oz:90119264-9147-415d-9c59-b24c65cb2f5a"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pork-carnitas-cooked-v1-1:288d78bd-62cd-46d6-8479-1a2c3ce2edfd"
+      ],
+      "recipe_id": "01a0d079-2b28-a838-54e0-ef559b3b0c69",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken-3oz:6121047c-2c9a-4cc2-b2be-c7d41104107b"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 85.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "menu_package_version": {
-    "version_identifier": "mb:b1bshEBsQkQG3N4bjtr4WV",
-    "last_modification_time": 1791514218814000000
+    "version_identifier": "mb:hl1V0Cm5qnWHCVXjNfoYpT",
+    "last_modification_time": 1792533052794000000
   },
   "robot_brand_id": "kitchen-solutions"
 }

@@ -1,8 +1,9 @@
 # Bowl Fill Simulator
 
-A Qt6 desktop port of the HTML bowl-fill simulator. It models what the dynamic
-portion algorithm does to a bowl — which optimises on **mass** — against the limit
-that actually makes bowls fail at the lidder, which is **volume**.
+A Qt6 desktop port of the HTML bowl-fill simulator. It models Dynamic Portioning —
+how the robot tops up or trims a bowl — against the limit that actually makes bowls
+fail at the lidder, which is **volume**. The legacy portioning algorithm optimises on
+**mass**; Volume Fill, its replacement, on volume.
 
 Menu settings are read from the bridge-service dumps in `menus/` at startup, so
 editing a menu and relaunching is enough to see the effect. No regeneration step.
@@ -53,8 +54,9 @@ data/      measurements/ — every mass→volume measurement, loaded at startup
            archive/ — measurements kept but not loaded (the original 36-bowl run)
            ingredient_costs.csv — placeholder prices for the COGS readout
            ingredient_aliases.csv, ingredient_pieces.csv — the Ingredients dialog
+           ingredient_colours.csv — colours chosen in the Ingredients dialog
 photos/    reference photographs of known masses in a bowl
-src/core/  simulation, the adaptive solver, curve fitting and menu parsing (plain C++, no Qt)
+src/core/  simulation, curve fitting, costs and menu parsing (plain C++, no Qt)
 src/ui/    Qt widgets, charts drawn with QPainter
 tests/     verify.cc, checked against the HTML simulator's output (plain C++, no Qt)
 ```
@@ -109,7 +111,7 @@ The **Manual Entry** brand, last in the brand list, is built from what is loaded
 the robot rather than from a menu dump. Set it under **Settings → Robot stations**:
 19 ordered stations, each holding one ingredient and what it serves as (base,
 protein, topping or sauce), plus the sauces served in cups and one weight floor for
-every bowl (used by dynamic portioning; Volume fill ignores floors). Pick any name a
+every bowl (used by legacy portioning; Volume fill ignores floors). Pick any name a
 brand uses, or type one in.
 
 A known ingredient takes its step, max and portion from a brand that ramps it. A
@@ -250,57 +252,74 @@ through in `curve_model_selection.ipynb` (sections 10 and 11).
 ./build/bowlfill-verify     # or: ctest --test-dir build
 ```
 
-94 checks, asserted against the HTML simulator this was ported from: the fitted
+389 checks, many asserted against the HTML simulator this was ported from: the fitted
 curves, menu parsing including the template/standalone split, floor matching, six
-end-to-end recipes, the compression model's zero-load identity, and CSV ingest
-including metric input and malformed input — plus the Adaptive solver: the 4:1:2
-identity, all three Day-in-the-Life scenarios, tolerance and clamp bounds,
-monotonicity, and that solving for volume ignores price.
+end-to-end recipes, the compression model's zero-load identity and its inverse (grams
+for a volume), costs, Volume Fill, and CSV ingest including metric input and malformed
+input.
+
+## The Bowl Builder
+
+The window opens on the **Bowl Builder**, for building a bowl the way a chef thinks of
+one. Pick a menu (or Manual Entry, for whatever is loaded on the robot), start from one
+of its bowls or build your own, and add bases, proteins, toppings and sauces.
+
+The bowl is shown as a cutaway of its left quarter, drawn large and true to scale (that
+much of the bowl is about as wide as it is deep), with each dispensed ingredient a level
+layer in dispense order and the lid, the full line and the max line across it. Drag a
+layer's tab, or its top edge, to set how much of the bowl it fills; the layers above
+ride along. Under the ingredient pickers, **This bowl** has the totals and a line per
+ingredient, with a box for typing an exact percentage.
+
+The page is laid out on the golden ratio: the left column and the bowl share the width
+1 : φ (38% : 62%), the column's two panels share its height φ : 1, and the bowl takes
+about 62% of its panel's height. The column stays between 400 and 640 px wide, and on a
+very wide screen the page stops at about 1800 px and centres.
+
+- Percentages are of the **food room**: the bowl's functional fill less what the sauce
+  cups (and any tall chunks) need. Together they are how full the bowl is.
+- A named recipe starts as the menu writes it: each ingredient at the recipe's grams,
+  and anything it gives no weight (or the base and sauce a protein-only template leaves
+  to the customer) at its menu portion. Build your own starts at the menu's portions
+  scaled together to the **max fill**: the menu's `volume_fill_fit_share` where it sets
+  one (BIG JERK and ORO set 0.87), otherwise Volume fill's *Fit within* in Dynamic
+  Portioning. An ingredient added later comes in at its menu portion. Set the
+  proportions however looks right (10% and 20% is fine), then **Scale to a full bowl**
+  scales every ingredient by the same factor up (or down) to the max.
+- Each percentage becomes grams through the ingredient's curve, compression included
+  (`grams_for_volumes`, the inverse of the bowl's volume), so the builder's grams give
+  exactly the fill it shows. Weight and volume are shown per ingredient and for the bowl,
+  with the food cost from `data/ingredient_costs.csv` (sauce cups are not costed) and the
+  chance a real bowl overfills. A portion above the menu's `max_dispense_weight_g` is
+  shown in red.
+
+**Dynamic Portioning →** opens the simulator on that bowl: the recipe *Your bowl, from
+the Bowl Builder* pins the builder's grams as the start weights, and everything else
+works as before. Going back and forth keeps Dynamic Portioning's edits until the bowl in
+the builder changes.
 
 ## Dispense models
 
-The **Dynamic portioning / Adaptive fill / Volume fill** switch at the top of the
-window chooses which algorithm runs.
+**Dynamic Portioning** is the process as a whole: what the robot does to a bowl's
+portions before it dispenses. The **Legacy portioning / Volume fill** switch in the
+Dynamic Portioning section chooses which algorithm runs; it opens on Volume fill, the
+replacement for the legacy ramp.
 
-**Volume fill** is dynamic portioning steered by volume alone: in the same `step_g`
+**Volume fill** is the ramp steered by volume alone: in the same `step_g`
 passes, and ignoring the weight floor, it tops up while the next whole pass fits, and
 steps bases and toppings down (never proteins, never below a set share of their
 portion) when a bowl is over as written. "Fits" is a set share of the food room.
-The brand report, the full sweep CSV and `menu_report.qmd` all carry it. They are different shapes of thing, not two tunings of one.
+The brand report, the full sweep CSV and `menu_report.qmd` all carry it.
 
 For a plain-language explanation aimed at non-experts, with a worked example, see
 [docs/HOW_FILLING_WORKS.md](docs/HOW_FILLING_WORKS.md).
 
-**Dynamic portioning** (the legacy ramp) is what `dynamic_portion_algorithm.cc` does today: add a flat
+**Legacy portioning** (the legacy ramp) is what `dynamic_portion_algorithm.cc` does today: add a flat
 `step_increment_g` to every ingredient, pass after pass, until a *mass* floor is
 cleared. It has no volume term at all.
 
-**Adaptive** is what the Adaptive Dispense user stories propose: solve directly for a
-*volume* target, holding each ingredient inside a tolerance band. The whole adjustment
-is a single scalar — every ingredient moves the same fraction of its own band:
-
-```
-g_i(a) = clamp( nominal_i × (1 + a·tolerance_i),  min_i, max_i )
-```
-
-Total volume is monotone in `a`, so it is found by bisection: no optimiser, no local
-minima. The default tolerances are **base ±20%, protein ±5%, topping ±10%**, which is
-the document's tolerance table and its "4:1:2 ratio steps for base/protein/topping"
-stated twice — 20:5:10 reduces to 4:1:2, so a base moves four times as far as a
-protein by construction.
-
-The target (85%) and the leave-alone band (75–85%) are shares of the **food room**:
-the functional fill less what the sauce cups and any tall chunks take. Two cups
-therefore lower the target, rather than eating into the bowl's headroom.
-
-Three outcomes, matching the Day in the Life scenarios:
-
-| status | meaning |
-| --- | --- |
-| **no adjustment** | nominal already sits inside the acceptable band, so nothing is touched |
-| **adjusted** | solved onto the target within tolerance |
-| **underfilled** | cannot reach the target even at full positive tolerance; dispensed short and flagged |
-| **still over at max reduction** | will not fit even at full negative tolerance; the nominal spec itself has to change |
+The food room is the functional fill less what the sauce cups and any tall chunks
+take, so two cups lower what food may fill, rather than eating into the bowl's headroom.
 
 **Sauce cups** occupy real space in the bowl — up to two at 70 ml each (measured) — so the tiles
 report both *food fill* and *with sauce cups*.
@@ -320,8 +339,7 @@ chunk standing proud or a resting cup would then touch the lid; pressed-in cups
 (tops at the lid) take away what they displace below the surface. The overfill odds
 are judged against both the food room and the real rim.
 
-**COGS is reported, never solved for.** The document is explicit: "understand the
-impact on COGS, not optimize up front on COGS." Prices come from
+**COGS is reported, never solved for.** Prices come from
 `data/ingredient_costs.csv`, and **every number in that file is a placeholder** —
 order-of-magnitude guesses from the ingredient name, chosen so the relative ordering
 is sensible. Good enough to see whether a change moves COGS the right way; not good
@@ -356,7 +374,8 @@ same curve an imperial one would. `1 fl oz = 29.5735295625 ml`, exact by definit
 --size WxH
 --scale n           render at this device pixel ratio
 --units oz|ml
---mode legacy|adaptive
+--mode volume|legacy   Dynamic Portioning's algorithm; Volume fill is the default
+--view builder|portioning   open on Dynamic Portioning, from the builder's bowl
 --dark
 --screenshot <file> render to PNG and exit
 ```

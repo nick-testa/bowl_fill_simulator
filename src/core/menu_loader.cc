@@ -694,8 +694,8 @@ Menu build_menu(const json &m,
 
     // It also names what the brand serves. A brand with no dynamic_portion_increases
     // still offers everything listed here; it just has no ramp (step and cap stay 0,
-    // so the legacy model holds the portion and adaptive can only trim it). Sauces are
-    // left out because the simulator carries them as sauce cups (menu.sauces).
+    // so both dispense models hold the portion as written). Sauces are left out because
+    // the simulator carries them as sauce cups (menu.sauces).
     for (const auto &[name, weights] : named)
     {
         if (menu.ingredients.count(name) || sauce_for(name))
@@ -836,6 +836,10 @@ Menu build_menu(const json &m,
 
     for (const json &d : array(m, "dynamic_portion_increases"))
     {
+        if (const json &share = field(d, "volume_fill_fit_share"); share.is_number() && share.get<double>() > 0)
+        {
+            menu.volume_fill_fit_share = share.get<double>();
+        }
         for (const json &a : array(d, "apply_for"))
         {
             FloorRule f;

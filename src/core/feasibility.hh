@@ -1,6 +1,5 @@
 #pragma once
 
-#include "adaptive.hh"
 #include "curves.hh"
 #include "menu_model.hh"
 #include "simulator.hh"
@@ -36,12 +35,10 @@ struct RecipeAudit
     bool floor_matched = false;
 
     SimResult legacy;
-    AdaptiveResult adaptive;
     VolumeFillResult volume;
 
     /// A short, plain description of what goes wrong, or that nothing does.
     std::string legacy_summary() const;
-    std::string adaptive_summary() const;
     std::string volume_summary() const;
     /// Ordering for the report: worst first.
     int severity() const;
@@ -57,7 +54,6 @@ struct BrandAudit
     /// Overflowing and never filling are different problems with different fixes, so
     /// they are counted apart rather than summed into one "fails" number.
     int legacy_over = 0, legacy_short = 0;
-    int adaptive_over = 0, adaptive_short = 0;
     /// Volume Fill: still over with bases and toppings stepped down as far as allowed,
     /// and finished bowls that stay under the limit with everything at its max.
     int volume_over = 0, volume_short = 0;
@@ -74,8 +70,6 @@ struct BrandAudit
 BrandAudit audit_brand(const Menu &menu,
                        const CurveSet &curves,
                        const SimSettings &legacy_settings,
-                       const AdaptiveSettings &adaptive_settings,
-                       const CostTable *costs = nullptr,
                        const VolumeFillSettings &volume_settings = {});
 
 } // namespace bowlfill

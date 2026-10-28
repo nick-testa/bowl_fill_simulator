@@ -365,8 +365,15 @@ SimResult simulate(std::vector<BowlItem> items, const SimSettings &settings);
 /// volume_fill() both measure, compression included when the settings ask for it.
 Frame bowl_frame(const std::vector<BowlItem> &items, const std::vector<double> &grams, const SimSettings &settings);
 
+/// The inverse of bowl_frame(): the grams that give each item `target_oz` of the bowl (one per
+/// item), compression included when the settings ask for it. What lies on a base depends on the
+/// grams of everything above it, so the items are solved in turn until none moves.
+std::vector<double> grams_for_volumes(const std::vector<BowlItem> &items,
+                                      const std::vector<double> &target_oz,
+                                      const SimSettings &settings);
+
 ///
-/// Volume Fill: the dynamic ramp made to respect the bowl. It works in the same
+/// Volume Fill: the legacy ramp made to respect the bowl. It works in the same
 /// step_g passes the robot does, but against volume alone; the weight floor plays
 /// no part, so it recommends the same bowl whether or not one is set:
 ///   - a bowl that fits as written is topped up, every ingredient (proteins

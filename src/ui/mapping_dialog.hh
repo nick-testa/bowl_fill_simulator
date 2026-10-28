@@ -2,6 +2,8 @@
 
 #include "core/menu_model.hh"
 
+#include "ingredient_colours.hh"
+
 #include <QDialog>
 
 #include <vector>
@@ -28,7 +30,7 @@ public:
     MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                   const PieceHeights &pieces, const MoundSlopes &slopes,
                   const RollOffAngles &rolls, const IngredientGroups &groups,
-                  const QString &brand = {},
+                  const IngredientColours &colours, const QString &brand = {},
                   QWidget *parent = nullptr);
 
     /// What to save: only rows that differ from the automatic name or set a kind,
@@ -44,6 +46,9 @@ public:
     /// Pooling groups by name in use: every row given a group other than its automatic
     /// one, plus saved groups for names no row maps to any more.
     IngredientGroups groups() const;
+    /// Chosen colours by name in use: every row given one, plus saved colours for names
+    /// no row maps to any more.
+    IngredientColours colours() const;
 
 private:
     struct Row {
@@ -52,7 +57,10 @@ private:
 
     void populate(const NameMappings &current, const PieceHeights &pieces,
                   const MoundSlopes &slopes, const RollOffAngles &rolls,
-                  const IngredientGroups &groups);
+                  const IngredientGroups &groups, const IngredientColours &colours);
+    QColor colour_at(int row) const;   ///< invalid for the automatic colour
+    void set_colour(int row, const QColor &colour);
+    void sync_colour(int row, const QColor &colour);
     QString group_at(int row) const;   ///< empty for "automatic"
     void sync_group(int row);
     double piece_at(int row) const;   ///< -1 for "default"
@@ -74,6 +82,7 @@ private:
     MoundSlopes stale_slopes_;
     RollOffAngles stale_rolls_;
     IngredientGroups stale_groups_;
+    IngredientColours stale_colours_;
     QStringList names_;    ///< every name in use, offered by the "Maps to" boxes
 
     QComboBox *show_ = nullptr;

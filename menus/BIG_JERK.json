@@ -7,7 +7,7 @@ MAPPINGS:
         "mb:mexican-rice-retherm:6950d618-3ae5-45d3-a1b0-5b331b73819a"
       ],
       "ingredient_name": "Mexican Rice [Retherm]",
-      "per_portion_weight_g": 220.0,
+      "per_portion_weight_g": 170.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -79,7 +79,7 @@ MAPPINGS:
         "mb:white-rice:fd9c6861-13cc-42c1-bcf8-5655ca71e35d"
       ],
       "ingredient_name": "White Jasmine Rice retherm v11",
-      "per_portion_weight_g": 220.0,
+      "per_portion_weight_g": 170.0,
       "per_portion_minimum_weight_g": 0.0
     }
   ],
@@ -200,7 +200,10 @@ MAPPINGS:
         }
       ],
       "ingredient_combined_limits": [],
-      "excluded_ingredients": []
+      "excluded_ingredients": [],
+      "algorithm": "VolumeFill",
+      "volume_fill_fit_share": 0.87,
+      "volume_fill_min_share": 0.4
     }
   ],
   "recipes": [
@@ -422,8 +425,8 @@ MAPPINGS:
     }
   ],
   "menu_package_version": {
-    "version_identifier": "mb:9tN9DVVfhmLfXCOz1Nl9KA",
-    "last_modification_time": 1791881069012000000
+    "version_identifier": "mb:eYZG1J61kUNrae7EpDWRgR",
+    "last_modification_time": 1793021456150000000
   },
   "robot_brand_id": "kitchen-solutions"
 }

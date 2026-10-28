@@ -115,33 +115,6 @@ std::string RecipeAudit::legacy_summary() const
     return {};
 }
 
-std::string RecipeAudit::adaptive_summary() const
-{
-    if (customer_built)
-    {
-        return "—";
-    }
-    const std::string fill = general(std::round(adaptive.food_fill() * 100));
-    switch (adaptive.status)
-    {
-    case AdaptiveStatus::NoAdjustment:
-        return std::format("Already inside the band at {}% — dispensed unchanged.", fill);
-    case AdaptiveStatus::Adjusted:
-        return std::format("Solved to {}% by moving every ingredient {}% of its band.",
-                           fill,
-                           fixed(std::fabs(adaptive.alpha) * 100, 0));
-    case AdaptiveStatus::StillOver:
-        return std::format("Still over at full reduction: {}% of the food room. Tolerances "
-                           "cannot rescue it; the spec has to change.",
-                           fill);
-    case AdaptiveStatus::Underfilled:
-        return std::format("Cannot reach the target even at full increase — {}%.", fill);
-    case AdaptiveStatus::NoIngredients:
-        return "Nothing to dispense.";
-    }
-    return {};
-}
-
 std::string RecipeAudit::volume_summary() const
 {
     if (customer_built)
@@ -244,15 +217,6 @@ std::string BrandAudit::headline() const
 
     if (legacy_over > 0)
     {
-        head += adaptive_over > 0 ? std::format("Adaptive rescues all but {} of the overfills. ", adaptive_over)
-                                  : std::string("Adaptive brings every overfill back inside the bowl. ");
-    }
-    if (adaptive_short > 0)
-    {
-        head += std::format("{} cannot reach the fill target on the ingredients specified. ", adaptive_short);
-    }
-    if (legacy_over > 0)
-    {
         head += volume_over > 0 ? std::format("Volume fill leaves {} over even stepped down. ", volume_over)
                                 : std::string("Volume fill brings every overfill back inside the bowl. ");
     }
@@ -287,11 +251,8 @@ std::string BrandAudit::to_csv() const
 {
     std::string out = "brand,recipe,kind,pinned_ingredients,nominal_g,nominal_oz,floor_g,"
                       "legacy_verdict,legacy_final_oz,legacy_fill_pct,legacy_detail,"
-                      "adaptive_status,adaptive_fill_pct,adaptive_detail,"
                       // The bowl as a distribution: appended so existing columns keep their places.
                       "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,legacy_p90_ml,"
-                      "adaptive_p_over_room,adaptive_p_over_rim,adaptive_p10_ml,adaptive_median_ml,"
-                      "adaptive_p90_ml,"
                       // Volume Fill, likewise appended.
                       "volume_status,volume_final_oz,volume_fill_pct,volume_passes,volume_detail,"
                       "volume_p_over_room,volume_p_over_rim,volume_p10_ml,volume_median_ml,volume_p90_ml\n";
@@ -300,7 +261,7 @@ std::string BrandAudit::to_csv() const
         const double cap = r.legacy.settings.bowl_capacity_oz;
         const double sauce = r.legacy.settings.overhead_oz();
         const double final_oz = r.legacy.frames.empty() ? 0.0 : r.legacy.last().ounces;
-        out += std::format("{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+        out += std::format("{},{},{},{},{},{},{},{},{},{},{}",
                            csv_escape(brand),
                            csv_escape(r.recipe),
                            r.customer_built ? "customer-built" : (r.complete_bowl ? "complete" : "partial"),
@@ -311,13 +272,9 @@ std::string BrandAudit::to_csv() const
                            r.customer_built ? std::string("n/a") : csv_escape(to_string(r.legacy.verdict)),
                            fixed(final_oz, 2),
                            r.customer_built || cap <= 0 ? std::string("n/a") : fixed((final_oz + sauce) / cap * 100, 0),
-                           csv_escape(r.legacy_summary()),
-                           r.customer_built ? std::string("n/a") : csv_escape(to_string(r.adaptive.status)),
-                           fixed(r.customer_built ? 0.0 : r.adaptive.food_fill() * 100, 0),
-                           csv_escape(r.adaptive_summary()));
+                           csv_escape(r.legacy_summary()));
         // The distribution columns follow.
-        out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill) + ',' +
-               fill_csv(r.customer_built ? FillUncertainty{} : r.adaptive.fill);
+        out += ',' + fill_csv(r.customer_built ? FillUncertainty{} : r.legacy.fill);
         // Volume Fill: status, where it ends, how many passes (+ up, - down), why, odds.
         const bool vf = !r.customer_built && !r.volume.sim.frames.empty();
         const double vf_oz = vf ? r.volume.sim.last().ounces : 0.0;
@@ -336,8 +293,6 @@ std::string BrandAudit::to_csv() const
 BrandAudit audit_brand(const Menu &menu,
                        const CurveSet &curves,
                        const SimSettings &legacy_settings,
-                       const AdaptiveSettings &adaptive_settings,
-                       const CostTable *costs,
                        const VolumeFillSettings &volume_settings)
 {
     BrandAudit audit;
@@ -381,12 +336,6 @@ BrandAudit audit_brand(const Menu &menu,
             row.nominal_g = row.legacy.first().grams;
         }
 
-        AdaptiveSettings as = adaptive_settings;
-        if (recipe_cups > 0)
-        {
-            as.sauce.cups = recipe_cups;
-        }
-        row.adaptive = solve_adaptive(items, as, costs);
         row.volume = volume_fill(items, ls, volume_settings);
 
         if (recipe.customer_built)
@@ -417,16 +366,6 @@ BrandAudit audit_brand(const Menu &menu,
             else if (!row.legacy_ok())
             {
                 ++audit.legacy_over;
-            }
-            // "Still over" in the solver means it could not reach the target; only a
-            // bowl past its capacity is an overfill the report should claim.
-            if (row.adaptive.occupancy() > 1.0)
-            {
-                ++audit.adaptive_over;
-            }
-            if (row.adaptive.status == AdaptiveStatus::Underfilled && row.complete_bowl)
-            {
-                ++audit.adaptive_short;
             }
             if (row.volume.status == VolumeFillStatus::StillOver)
             {

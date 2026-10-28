@@ -2,6 +2,7 @@
 #include "qt_text.hh"
 #include "theme.hh"
 
+#include <QColorDialog>
 #include <QComboBox>
 #include <QCompleter>
 #include <QDoubleSpinBox>
@@ -11,9 +12,12 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSet>
 #include <QTableWidget>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -26,7 +30,7 @@ namespace {
 
 namespace space = theme::space;
 
-enum Column { kBrand, kRaw, kMapsTo, kKind, kGroup, kPiece, kSlope, kRoll, kColumns };
+enum Column { kBrand, kRaw, kMapsTo, kKind, kGroup, kPiece, kSlope, kRoll, kColour, kColumns };
 enum Show { kAll, kMapped, kUnmapped };
 
 /// Cell widgets fill their cell edge to edge; this insets one so rows breathe.
@@ -52,6 +56,38 @@ QDoubleSpinBox *spin_in(QTableWidget *table, int row, int col = kPiece)
     return cell ? cell->findChild<QDoubleSpinBox *>() : nullptr;
 }
 
+/// The colour cell's two buttons: the swatch that opens the picker, and its reset.
+QPushButton *pick_in(QTableWidget *table, int row)
+{
+    QWidget *cell = table->cellWidget(row, kColour);
+    return cell ? cell->findChild<QPushButton *>() : nullptr;
+}
+
+QToolButton *reset_in(QTableWidget *table, int row)
+{
+    QWidget *cell = table->cellWidget(row, kColour);
+    return cell ? cell->findChild<QToolButton *>() : nullptr;
+}
+
+QIcon swatch(const QColor &colour)
+{
+    QPixmap pm(28, 28);
+    pm.setDevicePixelRatio(2.0);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(QPen(theme::palette().rule_strong, 1));
+    p.setBrush(colour);
+    p.drawRoundedRect(QRectF(0.5, 0.5, 13, 13), 3, 3);
+    return QIcon(pm);
+}
+
+/// The kind as food_colour() takes it: 0 base, 1 protein, 2 anything else.
+int colour_kind(const QString &kind)
+{
+    return kind == "base" ? 0 : kind == "protein" ? 1 : 2;
+}
+
 QString capitalised(QString s)
 {
     if (!s.isEmpty()) s[0] = s[0].toUpper();
@@ -63,7 +99,7 @@ QString capitalised(QString s)
 MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings &current,
                              const PieceHeights &pieces, const MoundSlopes &slopes,
                              const RollOffAngles &rolls, const IngredientGroups &groups,
-                             const QString &brand,
+                             const IngredientColours &colours, const QString &brand,
                              QWidget *parent)
     : QDialog(parent)
 {
@@ -89,7 +125,8 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
         "Give chunky pieces that roll off a mound a <i>Roll-off</i> angle: they roll down "
         "anything steeper and ring the mound's foot instead of piling on top. "
         "A <i>Pool group</i> sets which ingredients share a typical curve in the fitted "
-        "curves; type a new name to start a group of your own.");
+        "curves; type a new name to start a group of your own. <i>Colour</i> is how the "
+        "ingredient is drawn in the bowl; <i>Automatic</i> takes it from the name.");
     blurb->setObjectName("lead");
     blurb->setWordWrap(true);
     v->addWidget(blurb);
@@ -127,7 +164,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     table_ = new QTableWidget(static_cast<int>(rows_.size()), kColumns);
     table_->setHorizontalHeaderLabels(
         {"Brand", "Name in menu", "Maps to", "Kind", "Pool group", "Piece height", "Mound slope",
-         "Roll-off"});
+         "Roll-off", "Colour"});
     table_->setShowGrid(false);
     table_->verticalHeader()->setVisible(false);
     table_->verticalHeader()->setDefaultSectionSize(40);
@@ -144,14 +181,16 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
     h->setSectionResizeMode(kPiece, QHeaderView::Fixed);
     h->setSectionResizeMode(kSlope, QHeaderView::Fixed);
     h->setSectionResizeMode(kRoll, QHeaderView::Fixed);
+    h->setSectionResizeMode(kColour, QHeaderView::Fixed);
     table_->setColumnWidth(kMapsTo, 280);
     table_->setColumnWidth(kKind, 170);
     table_->setColumnWidth(kGroup, 190);
     table_->setColumnWidth(kPiece, 170);
     table_->setColumnWidth(kSlope, 130);
     table_->setColumnWidth(kRoll, 110);
+    table_->setColumnWidth(kColour, 160);
     v->addWidget(table_, 1);
-    populate(current, pieces, slopes, rolls, groups);
+    populate(current, pieces, slopes, rolls, groups, colours);
 
     // ---- footer -----------------------------------------------------------
     auto *foot = new QHBoxLayout;
@@ -191,7 +230,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
 
 void MappingDialog::populate(const NameMappings &current, const PieceHeights &pieces,
                              const MoundSlopes &slopes, const RollOffAngles &rolls,
-                             const IngredientGroups &groups)
+                             const IngredientGroups &groups, const IngredientColours &colours)
 {
     // Every group on offer: the automatic ones, then any of the user's own.
     QStringList group_names;
@@ -284,6 +323,24 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
                          "every row that maps to the same name.");
         table_->setCellWidget(r, kRoll, in_cell(roll));
 
+        // Colour, likewise by the name in use: the swatch opens a picker, ↺ goes back to
+        // the colour the name gives it.
+        auto *colour_cell = new QWidget;
+        colour_cell->setObjectName("clear");
+        auto *ch = new QHBoxLayout(colour_cell);
+        ch->setContentsMargins(0, 4, theme::space::sm, 4);
+        ch->setSpacing(2);
+        auto *pick = new QPushButton;
+        pick->setToolTip("The colour this ingredient is drawn in, in the Bowl Builder and "
+                         "Dynamic Portioning. Shared by every row that maps to the same name.");
+        auto *reset = new QToolButton;
+        reset->setText("\u21BA");
+        reset->setObjectName("chipRemove");
+        reset->setToolTip("Back to the automatic colour");
+        ch->addWidget(pick, 1);
+        ch->addWidget(reset);
+        table_->setCellWidget(r, kColour, colour_cell);
+
         auto it = current.find({ss(row.brand), ss(row.raw)});
         set_row(r, it != current.end() ? it->second : NameMapping{});
         auto pit = pieces.find(ss(name_at(r)));
@@ -316,6 +373,21 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
             else group->setCurrentIndex(0);
         }
         connect(group, &QComboBox::currentTextChanged, this, [this, r] { sync_group(r); });
+        {
+            auto cit = std::find_if(colours.begin(), colours.end(), [&](const auto &e) {
+                return QString::compare(e.first, name_at(r), Qt::CaseInsensitive) == 0;
+            });
+            set_colour(r, cit != colours.end() ? cit->second : QColor());
+        }
+        connect(pick, &QPushButton::clicked, this, [this, r] {
+            const QColor now = colour_at(r).isValid()
+                                   ? colour_at(r)
+                                   : theme::automatic_food_colour(name_at(r), colour_kind(kind_at(r)));
+            const QColor chosen =
+                QColorDialog::getColor(now, this, QString("Colour for %1").arg(name_at(r)));
+            if (chosen.isValid()) sync_colour(r, chosen);
+        });
+        connect(reset, &QToolButton::clicked, this, [this, r] { sync_colour(r, QColor()); });
 
         connect(maps, &QComboBox::currentTextChanged, this, &MappingDialog::refresh_state);
         connect(kind, &QComboBox::currentIndexChanged, this, &MappingDialog::refresh_state);
@@ -340,12 +412,52 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
             used = ss(name_at(r)) == name;
         if (!used) stale_rolls_[name] = deg;
     }
+    for (const auto &[name, colour] : colours) {
+        bool used = false;
+        for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
+            used = QString::compare(name_at(r), name, Qt::CaseInsensitive) == 0;
+        if (!used) stale_colours_[name] = colour;
+    }
     for (const auto &[name, g] : groups) {
         bool used = false;
         for (int r = 0; r < static_cast<int>(rows_.size()) && !used; ++r)
             used = QString::compare(name_at(r), qs(name), Qt::CaseInsensitive) == 0;
         if (!used) stale_groups_[name] = g;
     }
+}
+
+QColor MappingDialog::colour_at(int row) const
+{
+    QPushButton *pick = pick_in(table_, row);
+    return pick ? pick->property("chosen").value<QColor>() : QColor();
+}
+
+void MappingDialog::set_colour(int row, const QColor &colour)
+{
+    QPushButton *pick = pick_in(table_, row);
+    if (!pick) return;
+    pick->setProperty("chosen", colour);
+    const QColor shown =
+        colour.isValid() ? colour : theme::automatic_food_colour(name_at(row), colour_kind(kind_at(row)));
+    pick->setIcon(swatch(shown));
+    pick->setText(colour.isValid() ? colour.name() : QString("Automatic"));
+    if (QToolButton *reset = reset_in(table_, row)) reset->setVisible(colour.isValid());
+}
+
+void MappingDialog::sync_colour(int row, const QColor &colour)
+{
+    // A colour belongs to the ingredient, not the spelling, like a piece height.
+    const QString name = name_at(row);
+    for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
+        if (name_at(r) == name) set_colour(r, colour);
+}
+
+IngredientColours MappingDialog::colours() const
+{
+    IngredientColours out = stale_colours_;
+    for (int r = 0; r < static_cast<int>(rows_.size()); ++r)
+        if (const QColor c = colour_at(r); c.isValid()) out[name_at(r)] = c;
+    return out;
 }
 
 QString MappingDialog::group_at(int row) const

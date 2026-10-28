@@ -7,12 +7,12 @@
 #include "core/step_table.hh"
 
 #include "bowl_diagram.hh"
+#include "ingredient_colours.hh"
 #include "manual_entry_settings.hh"
 #include "qt_text.hh"
 #include "chip_picker.hh"
 #include "curve_chart.hh"
 #include "ramp_chart.hh"
-#include "tolerance_chart.hh"
 #include "mapping_dialog.hh"
 #include "theme.hh"
 #include "units.hh"
@@ -41,14 +41,6 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QMessageBox>
-#include <QPageSize>
-#include <QPdfWriter>
-#include <QTextDocument>
-#include <QDateTime>
-#include <QInputDialog>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QLineEdit>
 #include <QMenu>
 #include "report_dialog.hh"
@@ -80,11 +72,17 @@ namespace bowlfill {
 namespace {
 
 const char *const kIntroText =
-    "The dynamic portion algorithm optimises on <i>mass</i>: it steps every "
-    "ingredient until the bowl clears its recipe's gram floor. Bowls fail at the "
-    "lidder on <i>volume</i>. Ramp settings, portion weights and floors are read "
-    "from the menu dumps in <code>menus/</code>; mass→volume is "
-    "<code>%1 = K·g^p</code>, fitted to the measured bowls.";
+    "Build a bowl from a menu's ingredients by how much of the bowl each should fill, "
+    "and see it in grams, volume and food cost. <b>Dynamic Portioning</b> then shows "
+    "what the robot does to that bowl: legacy portioning steps every ingredient until "
+    "the bowl clears a <i>mass</i> floor, while bowls fail at the lidder on "
+    "<i>volume</i>, which Volume fill steers by. Menus are read from "
+    "<code>menus/</code>; mass→volume is <code>%1 = K·g^p</code>, fitted to the "
+    "measured bowls.";
+
+/// The Dynamic Portioning recipe that stands for the Bowl Builder's bowl. Not a name
+/// any menu could give a recipe.
+const QString kBuilderRecipe = QStringLiteral("\x01builder");
 
 namespace space = theme::space;
 
@@ -570,6 +568,9 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     if (!load_mound_slopes(ss(mounds_path()), mound_slopes_, &map_err)) load_warnings_ << qs(map_err);
     if (!load_roll_off(ss(rolloff_path()), roll_off_, &map_err)) load_warnings_ << qs(map_err);
     if (!load_ingredient_groups(ss(groups_path()), groups_, &map_err)) load_warnings_ << qs(map_err);
+    if (QString colour_err; !load_ingredient_colours(colours_path(), colours_, &colour_err))
+        load_warnings_ << colour_err;
+    theme::set_food_colours(colours_);
     LoadResult loaded = load_menus(ss(asset_dir_ + "/menus"), &name_maps_, &pieces_);
     menus_ = std::move(loaded.menus);
     load_warnings_ << qsl(loaded.warnings);
@@ -601,13 +602,10 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
     // After build_ui: the status line it updates lives there.
     load_warnings_ << reload_measurements();
     populate_brand();
+    // The builder's first bowl was proportioned before the curves above were loaded.
+    builder_->restart();
     mark_settings();
-    if (prefs.value("ui/settings_open", false).toBool()) {
-        // Open as it was left, without the slide.
-        const QSignalBlocker block(settings_);
-        settings_->setChecked(true);
-        body_->setCurrentIndex(1);
-    }
+    show_view(View::Builder);
 
     // Stale menu data is shown in the header, where it stays visible without
     // blocking every launch. Only a file that could not be read stops the user.
@@ -618,9 +616,26 @@ MainWindow::MainWindow(const QString &asset_dir, QWidget *parent)
 
 void MainWindow::select(const QString &brand, const QString &recipe)
 {
+    builder_->select_brand(brand, recipe);
+    select_portioning(brand, recipe);
+}
+
+void MainWindow::select_portioning(const QString &brand, const QString &recipe)
+{
     if (const int i = brand_->findData(brand); i >= 0) brand_->setCurrentIndex(i);
     if (recipe.isEmpty()) return;
     if (const int i = recipe_->findData(recipe); i >= 0) recipe_->setCurrentIndex(i);
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::Resize && watched == centralWidget()) {
+        constexpr int kMaxPage = 1808;   // the builder's 1760 of content, plus the margins
+        const int side = std::max(static_cast<int>(space::xl),
+                                  (centralWidget()->width() - kMaxPage) / 2 + space::xl);
+        centralWidget()->layout()->setContentsMargins(side, space::lg, side, space::lg);
+    }
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::build_ui()
@@ -635,23 +650,30 @@ void MainWindow::build_ui()
     root->setSpacing(space::lg);
     root->addWidget(build_header());
 
-    // Two views of the window body: the recipe beside its results, and the settings,
-    // which take the whole width when open so no control is cramped. A line at the
-    // top of the settings keeps the current bowl in view while they are tuned.
+    // Three views of the window body: the Bowl Builder, Dynamic Portioning (the recipe
+    // beside its results), and the settings, which take the whole width when open so no
+    // control is cramped. A line at the top of the settings keeps the current bowl in view.
     body_ = new QStackedWidget;
     body_->setObjectName("clear");
-    auto *splitter = new QSplitter(Qt::Horizontal);
-    splitter->setChildrenCollapsible(false);
-    splitter->addWidget(build_controls());
-    splitter->addWidget(build_results());
-    splitter->setStretchFactor(0, 0);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes({380, 1060});
-    body_->addWidget(splitter);
+    body_->addWidget(build_portioning());
     body_->addWidget(build_settings());
+    // Last: it computes a bowl as it is built, from the settings above.
+    BuilderContext ctx;
+    ctx.menus = &menus_;
+    ctx.costs = &costs_;
+    ctx.make_item = [this](const Ingredient &ing) { return menu_item(ing); };
+    ctx.settings = [this] { return legacy_settings(); };
+    ctx.max_fill = [this](const Menu &m) { return max_fill(m); };
+    ctx.max_fill_source = [this](const Menu &m) { return max_fill_source(m); };
+    ctx.risk_limit = [this] { return risk_pct_->value() / 100.0; };
+    builder_ = new BowlBuilder(std::move(ctx));
+    body_->insertWidget(static_cast<int>(View::Builder), builder_);
     root->addWidget(body_, 1);
 
     setCentralWidget(central);
+    // On a very wide screen the page stops growing and centres, header and all, so the
+    // layout keeps its proportions rather than stretching them.
+    central->installEventFilter(this);
 }
 
 QWidget *MainWindow::build_header()
@@ -670,28 +692,6 @@ QWidget *MainWindow::build_header()
     titles->addWidget(make_label("Lab37 · assembly line portioning", "subtitle"));
     h->addLayout(titles);
     h->addStretch(1);
-
-    // The dispense model changes the whole results column, so it lives up here
-    // rather than among the settings it switches between.
-    mode_legacy_ = make_toggle("Dynamic portioning");
-    mode_adaptive_ = make_toggle("Adaptive fill");
-    mode_legacy_->setChecked(true);
-    mode_legacy_->setToolTip("What runs today (dynamic_portion_algorithm.cc): every "
-                             "ingredient is topped up in small steps until the bowl "
-                             "clears its weight floor.");
-    mode_adaptive_->setToolTip("The proposed replacement: one dial moves every ingredient "
-                               "inside its allowance so the food lands on a fill level.");
-    connect(mode_legacy_, &QPushButton::clicked, this, [this] { set_mode(false); });
-    connect(mode_adaptive_, &QPushButton::clicked, this, [this] { set_mode(true); });
-    mode_volume_ = make_toggle("Volume fill");
-    mode_volume_->setToolTip("The ramp steered by volume alone, whatever the weight floor: "
-                             "tops up while the next step still fits, and steps bases and "
-                             "toppings down (never proteins) when the bowl is over.");
-    connect(mode_volume_, &QPushButton::clicked, this, [this] { set_model(Model::VolumeFill); });
-    auto *modes = segment({mode_legacy_, mode_adaptive_, mode_volume_});
-    modes->setMinimumWidth(440);
-    h->addWidget(modes);
-    h->addSpacing(space::sm);
 
     unit_oz_ = make_toggle("fl oz");
     unit_ml_ = make_toggle("ml");
@@ -741,17 +741,18 @@ QWidget *MainWindow::build_header()
     });
     h->addWidget(estimates_);
 
-    auto *report = new QPushButton("Brand report…");
-    report->setToolTip("Every recipe this brand defines, checked against the current bowl "
-                       "and curves under both dispense models, with a full sweep of every "
-                       "combination.");
-    connect(report, &QPushButton::clicked, this, &MainWindow::show_report);
-    h->addWidget(report);
+    portioning_ = new QPushButton("Dynamic Portioning  →");
+    portioning_->setObjectName("primary");
+    portioning_->setToolTip("See how the robot portions this bowl: legacy portioning, which "
+                            "tops it up to a weight floor, and Volume fill, which fills it by "
+                            "volume.");
+    connect(portioning_, &QPushButton::clicked, this, &MainWindow::show_dynamic_portioning);
+    h->addWidget(portioning_);
 
     settings_ = make_toggle("⚙  Settings");
     settings_->setToolTip("Bowl and lid, dispense variation, mounding, compression, "
                           "measurement data and ingredient names.");
-    connect(settings_, &QPushButton::toggled, this, [this](bool on) { open_settings(on); });
+    connect(settings_, &QPushButton::clicked, this, [this](bool on) { open_settings(on); });
     h->addWidget(settings_);
 
     about_ = new QPushButton("About");
@@ -848,29 +849,6 @@ QWidget *MainWindow::build_controls()
     recipe_note_ = make_label("", "note");
     v->addWidget(recipe_note_);
 
-    // Saved scenarios: this brand's named set-ups, each a recipe with its picks and
-    // edits, brought back whole.
-    auto *scenario_row = new QHBoxLayout;
-    scenario_row->setSpacing(space::sm);
-    scenario_ = make_combo();
-    scenario_->setToolTip("Bring back a saved set-up of this brand: recipe, ingredients, "
-                          "portion edits and floor. Saved in data/scenarios.");
-    connect(scenario_, &QComboBox::activated, this, [this](int i) {
-        if (i > 0 && i - 1 < static_cast<int>(scenarios_.size())) apply_scenario(scenarios_[i - 1]);
-        scenario_delete_->setEnabled(i > 0);
-    });
-    scenario_row->addWidget(field("Saved scenario", scenario_), 1);
-    auto *save = new QPushButton("Save\u2026");
-    save->setToolTip("Save the bowl as it is now, edits and all, under a name.");
-    connect(save, &QPushButton::clicked, this, &MainWindow::save_scenario);
-    scenario_row->addWidget(save, 0, Qt::AlignBottom);
-    scenario_delete_ = new QPushButton("Delete");
-    scenario_delete_->setObjectName("quiet");
-    scenario_delete_->setEnabled(false);
-    connect(scenario_delete_, &QPushButton::clicked, this, &MainWindow::delete_scenario);
-    scenario_row->addWidget(scenario_delete_, 0, Qt::AlignBottom);
-    v->addLayout(scenario_row);
-
     for (int i = 0; i < 2; ++i) {
         QComboBox *&box = (i == 0 ? base1_ : base2_);
         box = make_combo();
@@ -909,8 +887,8 @@ QWidget *MainWindow::build_controls()
     sauce_chips_->set_limit(SauceCups::kMax);
 
     // ---- the dispense model's one recipe-level input ----------------------
-    legacy_group_ = titled_panel("Dynamic portioning", v);
-    floor_panel_title_ = legacy_group_->findChild<QLabel *>();
+    QFrame *model_panel = titled_panel("Legacy portioning", v);
+    floor_panel_title_ = model_panel->findChild<QLabel *>();
     floor_ = make_spin(0, 5000, 5, 0);
     floor_->setToolTip("The weight the bowl is topped up to (minimum_product_weight_g), "
                        "matched from the menu's rules. A value you type stays until you "
@@ -975,40 +953,7 @@ QWidget *MainWindow::build_controls()
                               field("Step down no lower than", min_pct_)}));
     volume_fields_->setVisible(false);
     v->addWidget(volume_fields_);
-    col->addWidget(legacy_group_);
-
-    adaptive_group_ = titled_panel("Adaptive fill", v);
-    target_fill_ = make_spin(10, 100, 1, 0);
-    target_fill_->setValue(85);
-    target_fill_->setToolTip("Where the food should land, as a share of the food room.");
-    band_low_ = make_spin(0, 100, 1, 0);
-    band_low_->setValue(75);
-    band_low_->setToolTip("A bowl already between this and the target is dispensed as "
-                          "written.");
-    v->addLayout(field_row({field("Target fill %", target_fill_),
-                            field("Leave alone above %", band_low_)}));
-    tol_base_ = make_spin(0, 100, 1, 0);      tol_base_->setValue(20);
-    tol_protein_ = make_spin(0, 100, 1, 0);   tol_protein_->setValue(5);
-    tol_topping_ = make_spin(0, 100, 1, 0);   tol_topping_->setValue(10);
-    for (QDoubleSpinBox *sp : {tol_base_, tol_protein_, tol_topping_})
-        sp->setToolTip("How far each kind may move from its recipe portion. The one dial "
-                       "moves every ingredient the same share of its own allowance, so "
-                       "20:5:10 is the document's \"4:1:2 ratio steps\".");
-    v->addLayout(field_row({field("Base ±%", tol_base_), field("Protein ±%", tol_protein_),
-                            field("Topping ±%", tol_topping_)}));
-    menu_price_ = make_spin(0, 100, 0.25, 2);
-    menu_price_->setValue(12.95);
-    menu_price_->setPrefix("$");
-    cogs_target_ = make_spin(0, 100, 1, 0);
-    cogs_target_->setValue(23);
-    cogs_target_->setToolTip("Reported against, never solved for.");
-    v->addLayout(field_row({field("Menu price", menu_price_),
-                            field("COGS target %", cogs_target_)}));
-    for (QDoubleSpinBox *sp : {target_fill_, band_low_, tol_base_, tol_protein_,
-                               tol_topping_, menu_price_, cogs_target_})
-        connect(sp, &QDoubleSpinBox::valueChanged, this, [this] { recompute(); });
-    adaptive_group_->setVisible(false);
-    col->addWidget(adaptive_group_);
+    col->addWidget(model_panel);
 
     col->addStretch(1);
     scroll->setWidget(host);
@@ -1036,9 +981,9 @@ QWidget *MainWindow::build_settings()
     settings_summary_->setToolTip("The bowl on screen, recomputed as you change settings.");
     titles->addWidget(settings_summary_);
     head->addLayout(titles, 1);
-    auto *back = new QPushButton("←  Back to the bowl");
+    auto *back = new QPushButton("←  Back");
     back->setObjectName("primary");
-    connect(back, &QPushButton::clicked, this, [this] { settings_->setChecked(false); });
+    connect(back, &QPushButton::clicked, this, [this] { open_settings(false); });
     head->addWidget(back, 0, Qt::AlignTop);
     pv->addLayout(head);
 
@@ -1282,7 +1227,7 @@ QWidget *MainWindow::build_settings()
         for (QDoubleSpinBox *sp : {bias_base_, bias_protein_, bias_topping_})
             sp->setToolTip("How far over (or, negative, under) its target the robot "
                            "dispenses on average. Shifts the median bowl and its range; "
-                           "the ramp and the adaptive solver still plan on the targets.");
+                           "the ramp and Volume fill still plan on the targets.");
         v->addLayout(field_row({field("Base bias", bias_base_),
                                 field("Protein bias", bias_protein_),
                                 field("Topping bias", bias_topping_)}));
@@ -1492,10 +1437,10 @@ QWidget *MainWindow::build_settings()
 
         auto *use = new QPushButton("Build bowls with Manual Entry");
         use->setObjectName("primary");
-        use->setToolTip("Switch the brand to Manual Entry and go back to the bowl");
+        use->setToolTip("Switch the Bowl Builder to Manual Entry");
         connect(use, &QPushButton::clicked, this, [this] {
-            select(qs(kManualEntryBrand));
-            open_settings(false);
+            builder_->select_brand(qs(kManualEntryBrand));
+            show_builder();
         });
         auto *top = new QHBoxLayout;
         top->addWidget(use);
@@ -1587,7 +1532,7 @@ QWidget *MainWindow::build_settings()
         v->addWidget(manual_sauces_);
 
         v->addWidget(section_label("Weight floor"));
-        v->addWidget(make_label("The weight every Manual Entry bowl ramps up to under dynamic "
+        v->addWidget(make_label("The weight every Manual Entry bowl ramps up to under legacy "
                                 "portioning. None leaves bowls as built. Volume fill goes "
                                 "by volume alone and ignores it.",
                                 "note"));
@@ -1706,12 +1651,43 @@ QWidget *MainWindow::build_settings()
 
 void MainWindow::open_settings(bool open)
 {
-    QSettings().setValue("ui/settings_open", open);
-    if (settings_->isChecked() != open) {
-        const QSignalBlocker block(settings_);
-        settings_->setChecked(open);
+    if (open && view_ != View::Settings) before_settings_ = view_;
+    show_view(open ? View::Settings : before_settings_);
+}
+
+void MainWindow::show_view(View view)
+{
+    view_ = view;
+    body_->setCurrentIndex(static_cast<int>(view));
+    settings_->setChecked(view == View::Settings);
+    portioning_->setVisible(view == View::Builder);
+    // The estimates are Dynamic Portioning's bowl's, and the builder says its own.
+    estimates_->setVisible(view != View::Builder && !estimates_list_.empty());
+}
+
+void MainWindow::show_builder()
+{
+    show_view(View::Builder);
+}
+
+void MainWindow::show_dynamic_portioning()
+{
+    const ComposedBowl bowl = builder_->composed();
+    if (bowl.revision != synced_revision_) load_composed(bowl);
+    show_view(View::Portioning);
+}
+
+void MainWindow::load_composed(const ComposedBowl &bowl)
+{
+    composed_ = bowl;
+    synced_revision_ = bowl.revision;
+    // A new bowl from the builder starts clean: its portions, the menu's floor.
+    {
+        const QSignalBlocker block(brand_);
+        if (const int i = brand_->findData(bowl.brand); i >= 0) brand_->setCurrentIndex(i);
     }
-    body_->setCurrentIndex(open ? 1 : 0);
+    on_brand_changed();
+    if (const int i = recipe_->findData(kBuilderRecipe); i >= 0) recipe_->setCurrentIndex(i);
 }
 
 void MainWindow::mark_settings()
@@ -1808,12 +1784,6 @@ QWidget *MainWindow::build_results()
         recompute();
     });
     bowl_head->addWidget(mound_);
-    bowl_head->addSpacing(space::md);
-    auto *spec = new QPushButton("Export spec\u2026");
-    spec->setToolTip("Save a one-page PDF of this bowl: portions, steps and maxima, the "
-                     "predicted fill and its odds, and the estimates it rests on.");
-    connect(spec, &QPushButton::clicked, this, &MainWindow::export_spec);
-    bowl_head->addWidget(spec);
     bv->addLayout(bowl_head);
     // The bowl as a distribution: what the median bowl does, the range 80% of real
     // bowls land in, and the odds of going over.
@@ -1908,19 +1878,12 @@ QWidget *MainWindow::build_results()
         });
     bv->addWidget(bowl_row_);
 
-    // ---- charts: one per model, only the active one shows -----------------
+    // ---- the ramp, pass by pass -------------------------------------------
     QVBoxLayout *cv = nullptr;
     ramp_panel_ = titled_panel("Volume against mass, one point per ramp pass", cv);
     ramp_chart_ = new RampChart;
     cv->addWidget(ramp_chart_);
     v->addWidget(ramp_panel_);
-
-    QVBoxLayout *tv = nullptr;
-    tol_panel_ = titled_panel("How far each ingredient moved inside its tolerance", tv);
-    tol_chart_ = new ToleranceChart;
-    tv->addWidget(tol_chart_);
-    tol_panel_->setVisible(false);
-    v->addWidget(tol_panel_);
 
     v->addStretch(1);
     scroll->setWidget(host);
@@ -1945,34 +1908,19 @@ void MainWindow::toggle_theme()
 namespace {
 const char *const kLegacyKeys[5] = {"Ramp stops at", "Final volume", "Fill",
                                     "Squeezed out", "Highest safe floor"};
-const char *const kAdaptiveKeys[5] = {"Total mass", "Food volume", "Food fill",
-                                      "With sauce cups", "COGS"};
 }  // namespace
-
-void MainWindow::set_mode(bool adaptive)
-{
-    set_model(adaptive ? Model::Adaptive : Model::Dynamic);
-}
 
 void MainWindow::set_model(Model model)
 {
     model_ = model;
-    adaptive_ = model == Model::Adaptive;
     const bool volume = model == Model::VolumeFill;
-    mode_legacy_->setChecked(model == Model::Dynamic);
-    mode_adaptive_->setChecked(adaptive_);
+    mode_legacy_->setChecked(!volume);
     mode_volume_->setChecked(volume);
-    // Dynamic portioning ramps to the weight floor; Volume Fill ignores it and has its
+    // Legacy portioning ramps to the weight floor; Volume Fill ignores it and has its
     // fit target and step-down limit instead.
-    legacy_group_->setVisible(!adaptive_);
-    floor_panel_title_->setText(volume ? "Volume fill" : "Dynamic portioning");
+    floor_panel_title_->setText(volume ? "Volume fill" : "Legacy portioning");
     floor_fields_->setVisible(!volume);
     volume_fields_->setVisible(volume);
-    adaptive_group_->setVisible(adaptive_);
-    for (int i = 0; i < 5; ++i)
-        stat_key_[i]->setText(adaptive_ ? kAdaptiveKeys[i] : kLegacyKeys[i]);
-    ramp_panel_->setVisible(!adaptive_);
-    tol_panel_->setVisible(adaptive_);
     recompute();
 }
 
@@ -1982,6 +1930,66 @@ VolumeFillSettings MainWindow::volume_fill_settings() const
     vf.fit_share = fit_pct_->value() / 100.0;
     vf.min_share = min_pct_->value() / 100.0;
     return vf;
+}
+
+QWidget *MainWindow::build_portioning()
+{
+    auto *page = new QWidget;
+    page->setObjectName("clear");
+    auto *v = new QVBoxLayout(page);
+    v->setContentsMargins(0, 0, 0, 0);
+    v->setSpacing(space::md);
+
+    auto *bar = new QHBoxLayout;
+    bar->setSpacing(space::md);
+    auto *back = new QPushButton("←  Bowl Builder");
+    back->setToolTip("Back to building the bowl. What you change here stays until the bowl "
+                     "there changes.");
+    connect(back, &QPushButton::clicked, this, &MainWindow::show_builder);
+    bar->addWidget(back);
+    bar->addSpacing(space::sm);
+    auto *titles = new QVBoxLayout;
+    titles->setSpacing(0);
+    titles->addWidget(make_label("Dynamic Portioning", "heading"));
+    titles->addWidget(make_label("How the robot portions a bowl: it starts from the portions "
+                                 "below and adjusts them in steps.", "note"));
+    bar->addLayout(titles, 1);
+
+    // The dispense model changes the whole results column, so it heads the page rather
+    // than sitting among the settings it switches between.
+    mode_legacy_ = make_toggle("Legacy portioning");
+    mode_legacy_->setToolTip("What runs today (dynamic_portion_algorithm.cc): every "
+                             "ingredient is topped up in small steps until the bowl "
+                             "clears its weight floor.");
+    connect(mode_legacy_, &QPushButton::clicked, this, [this] { set_model(Model::Legacy); });
+    mode_volume_ = make_toggle("Volume fill");
+    mode_volume_->setToolTip("The ramp steered by volume alone, whatever the weight floor: "
+                             "tops up while the next step still fits, and steps bases and "
+                             "toppings down (never proteins) when the bowl is over.");
+    connect(mode_volume_, &QPushButton::clicked, this, [this] { set_model(Model::VolumeFill); });
+    auto *modes = segment({mode_legacy_, mode_volume_});
+    modes->setMinimumWidth(300);
+    bar->addWidget(modes);
+    auto *report = new QPushButton("Brand report…");
+    report->setToolTip("Every recipe this brand defines, checked against the current bowl "
+                       "and curves under both dispense models, with a full sweep of every "
+                       "combination.");
+    connect(report, &QPushButton::clicked, this, &MainWindow::show_report);
+    bar->addWidget(report);
+    v->addLayout(bar);
+
+    auto *splitter = new QSplitter(Qt::Horizontal);
+    splitter->setChildrenCollapsible(false);
+    splitter->addWidget(build_controls());
+    splitter->addWidget(build_results());
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes({380, 1060});
+    v->addWidget(splitter, 1);
+    // Volume fill is the default: it is what is replacing the legacy ramp. Shows its
+    // panel and checks its toggle; nothing is computed until a brand is loaded.
+    set_model(model_);
+    return page;
 }
 
 void MainWindow::set_units(bool metric)
@@ -2058,6 +2066,26 @@ QStringList MainWindow::bowl_names() const
     return out;
 }
 
+BowlItem MainWindow::menu_item(const Ingredient &ingredient) const
+{
+    BowlItem it = make_item(ingredient, curves_, kFlatProteinRate, kFlatToppingRate);
+    it.mound_slope_deg = mound_slope_for(qs(it.name));
+    if (const auto roll = roll_off_.find(it.name); roll != roll_off_.end())
+        it.roll_off_deg = roll->second;
+    return it;
+}
+
+double MainWindow::max_fill(const Menu &m) const
+{
+    return m.volume_fill_fit_share.value_or(fit_pct_->value() / 100.0);
+}
+
+QString MainWindow::max_fill_source(const Menu &m) const
+{
+    return m.volume_fill_fit_share ? QString("set by the %1 menu").arg(qs(m.brand))
+                                   : QString("from Volume fill in Dynamic Portioning");
+}
+
 std::vector<BowlItem> MainWindow::assemble_bowl() const
 {
     std::vector<BowlItem> items;
@@ -2068,13 +2096,10 @@ std::vector<BowlItem> MainWindow::assemble_bowl() const
     for (const QString &name : bowl_names()) {
         const Ingredient *ing = m->find(ss(name));
         if (!ing) continue;
-        BowlItem it = make_item(*ing, curves_, kFlatProteinRate, kFlatToppingRate);
+        BowlItem it = menu_item(*ing);
         it.start_g = value_for(name, "start");
         it.step_g = value_for(name, "step");
         it.max_g = value_for(name, "max");
-        it.mound_slope_deg = mound_slope_for(qs(it.name));
-        if (const auto roll = roll_off_.find(it.name); roll != roll_off_.end())
-            it.roll_off_deg = roll->second;
         if (!it.has_curve) {
             it.flat_oz_per_100g = value_for(name, "rate");
         } else if (auto ov = overrides_.find(name);
@@ -2109,6 +2134,11 @@ QString MainWindow::mounds_path() const
 QString MainWindow::groups_path() const
 {
     return asset_dir_ + "/data/ingredient_groups.csv";
+}
+
+QString MainWindow::colours_path() const
+{
+    return asset_dir_ + "/data/ingredient_colours.csv";
 }
 
 QString MainWindow::rolloff_path() const
@@ -2154,6 +2184,11 @@ bool MainWindow::reload_ingredient_files(QStringList *problems)
     ok = read(load_mound_slopes(ss(mounds_path()), slopes, &err)) && ok;
     ok = read(load_roll_off(ss(rolloff_path()), rolls, &err)) && ok;
     ok = read(load_ingredient_groups(ss(groups_path()), groups, &err)) && ok;
+    IngredientColours colours;
+    if (QString colour_err; !load_ingredient_colours(colours_path(), colours, &colour_err)) {
+        if (problems) *problems << colour_err;
+        ok = false;
+    }
     if (!ok) return false;
 
     const bool regroup = groups != groups_;
@@ -2164,6 +2199,11 @@ bool MainWindow::reload_ingredient_files(QStringList *problems)
     mound_slopes_ = std::move(slopes);
     roll_off_ = std::move(rolls);
     groups_ = std::move(groups);
+    if (colours != colours_) {
+        colours_ = std::move(colours);
+        theme::set_food_colours(colours_);
+        recompute();
+    }
     if (regroup) reload_measurements();   // new groups make the fitted curves out of date
     if (changed) reload_menus();
     return true;
@@ -2183,12 +2223,13 @@ void MainWindow::show_mappings()
         QFile f(path);
         return f.open(QIODevice::ReadOnly) ? f.readAll() : QByteArray();
     };
-    const QStringList paths = {mappings_path(), pieces_path(), mounds_path(), rolloff_path(), groups_path()};
+    const QStringList paths = {mappings_path(), pieces_path(), mounds_path(), rolloff_path(), groups_path(),
+                               colours_path()};
     QList<QByteArray> at_open;
     for (const QString &p : paths) at_open << bytes(p);
 
     const std::vector<Menu> loaded = loaded_menus();
-    MappingDialog dialog(loaded, name_maps_, pieces_, mound_slopes_, roll_off_, groups_,
+    MappingDialog dialog(loaded, name_maps_, pieces_, mound_slopes_, roll_off_, groups_, colours_,
                          brand_->currentData().toString(), this);
     if (dialog.exec() != QDialog::Accepted) return;
     const NameMappings next = dialog.mappings();
@@ -2196,6 +2237,7 @@ void MainWindow::show_mappings()
     const MoundSlopes next_slopes = dialog.slopes();
     const RollOffAngles next_rolls = dialog.rolls();
     const IngredientGroups next_groups = dialog.groups();
+    const IngredientColours next_colours = dialog.colours();
 
     // A file changed while the dialog was open would be overwritten by what the dialog shows.
     QStringList moved;
@@ -2226,6 +2268,13 @@ void MainWindow::show_mappings()
         QMessageBox::warning(this, "Could not save ingredients", qs(err));
         return;
     }
+    if (QString colour_err;
+        next_colours != colours_ && !save_ingredient_colours(colours_path(), next_colours, &colour_err)) {
+        QMessageBox::warning(this, "Could not save ingredients", colour_err);
+        return;
+    }
+    colours_ = next_colours;
+    theme::set_food_colours(colours_);
     name_maps_ = next;
     pieces_ = next_pieces;
     mound_slopes_ = next_slopes;
@@ -2255,8 +2304,9 @@ void MainWindow::reload_menus()
     issues_->setToolTip(menu_issues_.join("\n"));
     update_mapping_note();
 
+    builder_->reload_menus();
     populate_brand();
-    select(brand, recipe);
+    select_portioning(brand, recipe);
 }
 
 std::vector<Menu> MainWindow::loaded_menus() const
@@ -2278,10 +2328,11 @@ void MainWindow::apply_manual_entry()
     save_manual_entry(manual_);
     const bool showing = brand_ && brand_->currentData().toString() == qs(kManualEntryBrand);
     rebuild_manual_menu();
+    builder_->reload_menus();
     // Its ingredients changed under the bowl, so the bowl starts again.
     if (showing) {
         populate_brand();
-        select(qs(kManualEntryBrand));
+        select_portioning(qs(kManualEntryBrand));
     }
 }
 
@@ -2354,6 +2405,7 @@ void MainWindow::on_brand_changed()
 
     recipe_->clear();
     recipe_->addItem("— build your own —", QString());
+    if (composed_.brand == qs(m->brand)) recipe_->addItem("Your bowl, from the Bowl Builder", kBuilderRecipe);
     // Manual Entry's one recipe is the build-your-own shell the report sweeps.
     const bool manual = m->brand == kManualEntryBrand;
     for (const Recipe &r : m->recipes)
@@ -2391,7 +2443,6 @@ void MainWindow::on_brand_changed()
 
     loading_ = false;
     rebuild_ingredient_pickers();
-    reload_scenarios();
     on_recipe_changed();
 }
 
@@ -2413,7 +2464,21 @@ void MainWindow::on_recipe_changed()
     for (const Recipe &r : m->recipes)
         if (qs(r.name) == want) rec = &r;
 
-    if (!rec) {
+    if (want == kBuilderRecipe) {
+        // The builder's bowl: its picks, its portions pinned as the start weights.
+        for (const auto &[name, grams] : composed_.grams) pins_[name] = grams;
+        auto select = [](QComboBox *box, const QString &name) {
+            const int i = box->findData(name);
+            box->setCurrentIndex(i >= 0 ? i : 0);
+        };
+        select(base1_, composed_.bases.value(0));
+        select(base2_, composed_.bases.value(1));
+        picked_proteins_ = composed_.proteins;
+        picked_toppings_ = composed_.toppings;
+        picked_sauces_ = composed_.sauces;
+        recipe_note_->setText("The bowl from the Bowl Builder, at the portions set there. They "
+                              "are where the ramp starts; edit them in the table.");
+    } else if (!rec) {
         const QStringList bases = qsl(m->names_of(Kind::Base));
         base1_->setCurrentIndex(bases.isEmpty() ? -1 : 0);
         base2_->setCurrentIndex(0);
@@ -2858,24 +2923,6 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
     geometry_note_->setText(text);
 }
 
-AdaptiveSettings MainWindow::adaptive_settings() const
-{
-    AdaptiveSettings a;
-    a.bowl_capacity_oz = units::to_oz(capacity_->value());
-    a.target_fill = target_fill_->value() / 100.0;
-    a.band_low = band_low_->value() / 100.0;
-    a.band_high = a.target_fill;
-    a.tolerances.base = tol_base_->value() / 100.0;
-    a.tolerances.protein = tol_protein_->value() / 100.0;
-    a.tolerances.topping = tol_topping_->value() / 100.0;
-    a.sauce.cups = sauce_cup_count();
-    a.geometry = geometry();
-    a.dispense = dispense();
-    a.menu_price = menu_price_->value();
-    a.cogs_target = cogs_target_->value() / 100.0;
-    return a;
-}
-
 void MainWindow::update_step_table()
 {
     const Menu *m = menu();
@@ -2975,15 +3022,11 @@ void MainWindow::update_step_table()
 void MainWindow::recompute()
 {
     if (loading_) return;
+    // Every setting that moves this bowl moves the builder's too.
+    if (builder_) builder_->refresh();
     const Menu *m = menu();
     if (!m) return;
     update_step_table();
-
-    if (adaptive_) {
-        last_adaptive_ = solve_adaptive(assemble_bowl(), adaptive_settings(), &costs_);
-        render_adaptive();
-        return;
-    }
 
     const bool volume = model_ == Model::VolumeFill;
     VolumeFillResult vfr;
@@ -3289,322 +3332,16 @@ void MainWindow::recompute()
 
     update_curve_note();
     update_settings_summary(r.fill);
-    update_estimates(r.items, nullptr);
-}
-
-QString MainWindow::scenarios_dir() const
-{
-    return asset_dir_ + "/data/scenarios";
-}
-
-namespace {
-
-QJsonObject override_json(const Override &o)
-{
-    QJsonObject j;
-    if (o.start_g) j["start_g"] = *o.start_g;
-    if (o.step_g) j["step_g"] = *o.step_g;
-    if (o.max_g) j["max_g"] = *o.max_g;
-    if (o.rate) j["rate_oz_per_100g"] = *o.rate;
-    if (o.curve_scale) j["curve_scale"] = *o.curve_scale;
-    return j;
-}
-
-Override override_from(const QJsonObject &j)
-{
-    Override o;
-    auto read = [&](const char *key, std::optional<double> &out) {
-        if (j.contains(key) && j[key].isDouble()) out = j[key].toDouble();
-    };
-    read("start_g", o.start_g);
-    read("step_g", o.step_g);
-    read("max_g", o.max_g);
-    read("rate_oz_per_100g", o.rate);
-    read("curve_scale", o.curve_scale);
-    return o;
-}
-
-QStringList strings(const QJsonValue &v)
-{
-    QStringList out;
-    for (const QJsonValue &x : v.toArray()) out << x.toString();
-    return out;
-}
-
-}  // namespace
-
-void MainWindow::reload_scenarios(const QString &select)
-{
-    scenarios_.clear();
-    const Menu *m = menu();
-    QDir dir(scenarios_dir());
-    for (const QString &name : dir.entryList({"*.json"}, QDir::Files, QDir::Name)) {
-        QFile f(dir.filePath(name));
-        if (!f.open(QIODevice::ReadOnly)) continue;
-        const QJsonObject j = QJsonDocument::fromJson(f.readAll()).object();
-        if (!m || j["brand"].toString() != qs(m->brand)) continue;
-        Scenario s;
-        s.file = f.fileName();
-        s.name = j["name"].toString(QFileInfo(name).completeBaseName());
-        s.brand = j["brand"].toString();
-        s.recipe = j["recipe"].toString();
-        s.adaptive = j["mode"].toString() == "adaptive";
-        s.volume = j["mode"].toString() == "volume";
-        const QStringList bases = strings(j["bases"]);
-        s.base1 = bases.value(0);
-        s.base2 = bases.value(1);
-        s.proteins = strings(j["proteins"]);
-        s.toppings = strings(j["toppings"]);
-        s.sauces = strings(j["sauces"]);
-        s.split = j["split_bases"].toBool(true);
-        if (j["floor_g"].isDouble()) s.floor_g = j["floor_g"].toDouble();
-        const QJsonObject edits = j["edits"].toObject();
-        for (auto it = edits.begin(); it != edits.end(); ++it)
-            s.overrides[it.key()] = override_from(it.value().toObject());
-        scenarios_.push_back(std::move(s));
-    }
-    std::sort(scenarios_.begin(), scenarios_.end(), [](const Scenario &a, const Scenario &b) {
-        return a.name.compare(b.name, Qt::CaseInsensitive) < 0;
-    });
-    const QSignalBlocker block(scenario_);
-    scenario_->clear();
-    scenario_->addItem(scenarios_.empty() ? "— none saved —" : "— choose —");
-    int pick = 0;
-    for (size_t i = 0; i < scenarios_.size(); ++i) {
-        scenario_->addItem(scenarios_[i].name);
-        if (scenarios_[i].name == select) pick = static_cast<int>(i) + 1;
-    }
-    scenario_->setCurrentIndex(pick);
-    scenario_delete_->setEnabled(pick > 0);
-}
-
-void MainWindow::save_scenario()
-{
-    const Menu *m = menu();
-    if (!m) return;
-    const QString suggestion = scenario_->currentIndex() > 0 ? scenario_->currentText()
-                               : recipe_->currentIndex() > 0 ? recipe_->currentText()
-                                                             : QString("My bowl");
-    bool ok = false;
-    const QString name = QInputDialog::getText(this, "Save scenario",
-                                               "Name this set-up of the bowl:",
-                                               QLineEdit::Normal, suggestion, &ok).trimmed();
-    if (!ok || name.isEmpty()) return;
-
-    QJsonObject j;
-    j["name"] = name;
-    j["brand"] = qs(m->brand);
-    j["recipe"] = recipe_->currentData().toString();
-    j["mode"] = adaptive_ ? "adaptive" : model_ == Model::VolumeFill ? "volume" : "dynamic";
-    QJsonArray bases;
-    for (QComboBox *b : {base1_, base2_})
-        if (!b->currentData().toString().isEmpty()) bases.append(b->currentData().toString());
-    j["bases"] = bases;
-    j["proteins"] = QJsonArray::fromStringList(picked_proteins_);
-    j["toppings"] = QJsonArray::fromStringList(picked_toppings_);
-    j["sauces"] = QJsonArray::fromStringList(picked_sauces_);
-    j["split_bases"] = split_->isChecked();
-    if (floor_override_) j["floor_g"] = *floor_override_;
-    QJsonObject edits;
-    for (const auto &[ingredient, o] : overrides_) {
-        const QJsonObject e = override_json(o);
-        if (!e.isEmpty()) edits[ingredient] = e;
-    }
-    j["edits"] = edits;
-    j["saved"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-
-    // One file per scenario, named for the brand and the scenario; an existing one of
-    // the same name is replaced after asking.
-    QString slug = QString("%1 - %2").arg(qs(m->brand), name);
-    slug.replace(QRegularExpression(R"([^A-Za-z0-9 ._+-])"), "_");
-    QDir().mkpath(scenarios_dir());
-    const QString path = QDir(scenarios_dir()).filePath(slug + ".json");
-    if (QFileInfo::exists(path)
-        && QMessageBox::question(this, "Replace scenario",
-                                 QString("A scenario called \"%1\" already exists. Replace it?")
-                                     .arg(name)) != QMessageBox::Yes)
-        return;
-    QFile f(path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        QMessageBox::warning(this, "Could not save the scenario",
-                             QString("Could not write %1.").arg(path));
-        return;
-    }
-    f.write(QJsonDocument(j).toJson(QJsonDocument::Indented));
-    f.close();
-    reload_scenarios(name);
-}
-
-void MainWindow::apply_scenario(const Scenario &s)
-{
-    const Menu *m = menu();
-    if (!m) return;
-    // The recipe first: it sets the pinned weights the edits sit on top of.
-    if (const int i = recipe_->findData(s.recipe.isEmpty() ? QString() : s.recipe); i >= 0)
-        recipe_->setCurrentIndex(i);
-
-    loading_ = true;
-    for (auto [box, name] : {std::pair{base1_, s.base1}, std::pair{base2_, s.base2}}) {
-        const int i = box->findData(name);
-        box->setCurrentIndex(i >= 0 ? i : (box == base2_ ? 0 : box->currentIndex()));
-    }
-    // Only what this menu still offers comes back.
-    auto offered = [&](const QStringList &names, Kind kind) {
-        QStringList out;
-        for (const QString &n : names)
-            if (m->find(ss(n)) && m->find(ss(n))->kind == kind) out << n;
-        return out;
-    };
-    picked_proteins_ = offered(s.proteins, Kind::Protein);
-    picked_toppings_ = offered(s.toppings, Kind::Topping);
-    picked_sauces_.clear();
-    for (const QString &n : s.sauces)
-        if (contains(m->sauces, ss(n))) picked_sauces_ << n;
-    split_->setChecked(s.split);
-    overrides_ = s.overrides;
-    floor_override_ = s.floor_g;
-    loading_ = false;
-    const Model want = s.adaptive ? Model::Adaptive : s.volume ? Model::VolumeFill : Model::Dynamic;
-    if (want != model_) set_model(want);
-    on_selection_changed();
-}
-
-void MainWindow::delete_scenario()
-{
-    const int i = scenario_->currentIndex() - 1;
-    if (i < 0 || i >= static_cast<int>(scenarios_.size())) return;
-    if (QMessageBox::question(this, "Delete scenario",
-                              QString("Delete the saved scenario \"%1\"? Its file in "
-                                      "data/scenarios is removed.")
-                                  .arg(scenarios_[i].name)) != QMessageBox::Yes)
-        return;
-    QFile::remove(scenarios_[i].file);
-    reload_scenarios();
-}
-
-void MainWindow::export_spec()
-{
-    const Menu *m = menu();
-    if (!m) return;
-    const QString recipe = recipe_->currentIndex() > 0 ? recipe_->currentText()
-                                                       : QString("Build your own");
-    QString base = QString("%1 - %2 spec.pdf").arg(qs(m->brand), recipe);
-    base.replace(QRegularExpression(R"([^A-Za-z0-9 ._+-])"), "_");
-    const QString path = QFileDialog::getSaveFileName(
-        this, "Export recipe spec", QDir(QDir::homePath()).filePath(base), "PDF (*.pdf)");
-    if (path.isEmpty()) return;
-    if (write_spec(path)) QMessageBox::information(this, "Spec exported", QString("Saved %1.").arg(path));
-    else QMessageBox::warning(this, "Could not export", QString("Could not write %1.").arg(path));
-}
-
-bool MainWindow::write_spec(const QString &path)
-{
-    const Menu *m = menu();
-    if (!m) return false;
-    const QString recipe = recipe_->currentIndex() > 0 ? recipe_->currentText()
-                                                       : QString("Build your own");
-
-    // The page is built as HTML from what is on screen, so it says exactly what the
-    // window says. Colours are fixed for paper, not taken from the theme.
-    auto esc = [](const QString &t) { return t.toHtmlEscaped(); };
-    auto plain = [](QString html) { return html.remove(QRegularExpression("<[^>]*>")); };
-    QString html;
-    html += "<html><body style='font-family:sans-serif; color:#1d2321; font-size:10pt;'>";
-    html += QString("<h2 style='margin:0'>%1 · %2</h2>").arg(esc(qs(m->brand)), esc(recipe));
-    html += QString("<p style='color:#5b6663; margin-top:2px'>%1 · %2</p>")
-                .arg(adaptive_ ? "Adaptive fill"
-                     : model_ == Model::VolumeFill ? "Volume fill" : "Dynamic portioning",
-                     QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm"));
-    html += QString("<p><b>%1</b><br>%2</p>").arg(esc(verdict_head_->text()),
-                                                 esc(plain(verdict_sub_->text())));
-
-    // The diagram, drawn in the light palette for paper.
-    {
-        const bool dark = theme::is_dark();
-        theme::set_dark(false);
-        spec_image_ = diagram_->grab().toImage();
-        theme::set_dark(dark);
-        diagram_->update();
-        html += "<p><img src='bowl://diagram' width='380'></p>";
-    }
-    html += QString("<p>%1</p>").arg(fill_note_->text());
-
-    // The portions, as the table on screen has them.
-    html += "<table cellspacing='0' cellpadding='4' style='border-collapse:collapse'>";
-    html += "<tr>";
-    for (int c = 0; c < breakdown_->columnCount() - 1; ++c)
-        html += QString("<th align='%1' style='border-bottom:1px solid #999'>%2</th>")
-                    .arg(c == 0 ? "left" : "right",
-                         esc(breakdown_->horizontalHeaderItem(c)->text()));
-    html += "</tr>";
-    for (int r = 0; r < breakdown_->rowCount(); ++r) {
-        html += "<tr>";
-        for (int c = 0; c < breakdown_->columnCount() - 1; ++c) {
-            const QTableWidgetItem *it = breakdown_->item(r, c);
-            const bool edited = it && it->font().bold();
-            html += QString("<td align='%1' style='border-bottom:1px solid #ddd'>%2%3%4</td>")
-                        .arg(c == 0 ? "left" : "right", edited ? "<b>" : "",
-                             esc(it ? it->text() : QString()), edited ? "</b>" : "");
-        }
-        html += "</tr>";
-    }
-    html += "</table>";
-    if (row_edited_any())
-        html += "<p style='color:#5b6663'>Bold values were edited from the menu's.</p>";
-
-    // The set-up the numbers depend on.
-    const BowlGeometry g = geometry();
-    QStringList setup;
-    setup << QString("Functional fill %1").arg(units::volume(units::to_oz(capacity_->value()), true));
-    setup << QString("%1 sauce cup%2%3").arg(sauce_cup_count()).arg(sauce_cup_count() == 1 ? "" : "s")
-                 .arg(picked_sauces_.isEmpty() ? QString() : " (" + picked_sauces_.join(", ") + ")");
-    if (!adaptive_) setup << QString("weight floor %1 g").arg(floor_->value(), 0, 'f', 0);
-    if (model_ == Model::VolumeFill)
-        setup << QString("fit within %1% of the food room, stepping down to no less than %2%")
-                     .arg(std::round(fit_pct_->value())).arg(std::round(min_pct_->value()));
-    else setup << QString("target %1% of the food room").arg(target_fill_->value(), 0, 'f', 0);
-    setup << (g.enabled ? QString("fit judged by height, cups %1")
-                              .arg(g.cups_pressed ? "pressed in" : "resting on top")
-                        : QString("fit judged by volume"));
-    setup << QString("robot measurements");
-    html += QString("<p><b>Set-up:</b> %1.</p>").arg(esc(setup.join(" · ")));
-    if (!estimates_list_.empty()) {
-        html += "<p><b>Estimates these numbers rest on:</b></p><ul>";
-        for (const Estimate &e : estimates_list_) html += "<li>" + esc(e.text) + "</li>";
-        html += "</ul>";
-    }
-    html += "</body></html>";
-
-    QTextDocument doc;
-    doc.addResource(QTextDocument::ImageResource, QUrl("bowl://diagram"), spec_image_);
-    doc.setHtml(html);
-    QPdfWriter pdf(path);
-    pdf.setPageSize(QPageSize(QPageSize::Letter));
-    pdf.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
-    pdf.setResolution(144);
-    pdf.setTitle(QString("%1 - %2").arg(qs(m->brand), recipe));
-    doc.setPageSize(QSizeF(pdf.width(), pdf.height()));
-    QPainter painter;
-    if (!painter.begin(&pdf)) return false;
-    doc.drawContents(&painter);
-    painter.end();
-    return true;
-}
-
-bool MainWindow::row_edited_any() const
-{
-    for (const auto &[name, o] : overrides_)
-        if (row_edited(name)) return true;
-    return false;
+    update_estimates(r.items);
 }
 
 void MainWindow::show_settings_page(int page)
 {
-    settings_->setChecked(true);
+    open_settings(true);
     if (page >= 0 && page < static_cast<int>(settings_nav_.size())) settings_nav_[page]->click();
 }
 
-void MainWindow::update_estimates(const std::vector<BowlItem> &items, const AdaptiveResult *ar)
+void MainWindow::update_estimates(const std::vector<BowlItem> &items)
 {
     enum Page { kBowl, kDispense, kMounding, kCompression, kMeasurements, kIngredients,
                 kStations };
@@ -3650,7 +3387,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
             list.push_back({QString("Mound slope is a placeholder (%1)").arg(defaulted.join(", ")),
                             go_page(kMounding)});
     }
-    if (!adaptive_ && compress_->isChecked())
+    if (compress_->isChecked())
         list.push_back({"Compression is extrapolated: no loaded bowls were measured",
                         go_page(kCompression)});
     {
@@ -3661,11 +3398,6 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
         if (!unsourced.isEmpty())
             list.push_back({QString("Price not from KitchenOS: %1").arg(unsourced.join(", ")), {}});
     }
-    if (ar) {
-        for (const AdaptiveItem &it : ar->items)
-            if (!it.cost_known)
-                list.push_back({QString("%1: no price, uses its kind's default").arg(qs(it.name)), {}});
-    }
     if (m && recipe_->currentIndex() > 0)
         for (const Recipe &r : m->recipes)
             if (r.name == recipe_->currentData().toString() && r.unweighted() > 0)
@@ -3675,7 +3407,7 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items, const Adap
 
     estimates_list_ = std::move(list);
     const int n = static_cast<int>(estimates_list_.size());
-    estimates_->setVisible(n > 0);
+    estimates_->setVisible(n > 0 && view_ != View::Builder);
     estimates_->setText(QString("ⓘ  %1 estimate%2").arg(n).arg(n == 1 ? "" : "s"));
     QStringList tip;
     for (const Estimate &e : estimates_list_) tip << QString("• ") + e.text;
@@ -3809,21 +3541,17 @@ void MainWindow::show_report()
 
     // Each recipe resolves its own floor, so the panel's floor field is deliberately
     // not carried in: the report answers what the menu does, not what is dialled up.
-    const BrandAudit audit =
-        audit_brand(*m, curves_, legacy_settings(), adaptive_settings(), &costs_,
-                    volume_fill_settings());
+    const BrandAudit audit = audit_brand(*m, curves_, legacy_settings(), volume_fill_settings());
 
     const QString assumptions =
         QString("%1 bowl · %2 curves · %3 sauce cup%4 charged against capacity in both "
-                "models · adaptive target %5% · volume fill within %6% of the food room, "
-                "stepping down to %7% · each recipe uses the floor its own ingredients "
-                "match. Overfill odds above the %8% limit are flagged; %9 of %10 recipes "
-                "exceed it under Volume Fill.")
+                "models · volume fill within %5% of the food room, stepping down to %6% · "
+                "each recipe uses the floor its own ingredients match. Overfill odds above "
+                "the %7% limit are flagged; %8 of %9 recipes exceed it under Volume Fill.")
             .arg(units::volume(units::to_oz(capacity_->value()), true))
             .arg("robot")
             .arg(sauce_cup_count())
             .arg(sauce_cup_count() == 1 ? "" : "s")
-            .arg(std::round(target_fill_->value()))
             .arg(std::round(fit_pct_->value()))
             .arg(std::round(min_pct_->value()))
             .arg(std::round(risk_pct_->value()))
@@ -3836,14 +3564,13 @@ void MainWindow::show_report()
 
     ReportDialog dialog(audit, assumptions, risk_pct_->value() / 100, this);
     connect(&dialog, &ReportDialog::recipe_chosen, this,
-            [this, m](const QString &recipe) { select(qs(m->brand), recipe); });
+            [this, m](const QString &recipe) { select_portioning(qs(m->brand), recipe); });
     connect(&dialog, &ReportDialog::full_report_requested, this, [this, m] {
         SweepContext ctx;
         ctx.menus = &menus_;
         ctx.brand = qs(m->brand);
         ctx.curves = &curves_;
         ctx.legacy = legacy_settings();
-        ctx.adaptive = adaptive_settings();
         ctx.volume = volume_fill_settings();
         ctx.costs = &costs_;
         SweepDialog(std::move(ctx), this).exec();
@@ -4048,7 +3775,7 @@ void MainWindow::on_reset_curves()
 
 //
 // ############################################################################
-// Adaptive Dispense rendering
+// Rendering shared by the table and the photos
 //
 
 void MainWindow::fill_portion_table(const std::vector<BreakdownRow> &rows,
@@ -4127,171 +3854,6 @@ void MainWindow::render_photos(const std::vector<BowlItem> &items)
         photo_caption_[i]->setVisible(i == 0);
     }
     static_cast<BowlCard *>(bowl_row_)->relayout();   // a photo more or less changes the fit
-}
-
-void MainWindow::render_adaptive()
-{
-    const AdaptiveResult &r = last_adaptive_;
-    const AdaptiveSettings &a = r.settings;
-    const theme::Palette &pal = theme::palette();
-    const double cap = a.food_capacity_oz();   // the target is a share of this
-
-    QString head, sub;
-    QColor border = pal.rule_strong, fill = pal.panel_sunk, head_colour = pal.ink;
-    switch (r.status) {
-    case AdaptiveStatus::NoAdjustment:
-        head = "No adjustment required";
-        sub = QString("The recipe as written lands at %1 — %2% of the food room, inside the "
-                      "%3–%4% band — so nominal quantities are dispensed unchanged.")
-                  .arg(units::volume(r.food_volume_oz, true))
-                  .arg(std::round(r.food_fill() * 100))
-                  .arg(std::round(a.band_low * 100))
-                  .arg(std::round(a.band_high * 100));
-        border = pal.accent; fill = pal.accent_soft; head_colour = pal.accent;
-        break;
-    case AdaptiveStatus::Adjusted:
-        head = QString("Adjusted to target — every ingredient moved %1% of its band")
-                   .arg(std::fabs(r.alpha) * 100, 0, 'f', 0);
-        sub = QString("Solved to %1, %2% of the food room. %3 %4 of its allowance; "
-                      "protein moved least by design.")
-                  .arg(units::volume(r.food_volume_oz, true))
-                  .arg(std::round(r.food_fill() * 100))
-                  .arg(r.alpha < 0 ? "Reduced by" : "Increased by")
-                  .arg(QString("%1%").arg(std::fabs(r.alpha) * 100, 0, 'f', 0));
-        border = pal.accent; fill = pal.accent_soft; head_colour = pal.accent;
-        break;
-    case AdaptiveStatus::StillOver:
-        head = "Will not fit, even at full reduction";
-        sub = QString("Every ingredient is at the bottom of its tolerance and the bowl "
-                      "still comes to %1 against a %2 target. The bands are not wide "
-                      "enough to rescue this recipe — the nominal spec has to change.")
-                  .arg(units::volume(r.food_volume_oz, true))
-                  .arg(units::volume(a.target_fill * cap, true));
-        border = pal.over; fill = pal.over_soft; head_colour = pal.over;
-        break;
-    case AdaptiveStatus::Underfilled:
-        head = "Underfilled — cannot reach the target";
-        sub = QString("Every ingredient is at the top of its tolerance and the bowl "
-                      "only reaches %1 against a %2 target. Dispensed safely short and "
-                      "flagged, per US-6.")
-                  .arg(units::volume(r.food_volume_oz, true))
-                  .arg(units::volume(a.target_fill * cap, true));
-        break;
-    case AdaptiveStatus::NoIngredients:
-        head = "Nothing in the bowl";
-        break;
-    }
-    verdict_head_->setText(head);
-    verdict_head_->setStyleSheet(QString("color:%1;").arg(head_colour.name()));
-    verdict_sub_->setText(sub);
-    verdict_panel_->setStyleSheet(
-        QString("QFrame#panel{background:%1;border:1px solid %2;border-radius:10px;}")
-            .arg(fill.name(), border.name()));
-
-    // Tiles: food, occupancy including the cups, and COGS against the guardrail.
-    stat_value_[0]->setText(QString("%1 g").arg(
-        std::round(std::accumulate(r.items.begin(), r.items.end(), 0.0,
-                                   [](double t, const AdaptiveItem &i) {
-                                       return t + i.final_g;
-                                   }))));
-    stat_value_[1]->setText(units::volume(r.food_volume_oz, true));
-    stat_value_[2]->setText(QString("%1 %").arg(std::round(r.food_fill() * 100)));
-    stat_tile_[3]->setVisible(true);
-    stat_value_[3]->setText(QString("%1 %").arg(std::round(r.occupancy() * 100)));
-    const bool ok = r.cogs_within_guardrail();
-    stat_value_[4]->setText(a.menu_price > 0
-                                ? QString("%1 %").arg(r.cogs_ratio() * 100, 0, 'f', 1)
-                                : QString("—"));
-    stat_value_[4]->setStyleSheet(
-        QString("color:%1;").arg((ok ? pal.accent : pal.over).name()));
-
-    // The diagram and photos still describe the dispensed bowl, so feed them a
-    // SimResult built from the solved quantities.
-    SimResult shim;
-    shim.settings.bowl_capacity_oz = a.bowl_capacity_oz;
-    shim.settings.sauce = a.sauce;
-    shim.settings.geometry = a.geometry;
-    shim.settings.chunk_height_mm = a.chunk_height_mm;
-    shim.items = assemble_bowl();
-    Frame f;
-    for (size_t i = 0; i < shim.items.size() && i < r.items.size(); ++i) {
-        shim.items[i].final_g = r.items[i].final_g;
-        f.per_item_oz.push_back(r.items[i].volume_oz);
-        f.per_item_oz_uncompressed.push_back(r.items[i].volume_oz);
-        f.grams += r.items[i].final_g;
-        f.ounces += r.items[i].volume_oz;
-    }
-    f.ounces_uncompressed = f.ounces;
-    shim.frames.push_back(f);
-    shim.fill = r.fill;
-    show_bowl_cost(shim.items);
-    update_fill_note(shim);
-    diagram_->set_result(shim);
-    render_photos(shim.items);
-    const std::vector<QColor> band = diagram_->item_colours();
-
-    // The nominal portion and max are edited in place; the solver moves the rest.
-    std::vector<BreakdownRow> rows;
-    const double food_oz = std::max(0.001, r.food_volume_oz);
-    for (size_t i = 0; i < r.items.size() && i < shim.items.size(); ++i) {
-        const AdaptiveItem &it = r.items[i];
-        BreakdownRow row;
-        row.key = qs(it.name);
-        row.name = qs(it.name);
-        if (it.clamped) row.name += "  (clamped)";
-        if (!it.cost_known) row.name += "  (~cost)";
-        row.kind = ingredient_tip(shim.items[i]);
-        row.swatch = i < band.size() ? band[i] : QColor();
-        if (it.clamped) row.colour = pal.over;
-        row.edited = row_edited(qs(it.name));
-        auto plain = [](const QString &text) { TableCell c; c.text = text; return c; };
-        row.cells = {
-            portion_cell(qs(it.name), Field::Start, it.nominal_g),
-            portion_cell(qs(it.name), Field::Max, shim.items[i].max_g),
-            plain(QString("%1 g").arg(std::round(it.final_g))),
-            plain(QString("%1%2%").arg(it.delta_pct() > 0.05 ? "+" : "")
-                      .arg(it.delta_pct(), 0, 'f', 1)),
-            plain(units::volume(it.volume_oz, true)),
-            plain(QString("%1%").arg(std::round(it.volume_oz / food_oz * 100))),
-            plain(QString("$%1").arg(it.cost, 0, 'f', 2)),
-            rate_cell(qs(it.name)),
-        };
-        rows.push_back(row);
-    }
-    fill_portion_table(rows, {"Ingredient", "Nominal g", "Max g", "Dispensed", "Change",
-                              "Volume", "Share", "Cost",
-                              QString("%1/100 g").arg(units::suffix())},
-                       {{1, "The recipe's portion, which the solver adjusts. Click to edit."},
-                        {2, "The most the dispenser will give. Click to edit."},
-                        {4, "Dispensed against nominal, inside the ingredient's tolerance"},
-                        {8, QString("Volume per 100 g at the nominal portion. Edit it to "
-                                    "make the ingredient fluffier or denser.")}});
-
-    update_geometry_note(a.bowl_capacity_oz, a.sauce, a.geometry, a.chunk_height_mm);
-    QString note = QString("%1 take %2 of the bowl, leaving %3 for food. ")
-                       .arg(a.geometry.enabled ? "Cups and chunk clearance" : "Sauce cups")
-                       .arg(units::volume(a.sauce_volume_oz(), true))
-                       .arg(units::volume(a.food_capacity_oz(), true));
-    if (a.menu_price > 0)
-        note += QString("COGS is <b>%1%</b> of $%2 against a %3% guardrail — <b>%4</b>. ")
-                    .arg(r.cogs_ratio() * 100, 0, 'f', 1)
-                    .arg(a.menu_price, 0, 'f', 2)
-                    .arg(std::round(a.cogs_target * 100))
-                    .arg(ok ? "within" : "over");
-    if (!r.cost_complete)
-        note += QString("<span style='color:%1'>Some ingredients fell back to a "
-                        "per-kind default price.</span> ").arg(pal.over.name());
-    note += "Prices are from <code>data/ingredient_costs.csv</code>; the Bowl COGS tile says "
-            "which came from KitchenOS.";
-    foot_note_->setText(note);
-
-    tol_chart_->set_result(r);
-    update_settings_summary(r.fill);
-    update_estimates(shim.items, &r);
-
-
-    curve_filter_->set_options(qsl(curves_.ingredients()));
-    curve_chart_->set_curves(&curves_);
 }
 
 }  // namespace bowlfill

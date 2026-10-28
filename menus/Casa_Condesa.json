@@ -296,7 +296,8 @@ MAPPINGS:
         }
       ],
       "ingredient_combined_limits": [],
-      "excluded_ingredients": []
+      "excluded_ingredients": [],
+      "algorithm": "Legacy"
     }
   ],
   "recipes": [
@@ -710,8 +711,8 @@ MAPPINGS:
     }
   ],
   "menu_package_version": {
-    "version_identifier": "mb:vfKiW0Dv_w_JYIME9POLRy",
-    "last_modification_time": 1791732881796000000
+    "version_identifier": "mb:yMzyNco09B0F6Z2DZtkquM",
+    "last_modification_time": 1791829211537000000
   },
   "robot_brand_id": "kitchen-solutions"
 }

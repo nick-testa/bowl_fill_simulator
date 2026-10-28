@@ -59,7 +59,7 @@ add_library(bowlfill_core STATIC
   src/core/curves.cc
   src/core/fitted_curves.cc
   src/core/simulator.cc
-  src/core/adaptive.cc
+  src/core/costs.cc
   src/core/feasibility.cc
   src/core/sweep.cc
   src/core/step_table.cc
@@ -81,8 +81,10 @@ qt_add_executable(bowl-fill-simulator
   src/ui/ramp_chart.cc
   src/ui/curve_chart.cc
   src/ui/bowl_diagram.cc
+  src/ui/bowl_builder.cc
+  src/ui/bowl_editor.cc
+  src/ui/ingredient_colours.cc
   src/ui/theme.cc
-  src/ui/tolerance_chart.cc
   src/ui/units.cc
   src/ui/manual_entry_settings.cc
 )

@@ -19,7 +19,6 @@ struct SweepContext {
     QString brand;
     const CurveSet *curves = nullptr;
     SimSettings legacy;
-    AdaptiveSettings adaptive;
     VolumeFillSettings volume;
     const CostTable *costs = nullptr;
 };

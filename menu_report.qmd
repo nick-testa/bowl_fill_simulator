@@ -232,40 +232,6 @@ verdict_share_chart("ingredients", "Legacy verdict share by ingredient count",
                     label=lambda k: f"{k} ingredients");
 ```
 
-{{< pagebreak >}}
-
-# Where do legacy verdicts land under the adaptive method?
-
-Rows are the legacy verdict, columns the adaptive status. Cell text is the row
-count and the share of that legacy verdict.
-
-```{python}
-ADAPTIVE_ORDER = ordered(df["adaptive_status"],
-                         ["no adjustment", "adjusted", "underfilled", "still over at max reduction"])
-xt = (pd.crosstab(df["legacy_verdict"], df["adaptive_status"])
-        .reindex(index=VERDICT_ORDER, columns=ADAPTIVE_ORDER, fill_value=0))
-row_share = xt.div(xt.sum(axis=1), axis=0)
-
-fig, ax = plt.subplots(figsize=(9, 0.8 * len(xt) + 0.6))
-im = ax.imshow(row_share.values, cmap="Blues", vmin=0, vmax=1, aspect="auto")
-ax.set_xticks(range(len(xt.columns)), [textwrap.fill(c, 14) for c in xt.columns])
-ax.set_yticks(range(len(xt.index)), xt.index)
-ax.grid(False)
-for s in ax.spines.values():
-    s.set_visible(False)
-for i in range(xt.shape[0]):
-    for j in range(xt.shape[1]):
-        share = row_share.iat[i, j]
-        ax.text(j, i, f"{xt.iat[i, j]:,}\n{share:.0%}", ha="center", va="center", fontsize=8,
-                color="white" if share > 0.55 else INK)
-ax.set_xlabel("adaptive status")
-ax.set_ylabel("legacy verdict")
-ax.set_title("Legacy verdict → adaptive status (share of each legacy row)")
-fig.colorbar(im, ax=ax, format=mticker.PercentFormatter(1.0), shrink=0.85)
-plt.tight_layout()
-plt.show()
-```
-
 ```{python}
 #| output: asis
 if HAS_VOLUME:
@@ -342,11 +308,10 @@ if HAS_VOLUME:
 # Fill % distribution by model
 
 One panel per model on a shared x-axis (not overlaid) so each distribution reads on
-its own. Legacy and Volume fill are a share of the whole bowl, sauce cups included;
-Adaptive is a share of the food room.
+its own. Both are a share of the whole bowl, sauce cups included.
 
 ```{python}
-panels = [("legacy_fill_pct", "Legacy", "#2a78d6"), ("adaptive_fill_pct", "Adaptive", "#eb6834")]
+panels = [("legacy_fill_pct", "Legacy", "#2a78d6")]
 if HAS_VOLUME:
     panels.append(("volume_fill_pct", "Volume fill", "#0ca30c"))
 fill_cols = [c for c, _, _ in panels]
@@ -355,7 +320,8 @@ hi = int(np.ceil(df[fill_cols].max().max() / 10) * 10) + 2
 bins = np.arange(lo, hi, 2)
 
 fig, axes = plt.subplots(len(panels), 1, figsize=(9, 2.5 * len(panels)), sharex=True,
-                         sharey=True)
+                         sharey=True, squeeze=False)
+axes = axes[:, 0]
 for ax, (col, label, color) in zip(axes, panels):
     ax.hist(df[col], bins=bins, color=color, edgecolor=SURFACE, linewidth=0.5)
     med = df[col].median()
@@ -386,7 +352,7 @@ if HAS_ODDS:
 
 ```{python}
 if HAS_ODDS:
-    models = [("Legacy", "legacy_p_over_room"), ("Adaptive", "adaptive_p_over_room")]
+    models = [("Legacy", "legacy_p_over_room")]
     if HAS_VOLUME:
         models.append(("Volume fill", "volume_p_over_room"))
     odds = pd.DataFrame({

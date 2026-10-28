@@ -1,15 +1,17 @@
 #pragma once
 
-#include "core/adaptive.hh"
+#include "core/costs.hh"
 #include "core/curves.hh"
 #include "core/manual_entry.hh"
 #include "core/measurements.hh"
 #include "core/menu_model.hh"
 #include "core/simulator.hh"
 
+#include "bowl_builder.hh"
+#include "ingredient_colours.hh"
+
 #include <QColor>
 #include <QHash>
-#include <QImage>
 #include <QMainWindow>
 #include <functional>
 #include <map>
@@ -33,7 +35,6 @@ class RampChart;
 class CurveChart;
 class CurveFilter;
 class BowlDiagram;
-class ToleranceChart;
 class PhotoLabel;
 class ChipPicker;
 
@@ -67,35 +68,23 @@ struct BreakdownRow {
     bool edited = false;        ///< any field edited: the row offers a reset
 };
 
-/// A recipe as someone set it up: the bowl's picks and every edit, saved by name so
-/// it can be brought back. Stored one per file in data/scenarios.
-struct Scenario {
-    QString name, brand, recipe;   ///< recipe empty for build-your-own
-    bool adaptive = false;
-    bool volume = false;           ///< Volume Fill (when not adaptive)
-    QString base1, base2;
-    QStringList proteins, toppings, sauces;
-    bool split = true;
-    std::optional<double> floor_g;
-    std::map<QString, Override> overrides;
-    QString file;                  ///< where it was read from
-};
-
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
     explicit MainWindow(const QString &asset_dir, QWidget *parent = nullptr);
 
-    /// Preselects a brand and, optionally, one of its recipes by name.
+    /// Preselects a brand in both views and, optionally, one of its recipes in Dynamic
+    /// Portioning by name.
     void select(const QString &brand, const QString &recipe = {});
-    void select_adaptive() { set_mode(true); }
-    /// Writes the recipe spec of the bowl on screen to a PDF; false if it cannot.
-    bool write_spec(const QString &path);
 
 public slots:
-    void set_mode(bool adaptive);
     void set_volume_fill() { set_model(Model::VolumeFill); }
+    void set_legacy_portioning() { set_model(Model::Legacy); }
+    /// Opens Dynamic Portioning on the bowl in the builder, unless that bowl is unchanged
+    /// since it was last opened, when it comes back as it was left.
+    void show_dynamic_portioning();
+    void show_builder();
 
 private slots:
     void on_brand_changed();
@@ -118,11 +107,19 @@ private slots:
     void toggle_theme();
     void set_units(bool metric);
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     void build_ui();
+    /// Selects a brand and recipe in Dynamic Portioning alone, leaving the builder be.
+    void select_portioning(const QString &brand, const QString &recipe = {});
     QWidget *build_header();
     QWidget *build_controls();
     QWidget *build_results();
+    /// Dynamic Portioning: a bar (back, the dispense model, the brand report) over the
+    /// recipe and its results.
+    QWidget *build_portioning();
     void reload_theme();
 
     void populate_brand();
@@ -142,6 +139,7 @@ private:
     QString mounds_path() const;
     QString groups_path() const;
     QString rolloff_path() const;
+    QString colours_path() const;
     /// An ingredient's own mound slope, or -1 to take the default.
     double mound_slope_for(const QString &name) const;
     BowlGeometry geometry() const;
@@ -177,12 +175,16 @@ private:
     void set_rate(const QString &name, double oz_per_100g);
     void apply_floor();
     void recompute();
-    void render_adaptive();
     void render_photos(const std::vector<BowlItem> &items);
 
     const Menu *menu() const;
     SimSettings legacy_settings() const;
-    AdaptiveSettings adaptive_settings() const;
+    /// An ingredient as both views put it in a bowl, before any portion edits.
+    BowlItem menu_item(const Ingredient &ingredient) const;
+    /// The most the Bowl Builder fills a bowl to, as a share of the food room: the menu's
+    /// volume_fill_fit_share where it sets one, otherwise the Volume fill target.
+    double max_fill(const Menu &m) const;
+    QString max_fill_source(const Menu &m) const;
     double value_for(const QString &name, const QString &field) const;
     std::vector<BowlItem> assemble_bowl() const;
     QStringList bowl_names() const;
@@ -216,23 +218,20 @@ private:
 
     std::map<QString, Override> overrides_;
 
-    // The settings drawer.
-    QStackedWidget *body_ = nullptr;   ///< the bowl view, or the settings
+    // The window body: the Bowl Builder, Dynamic Portioning, or the settings.
+    enum class View { Builder, Portioning, Settings };
+    QStackedWidget *body_ = nullptr;
+    View view_ = View::Builder;
+    View before_settings_ = View::Builder;   ///< where the settings' back button goes
+    void show_view(View view);
+    BowlBuilder *builder_ = nullptr;
+    QPushButton *portioning_ = nullptr;   ///< opens Dynamic Portioning, from the builder
+    /// The builder's bowl as Dynamic Portioning last loaded it, and that bowl's revision.
+    ComposedBowl composed_;
+    int synced_revision_ = -1;
+    void load_composed(const ComposedBowl &bowl);
     QLabel *settings_summary_ = nullptr;   ///< the current bowl, in one line
     void update_settings_summary(const FillUncertainty &u);
-    // Saved scenarios.
-    QString scenarios_dir() const;
-    std::vector<Scenario> scenarios_;     ///< this brand's, by name
-    QComboBox *scenario_ = nullptr;
-    QPushButton *scenario_delete_ = nullptr;
-    void reload_scenarios(const QString &select = {});
-    void save_scenario();
-    void apply_scenario(const Scenario &s);
-    void delete_scenario();
-    /// A one-page PDF of the bowl on screen, for handing to culinary.
-    void export_spec();
-    bool row_edited_any() const;
-    QImage spec_image_;   ///< the diagram, held while the spec document is drawn
     /// Opens the settings on one of its pages.
     void show_settings_page(int page);
     /// What the current bowl's numbers rest on that is not measured: the header
@@ -243,7 +242,7 @@ private:
     };
     std::vector<Estimate> estimates_list_;
     QPushButton *estimates_ = nullptr;
-    void update_estimates(const std::vector<BowlItem> &items, const AdaptiveResult *ar);
+    void update_estimates(const std::vector<BowlItem> &items);
     /// Fills the Bowl COGS tile from the finished bowl's final masses.
     void show_bowl_cost(const std::vector<BowlItem> &items);
     QPushButton *settings_ = nullptr;
@@ -264,13 +263,11 @@ private:
     QStringList picked_sauces_;   ///< one sauce cup each, up to SauceCups::kMax
     int sauce_cup_count() const;
     SimResult last_;
-    AdaptiveResult last_adaptive_;
     CostTable costs_;
-    /// Which dispense model runs: the menu's dynamic ramp, Adaptive fill, or the
-    /// ramp made to respect the bowl (Volume Fill).
-    enum class Model { Dynamic, Adaptive, VolumeFill };
-    Model model_ = Model::Dynamic;
-    bool adaptive_ = false;   ///< model_ == Model::Adaptive
+    /// Which dispense model Dynamic Portioning runs: the menu's legacy ramp to a weight
+    /// floor, or the ramp made to respect the bowl (Volume Fill).
+    enum class Model { Legacy, VolumeFill };
+    Model model_ = Model::VolumeFill;   ///< Volume fill unless legacy is asked for
     void set_model(Model model);
     VolumeFillSettings volume_fill_settings() const;
     QPushButton *mode_volume_ = nullptr;
@@ -295,19 +292,7 @@ private:
     QCheckBox *compress_ = nullptr;
     QPushButton *theme_ = nullptr;
     QPushButton *mode_legacy_ = nullptr;
-    QPushButton *mode_adaptive_ = nullptr;
-    QWidget *legacy_group_ = nullptr;
-    QWidget *adaptive_group_ = nullptr;
-    QDoubleSpinBox *target_fill_ = nullptr;
-    QDoubleSpinBox *band_low_ = nullptr;
-    QDoubleSpinBox *tol_base_ = nullptr;
-    QDoubleSpinBox *tol_protein_ = nullptr;
-    QDoubleSpinBox *tol_topping_ = nullptr;
-    QDoubleSpinBox *menu_price_ = nullptr;
-    QDoubleSpinBox *cogs_target_ = nullptr;
     QWidget *ramp_panel_ = nullptr;
-    QWidget *tol_panel_ = nullptr;
-    ToleranceChart *tol_chart_ = nullptr;
     QPushButton *unit_oz_ = nullptr;
     QPushButton *unit_ml_ = nullptr;
     QLabel *capacity_label_ = nullptr;
@@ -321,6 +306,7 @@ private:
     IngredientGroups groups_;          ///< data/ingredient_groups.csv
     MoundSlopes mound_slopes_;         ///< data/ingredient_mounds.csv
     RollOffAngles roll_off_;           ///< data/ingredient_rolloff.csv
+    IngredientColours colours_;        ///< data/ingredient_colours.csv
     QCheckBox *heights_ = nullptr;     ///< judge fit by height under the lid
     QPushButton *cups_pressed_ = nullptr;
     QPushButton *cups_resting_ = nullptr;

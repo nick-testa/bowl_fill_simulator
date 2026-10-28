@@ -4,7 +4,7 @@
 
 ## Short answer
 
-**Yes, and it fits more easily than you might expect.** There is one big piece of work: moving the simulator's core onto plain C++ without Qt. There is one question for the org to settle: today's dynamic portion algorithm runs in the **Bridge Service**, which is marked frozen and is being decommissioned.
+**Yes, and it fits more easily than you might expect.** There is one big piece of work: moving the simulator's core onto plain C++ without Qt. There is one question for the org to settle: today's legacy portioning algorithm runs in the **Bridge Service**, which is marked frozen and is being decommissioned.
 
 These things make it easier:
 
@@ -41,8 +41,6 @@ What the current algorithm does:
 - **If the bowl fits as written,** it ramps up toward the weight floor, one whole step at a time, but only while the next step still fits in the food room (`fit_share × room`).
 - **If the bowl is over,** it steps **bases and toppings down** (never proteins), but not below `min_share` (70%) of the recipe portion.
 - **It returns** the predicted volume, a status (`FitsAtFloor`, `ShortRoomBound`, `SteppedDown`, `StillOver`, …) and overfill odds (`p_over_room`, `p_over_rim`).
-
-`solve_adaptive()` is a second option. It turns one dial to aim every bowl at 85% fill and leaves bowls at 75–85% alone. I would ship one model, not both; Volume Fill is the closer drop-in replacement.
 
 ## What has to change
 
@@ -111,7 +109,7 @@ You described the goal as adjusting volume up or down based on bowl selection cr
 - **Which bowls to adjust:** only predicted over or short, or anything outside a target band? Should the trigger be a hard threshold on predicted oz, or on `p_over_room`?
 - **Lowest acceptable portion:** is 70% of a base or topping acceptable to customers and for pricing? Should proteins always be protected?
 - **Short bowls:** should a bowl the room can't fill to the weight floor (`ShortRoomBound`) ship light, or should it be flagged?
-- **Cost:** COGS impact. Adaptive reports it; Volume Fill doesn't yet.
+- **Cost:** COGS impact. The simulator reports each bowl's food cost (the brand sweep carries `volume_cost`); Volume Fill doesn't act on it.
 
 ## Where should it run? Three options
 

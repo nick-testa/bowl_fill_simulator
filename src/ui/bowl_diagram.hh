@@ -4,9 +4,14 @@
 
 #include <QWidget>
 
+#include <optional>
 #include <vector>
 
 namespace bowlfill {
+
+/// The colour of each item's band, by index: its food's colour, with neighbours that
+/// would read as one pulled apart in lightness. Invalid for an item with no volume.
+std::vector<QColor> band_colours(const std::vector<BowlItem> &items, const std::vector<double> &oz);
 
 ///
 /// The final bowl in cross-section: a tapered vessel in real bowl proportions, each
@@ -21,6 +26,9 @@ public:
     explicit BowlDiagram(QWidget *parent = nullptr);
 
     void set_result(const SimResult &result);
+    /// Marks a level the food should stay under (food volume, in oz) with a line labelled
+    /// "max", in place of the 80% range; nothing clears it and shows the range again.
+    void set_limit(std::optional<double> limit_oz);
 
     /// The band colour of each item in the last result, by index; invalid for an
     /// item too small to draw.
@@ -39,6 +47,7 @@ protected:
 
 private:
     SimResult result_;
+    std::optional<double> limit_oz_;
 };
 
 }  // namespace bowlfill

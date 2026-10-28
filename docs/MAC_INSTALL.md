@@ -27,7 +27,7 @@ right-clicking its icon while it's open → **Options** → **Keep in Dock**.
 
 When you're sent a new zip, do steps 1–4 again. When asked, choose **Replace**.
 
-Your uploaded measurements and saved scenarios are kept. The menus update to the
+Your uploaded measurements are kept. The menus update to the
 new version.
 
 ## Where your files live

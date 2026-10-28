@@ -49,3 +49,13 @@ much with prep.
 **Bring it back** once a same-batch test (PID against g/deg dispense, then usual against
 old-way prep) shows which caused it, ideally as its own romaine variant if production
 will see both preps.
+
+## bowl_data_20261007_4_mexican_slaw.csv: Mexican Slaw, 2026-10-07 (set aside 2026-10-27)
+
+The six single-portion Mexican Slaw bowls of `measurements/bowl_data_20261007_4.csv`
+(the rest of that session stays in). Until 2026-10-27 they were the only slaw data. They
+read about 2.4 ml/g (34-94 g), half the 4-5.5 ml/g of the 25 slaw bowls in
+`measurements/bowl_data_20261027_01.csv`. Like the 2026-10-07 couscous and romaine, they come
+from the suspect first measurement day.
+
+**Bring it back** if later slaw batches also read near 2.4 ml/g.

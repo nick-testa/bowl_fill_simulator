@@ -258,7 +258,7 @@ void SweepDialog::run()
     QLocale loc;
     std::vector<SweepTotals> totals;
     const bool finished = run_sweep(
-        menus, *ctx_.curves, ctx_.legacy, ctx_.adaptive, ctx_.costs, limits(),
+        menus, *ctx_.curves, ctx_.legacy, ctx_.costs, limits(),
         out, [&](std::int64_t done, std::int64_t total) {
             progress.setLabelText(QString("%1 of %2 bowls…")
                                       .arg(loc.toString(done), loc.toString(total)));
@@ -282,24 +282,16 @@ void SweepDialog::run()
         all.legacy_fits += t.legacy_fits;
         all.legacy_over += t.legacy_over;
         all.legacy_short += t.legacy_short;
-        all.adaptive_over += t.adaptive_over;
-        all.adaptive_over_bowl += t.adaptive_over_bowl;
-        all.adaptive_short += t.adaptive_short;
         all.volume_fits += t.volume_fits;
         all.volume_short += t.volume_short;
         all.volume_over += t.volume_over;
     }
     QString summary =
-        QString("%1 bowls in %2.\n\nUnder dynamic portioning: %3 come out right, %4 go over "
-                "the bowl, %5 never reach their weight floor.\n\nUnder Adaptive: %6 still "
-                "do not fit. A further %7 fit but cannot be brought down to the fill "
-                "target, and %8 cannot reach it from below.\n\n")
+        QString("%1 bowls in %2.\n\nUnder legacy portioning: %3 come out right, %4 go over "
+                "the bowl, %5 never reach their weight floor.\n\n")
             .arg(loc.toString(all.rows), human_time(timer.elapsed() / 1000.0))
             .arg(loc.toString(all.legacy_fits), loc.toString(all.legacy_over),
-                 loc.toString(all.legacy_short))
-            .arg(loc.toString(all.adaptive_over_bowl),
-                 loc.toString(std::max<qint64>(0, all.adaptive_over - all.adaptive_over_bowl)),
-                 loc.toString(all.adaptive_short));
+                 loc.toString(all.legacy_short));
     summary += QString("Under Volume fill (within %1% of the food room, stepping down to %2%): "
                        "%3 fit, %4 stay under the limit with everything at its max, %5 are still over "
                        "with bases and toppings stepped down as far as allowed.\n\n")

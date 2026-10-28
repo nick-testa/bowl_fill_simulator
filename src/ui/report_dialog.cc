@@ -34,19 +34,6 @@ QString legacy_tag(const RecipeAudit &r)
     return {};
 }
 
-QString adaptive_tag(const RecipeAudit &r)
-{
-    if (r.customer_built) return "—";
-    switch (r.adaptive.status) {
-    case AdaptiveStatus::NoAdjustment: return "fits, unchanged";
-    case AdaptiveStatus::Adjusted: return "fits, adjusted";
-    case AdaptiveStatus::StillOver: return "still over";
-    case AdaptiveStatus::Underfilled: return "underfills";
-    case AdaptiveStatus::NoIngredients: return "—";
-    }
-    return {};
-}
-
 QString volume_tag(const RecipeAudit &r)
 {
     if (r.customer_built) return "\u2014";
@@ -102,18 +89,17 @@ ReportDialog::ReportDialog(const BrandAudit &audit, const QString &assumptions,
     v->addWidget(note);
 
     table_ = new QTableWidget(this);
-    table_->setColumnCount(11);
+    table_->setColumnCount(9);
     table_->setHorizontalHeaderLabels(
         {"Recipe", "Kind", "Pins", "As written (g)",
-         QString("As written (%1)").arg(units::suffix()), "Dynamic portioning", "Dynamic P(over)",
-         "Adaptive fill", "Adaptive P(over)", "Volume fill", "Volume P(over)"});
+         QString("As written (%1)").arg(units::suffix()), "Legacy portioning", "Legacy P(over)",
+         "Volume fill", "Volume P(over)"});
     if (QTableWidgetItem *h = table_->horizontalHeaderItem(6))
         h->setToolTip("Chance a real bowl overfills the food room (the bowl less cups and "
                       "chunk clearance), from ingredient scatter, curve uncertainty and "
                       "dispense variation.");
-    for (int c : {8, 10})
-        if (QTableWidgetItem *h = table_->horizontalHeaderItem(c))
-            h->setToolTip(table_->horizontalHeaderItem(6)->toolTip());
+    if (QTableWidgetItem *h = table_->horizontalHeaderItem(8))
+        h->setToolTip(table_->horizontalHeaderItem(6)->toolTip());
     table_->verticalHeader()->setVisible(false);
     table_->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -211,10 +197,8 @@ void ReportDialog::populate()
         };
         table_->setItem(i, 5, cell(legacy_tag(r), fg));
         table_->setItem(i, 6, odds(r.legacy.fill));
-        table_->setItem(i, 7, cell(adaptive_tag(r), fg));
-        table_->setItem(i, 8, odds(r.adaptive.fill));
-        table_->setItem(i, 9, cell(volume_tag(r), fg));
-        table_->setItem(i, 10, odds(r.volume.sim.fill));
+        table_->setItem(i, 7, cell(volume_tag(r), fg));
+        table_->setItem(i, 8, odds(r.volume.sim.fill));
         for (int c = 0; c < table_->columnCount(); ++c) table_->item(i, c)->setFont(row_font);
     }
     table_->resizeColumnsToContents();
@@ -232,13 +216,11 @@ void ReportDialog::show_detail(int row)
     const theme::Palette &pal = theme::palette();
     QString html = QString("<b style='color:%1'>%2</b><br>")
                        .arg(severity_colour(r).name(), qs(r.recipe).toHtmlEscaped());
-    html += QString("<span style='color:%1'>Dynamic portioning — %2</span><br>")
+    html += QString("<span style='color:%1'>Legacy portioning — %2</span><br>")
                 .arg(pal.ink.name(), qs(r.legacy_summary()).toHtmlEscaped());
     if (!r.customer_built)
-        html += QString("<span style='color:%1'>Adaptive fill — %2</span><br>"
-                        "<span style='color:%1'>Volume fill — %3</span>")
-                    .arg(pal.ink_soft.name(), qs(r.adaptive_summary()).toHtmlEscaped(),
-                         qs(r.volume_summary()).toHtmlEscaped());
+        html += QString("<span style='color:%1'>Volume fill — %2</span>")
+                    .arg(pal.ink_soft.name(), qs(r.volume_summary()).toHtmlEscaped());
     if (!r.customer_built && !r.complete_bowl)
         html += QString("<br><span style='color:%1'>Pins only %2 ingredient%3, so this is "
                         "a modifier rather than a finished bowl.</span>")

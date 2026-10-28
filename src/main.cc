@@ -164,8 +164,6 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
     CurveSet curves;
     SquashFit squash;
     if (!load_cli_curves(asset_dir, curves, &squash)) return 2;
-    CostTable costs;
-    costs.load_csv(ss(asset_dir + "/data/ingredient_costs.csv"));
 
     const LoadResult loaded = load_configured_menus(asset_dir);
     if (loaded.menus.empty()) {
@@ -180,11 +178,9 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
             continue;
         matched = true;
         SimSettings legacy;
-        AdaptiveSettings adaptive;
-        legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
-        legacy.dispense = adaptive.dispense = configured_dispense();
-        const BrandAudit audit = audit_brand(m, curves, legacy, adaptive, &costs,
-                                             configured_volume_fill());
+        legacy.geometry = configured_geometry(volume_only);
+        legacy.dispense = configured_dispense();
+        const BrandAudit audit = audit_brand(m, curves, legacy, configured_volume_fill());
         const std::string csv = audit.to_csv();
         out << qs(header_written ? csv.substr(csv.find('\n') + 1) : csv);
         header_written = true;
@@ -317,10 +313,9 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     std::int64_t last_pct = -1;
     std::vector<SweepTotals> totals;
     SimSettings legacy;
-    AdaptiveSettings adaptive;
-    legacy.geometry = adaptive.geometry = configured_geometry(volume_only);
-    legacy.dispense = adaptive.dispense = configured_dispense();
-    run_sweep(menus, curves, legacy, adaptive, &costs,
+    legacy.geometry = configured_geometry(volume_only);
+    legacy.dispense = configured_dispense();
+    run_sweep(menus, curves, legacy, &costs,
               limits, out, [&](std::int64_t done, std::int64_t total) {
                   const std::int64_t pct = total > 0 ? done * 100 / total : 100;
                   if (pct != last_pct) {
@@ -338,18 +333,13 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
         all.legacy_fits += t.legacy_fits;
         all.legacy_over += t.legacy_over;
         all.legacy_short += t.legacy_short;
-        all.adaptive_over += t.adaptive_over;
-        all.adaptive_over_bowl += t.adaptive_over_bowl;
-        all.adaptive_short += t.adaptive_short;
         all.volume_fits += t.volume_fits;
         all.volume_short += t.volume_short;
         all.volume_over += t.volume_over;
     }
     err << "\r" << all.rows << " bowls; legacy: " << all.legacy_fits << " right, "
         << all.legacy_over << " over the bowl, " << all.legacy_short
-        << " short of the floor. Adaptive: " << all.adaptive_over_bowl
-        << " still do not fit, "
-        << all.adaptive_short << " cannot reach the fill target. Volume fill: "
+        << " short of the floor. Volume fill: "
         << all.volume_fits << " fit, " << all.volume_short << " at max under the limit, "
         << all.volume_over << " still over.\n";
     return 0;
@@ -362,8 +352,8 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
 /// carries a copy in Resources/assets, but the bundle is read-only and replaced on every
 /// update, so the copy is laid out in Application Support and used from there. A build
 /// with a different stamp replaces the menus, photos and reference CSVs, keeping the
-/// old CSVs under backups/ since the Ingredients dialog edits them; measurements and
-/// scenarios the user added are never overwritten.
+/// old CSVs under backups/ since the Ingredients dialog edits them; measurements the user
+/// added are never overwritten.
 QString default_asset_dir()
 {
     const QString bundled = QCoreApplication::applicationDirPath() + "/../Resources/assets";
@@ -395,8 +385,7 @@ QString default_asset_dir()
         const QString rel = from.relativeFilePath(src);
         if (rel == ".stamp") continue;
         const QString dst = user + "/" + rel;
-        const bool users_own =
-            rel.startsWith("data/measurements/") || rel.startsWith("data/scenarios/");
+        const bool users_own = rel.startsWith("data/measurements/");
         if (QFileInfo::exists(dst)) {
             if (users_own) continue;
             QFile::remove(dst);
@@ -435,7 +424,8 @@ int main(int argc, char **argv)
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        "Simulates the dynamic portion algorithm against a bowl's volume limit.");
+        "Builds bowls from a menu's ingredients and simulates Dynamic Portioning (legacy "
+        "portioning and Volume Fill) against the bowl's volume limit.");
     parser.addHelpOption();
     QCommandLineOption assets(
         {"a", "assets"},
@@ -452,8 +442,14 @@ int main(int argc, char **argv)
     parser.addOption(dark);
     QCommandLineOption unit("units", "Volume units: oz or ml.", "u");
     parser.addOption(unit);
-    QCommandLineOption mode("mode", "Dispense model: legacy, adaptive or volume.", "m");
+    QCommandLineOption mode("mode", "Dynamic Portioning's dispense model: volume (the default) or "
+                                    "legacy.", "m");
     parser.addOption(mode);
+    QCommandLineOption view("view",
+                            "Open on the Bowl Builder (builder, the default) or Dynamic "
+                            "Portioning (portioning), which starts from the builder's bowl.",
+                            "v");
+    parser.addOption(view);
     QCommandLineOption scale("scale",
                              "Render at this device pixel ratio, e.g. 2 for a sharp "
                              "screenshot. Applied before the window is built.", "n");
@@ -546,11 +542,15 @@ int main(int argc, char **argv)
                                  : bowlfill::units::Volume::FluidOunces);
 
     bowlfill::MainWindow window(asset_dir);
-    if (parser.isSet(mode) && parser.value(mode).startsWith("a")) window.select_adaptive();
-    if (parser.isSet(mode) && parser.value(mode).startsWith("v")) window.set_volume_fill();
-    if (parser.isSet(pick)) {
-        const QStringList parts = parser.value(pick).split('|');
-        window.select(parts.value(0), parts.value(1));
+    if (parser.isSet(mode) && parser.value(mode).startsWith("l")) window.set_legacy_portioning();
+    // Dynamic Portioning opens on the builder's bowl, so a recipe named for it is chosen
+    // once it is open.
+    const bool portioning = parser.isSet(view) && parser.value(view).startsWith("p");
+    const QStringList parts = parser.value(pick).split('|');
+    if (parser.isSet(pick)) window.select(parts.value(0), portioning ? QString() : parts.value(1));
+    if (portioning) {
+        window.show_dynamic_portioning();
+        if (!parts.value(1).isEmpty()) window.select(parts.value(0), parts.value(1));
     }
     if (parser.isSet(size)) {
         const QStringList wh = parser.value(size).split('x');

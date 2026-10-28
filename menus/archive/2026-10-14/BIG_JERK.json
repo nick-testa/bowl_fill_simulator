@@ -1,0 +1,429 @@
+ID: prod
+MAPPINGS:
+{
+  "ingredients": [
+    {
+      "menu_item_ids": [
+        "mb:mexican-rice-retherm:6950d618-3ae5-45d3-a1b0-5b331b73819a"
+      ],
+      "ingredient_name": "Mexican Rice [Retherm]",
+      "per_portion_weight_g": 220.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:roasted-sweet-potatoes:34d00d15-2652-402b-b8af-c8d3b02b1593"
+      ],
+      "ingredient_name": "Sweet Potatoes Roasted Glazed",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pineapple-chow:704481bd-ba1d-482f-ab5e-a1473890a235"
+      ],
+      "ingredient_name": "Pineapple-Cucumber Salad",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:island-herb-sauce:b645f352-8839-4696-a3f8-835e3ca26f6c"
+      ],
+      "ingredient_name": "MintCilantro Chutney portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coconut-crunch:a55e9fbb-ca4a-4f7b-94be-2d9bb36f9678"
+      ],
+      "ingredient_name": "Coconut Crunch portion",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:garlic-mojo:f9871431-534f-40d1-b0a9-267f84bdad4c"
+      ],
+      "ingredient_name": "Green Salsa Macha Portioned",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken:b75b6e34-072d-44ec-8107-8f11ea0ab69f"
+      ],
+      "ingredient_name": "Jerk Chicken Cooked",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-pernil:08060ad6-5bd4-42c9-bdf7-9213e700a482"
+      ],
+      "ingredient_name": "Pork Carnitas Cooked v11",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pineapple-adobo-chicken:52c017f3-b3d6-40a8-aa01-aba3b2aefaaa"
+      ],
+      "ingredient_name": "Chicken Al Pastor [Cooked]",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:fd9c6861-13cc-42c1-bcf8-5655ca71e35d"
+      ],
+      "ingredient_name": "White Jasmine Rice retherm v11",
+      "per_portion_weight_g": 220.0,
+      "per_portion_minimum_weight_g": 0.0
+    }
+  ],
+  "product_templates": [
+    {
+      "source_item_id": "mb:jerk:07c06fd0-a07c-492f-86e3-5fdadbb3b6fb",
+      "target_item_ids": [
+        "mb-pt:mb:jerk:07c06fd0-a07c-492f-86e3-5fdadbb3b6fb:jerk-chicken-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:big-jerk:af3b29fc-10ea-4b6a-a792-c4630f0809df",
+      "target_item_ids": [
+        "mb-pt:mb:big-jerk:af3b29fc-10ea-4b6a-a792-c4630f0809df:jerk-chicken-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:bigger-jerk:2e4b1c29-99b7-455a-b98e-5bc87f94c565",
+      "target_item_ids": [
+        "mb-pt:mb:bigger-jerk:2e4b1c29-99b7-455a-b98e-5bc87f94c565:jerk-chicken-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:biggest-jerk:451ee77a-f47b-4fb6-9fa6-14e5961cacee",
+      "target_item_ids": [
+        "mb-pt:mb:biggest-jerk:451ee77a-f47b-4fb6-9fa6-14e5961cacee:jerk-chicken-cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:slow-roasted-pernil:da8ad15e-04f8-4cea-9a08-1ad14aa2041b",
+      "target_item_ids": [
+        "mb-pt:mb:slow-roasted-pernil:da8ad15e-04f8-4cea-9a08-1ad14aa2041b:pork-carnitas-cooked-v11"
+      ]
+    },
+    {
+      "source_item_id": "mb:pineapple-adobo-chicken:2c423120-0f2f-4038-a0ba-cb446a51bfab",
+      "target_item_ids": [
+        "mb-pt:mb:pineapple-adobo-chicken:2c423120-0f2f-4038-a0ba-cb446a51bfab:chicken-al-pastor-cooked"
+      ]
+    }
+  ],
+  "multi_product_templates": [],
+  "ingredient_templates": [],
+  "ignored_product_ids": [],
+  "ignored_ingredient_ids": [],
+  "auxiliary_product_ids": [
+    "mb:side-of-black-beans:45b3b011-0ca0-4f19-bd09-fc68f687883f",
+    "mb:sweet-plantains:acedd1ac-cdc4-4a2b-a8c4-46f01101c445",
+    "mb:coca-cola:b071d0ed-6cc4-429e-aead-6e78ed39f198",
+    "mb:diet-coke:419e38cd-360c-42f6-9376-7ee7c40d4d63",
+    "mb:bottled-water:7583a38e-6205-4873-a8f2-3488b4a5f16e",
+    "mb:island-herb-sauce:fb9c82ba-1f1c-48cd-a64b-a6e3baf9be47",
+    "mb:coconut-crunch:c7583372-e33b-4eaf-90c2-927ecc1fcdd1",
+    "mb:garlic-mojo:fccac043-d1b8-49c6-81e4-010b0117269e",
+    "mb:chocolate-chip-brownie:30c57eab-1acb-4d5f-9515-af0d763609f3",
+    "mb:chocolate-chip-brownie:bdb252d0-71e1-40ac-9b0c-8224121f1d6b",
+    "mb:yes-add-utensils:8196dcc4-b64e-4342-afaa-4c13f262fff5"
+  ],
+  "auxiliary_ingredient_ids": [
+    "mb:side-of-black-beans:45b3b011-0ca0-4f19-bd09-fc68f687883f",
+    "mb:sweet-plantains:acedd1ac-cdc4-4a2b-a8c4-46f01101c445",
+    "mb:coca-cola:b071d0ed-6cc4-429e-aead-6e78ed39f198",
+    "mb:diet-coke:419e38cd-360c-42f6-9376-7ee7c40d4d63",
+    "mb:bottled-water:7583a38e-6205-4873-a8f2-3488b4a5f16e",
+    "mb:island-herb-sauce:fb9c82ba-1f1c-48cd-a64b-a6e3baf9be47",
+    "mb:coconut-crunch:c7583372-e33b-4eaf-90c2-927ecc1fcdd1",
+    "mb:garlic-mojo:fccac043-d1b8-49c6-81e4-010b0117269e",
+    "mb:chocolate-chip-brownie:30c57eab-1acb-4d5f-9515-af0d763609f3",
+    "mb:chocolate-chip-brownie:bdb252d0-71e1-40ac-9b0c-8224121f1d6b",
+    "mb:yes-add-utensils:8196dcc4-b64e-4342-afaa-4c13f262fff5"
+  ],
+  "product_rules": [],
+  "dynamic_portion_increases": [
+    {
+      "apply_for": [
+        {
+          "ingredient_names": {
+            "must_have": [
+              "Mexican Rice [Retherm]",
+              "White Jasmine Rice retherm v11"
+            ],
+            "must_not_have": []
+          },
+          "filter_op": "Any",
+          "minimum_product_weight_g": 410.0
+        }
+      ],
+      "ingredients": [
+        {
+          "ingredient_name": "White Jasmine Rice retherm v11",
+          "step_increment_g": 3.2,
+          "max_dispense_weight_g": 240.0
+        },
+        {
+          "ingredient_name": "Mexican Rice [Retherm]",
+          "step_increment_g": 3.2,
+          "max_dispense_weight_g": 240.0
+        },
+        {
+          "ingredient_name": "Pork Carnitas Cooked v11",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 125.0
+        },
+        {
+          "ingredient_name": "Chicken Al Pastor [Cooked]",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 125.0
+        },
+        {
+          "ingredient_name": "Pineapple-Cucumber Salad",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 100.0
+        },
+        {
+          "ingredient_name": "Sweet Potatoes Roasted Glazed",
+          "step_increment_g": 0.5,
+          "max_dispense_weight_g": 100.0
+        }
+      ],
+      "ingredient_combined_limits": [],
+      "excluded_ingredients": []
+    }
+  ],
+  "recipes": [
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:jerk:07c06fd0-a07c-492f-86e3-5fdadbb3b6fb:jerk-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:mexican-rice-retherm:6950d618-3ae5-45d3-a1b0-5b331b73819a"
+      ],
+      "recipe_id": "01a0c652-6c70-6873-e288-ec12818c77f3",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:roasted-sweet-potatoes:34d00d15-2652-402b-b8af-c8d3b02b1593"
+      ],
+      "recipe_id": "01a0b686-89f0-8218-5adf-a32f6dd2a219",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pineapple-chow:704481bd-ba1d-482f-ab5e-a1473890a235"
+      ],
+      "recipe_id": "01a0a79c-e825-7763-0a89-4bb71754ae59",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:side-of-black-beans:45b3b011-0ca0-4f19-bd09-fc68f687883f"
+      ],
+      "recipe_id": "01a0d0a8-cc53-bf96-1884-8d4a798031dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:island-herb-sauce:b645f352-8839-4696-a3f8-835e3ca26f6c"
+      ],
+      "recipe_id": "01a0cc2c-e938-dd68-b07e-4e7bace0e9ac",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coconut-crunch:a55e9fbb-ca4a-4f7b-94be-2d9bb36f9678"
+      ],
+      "recipe_id": "01a0d0e0-cf82-eedd-e9cb-8b33a7b956f2",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:garlic-mojo:f9871431-534f-40d1-b0a9-267f84bdad4c"
+      ],
+      "recipe_id": "01a0cb75-e224-2ac1-13d7-522557b1a683",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:jerk-chicken:b75b6e34-072d-44ec-8107-8f11ea0ab69f"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 108.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:slow-roasted-pernil:08060ad6-5bd4-42c9-bdf7-9213e700a482"
+      ],
+      "recipe_id": "01a0d079-2b28-a838-54e0-ef559b3b0c69",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:pineapple-adobo-chicken:52c017f3-b3d6-40a8-aa01-aba3b2aefaaa"
+      ],
+      "recipe_id": "01a0c687-029c-2e68-4a09-60fbe26332a2",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:sweet-plantains:acedd1ac-cdc4-4a2b-a8c4-46f01101c445"
+      ],
+      "recipe_id": "01a0caf4-db7a-46e0-3a13-d43612f55d20",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coca-cola:b071d0ed-6cc4-429e-aead-6e78ed39f198"
+      ],
+      "recipe_id": "019f193b-4b35-1a4d-ceff-7b0fc2552e54",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:diet-coke:419e38cd-360c-42f6-9376-7ee7c40d4d63"
+      ],
+      "recipe_id": "01a0ef0c-1349-6f5f-5e1d-995896542376",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:bottled-water:7583a38e-6205-4873-a8f2-3488b4a5f16e"
+      ],
+      "recipe_id": "01a0e98c-3589-8242-d9ca-4a603222339b",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:big-jerk:af3b29fc-10ea-4b6a-a792-c4630f0809df:jerk-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 170.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:bigger-jerk:2e4b1c29-99b7-455a-b98e-5bc87f94c565:jerk-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 220.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:biggest-jerk:451ee77a-f47b-4fb6-9fa6-14e5961cacee:jerk-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07b-e126-6edf-ba2c-e0de36155a47",
+      "per_portion_weight_g": 270.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:slow-roasted-pernil:da8ad15e-04f8-4cea-9a08-1ad14aa2041b:pork-carnitas-cooked-v11"
+      ],
+      "recipe_id": "01a0d079-2b28-a838-54e0-ef559b3b0c69",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:pineapple-adobo-chicken:2c423120-0f2f-4038-a0ba-cb446a51bfab:chicken-al-pastor-cooked"
+      ],
+      "recipe_id": "01a0c687-029c-2e68-4a09-60fbe26332a2",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:white-rice:fd9c6861-13cc-42c1-bcf8-5655ca71e35d"
+      ],
+      "recipe_id": "01a0cbae-040b-d479-cc33-d97157f6ed3d",
+      "per_portion_weight_g": 160.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:island-herb-sauce:fb9c82ba-1f1c-48cd-a64b-a6e3baf9be47"
+      ],
+      "recipe_id": "01a0cc2a-f681-05a7-e8a7-77c00b8bfb2e",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:coconut-crunch:c7583372-e33b-4eaf-90c2-927ecc1fcdd1"
+      ],
+      "recipe_id": "01a0d0e0-cf82-eedd-e9cb-8b33a7b956f2",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:garlic-mojo:fccac043-d1b8-49c6-81e4-010b0117269e"
+      ],
+      "recipe_id": "01a0cb75-e224-2ac1-13d7-522557b1a683",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:30c57eab-1acb-4d5f-9515-af0d763609f3"
+      ],
+      "recipe_id": "01a118a1-e8d5-0214-647d-a01f930034dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:bdb252d0-71e1-40ac-9b0c-8224121f1d6b"
+      ],
+      "recipe_id": "01a118a1-e8d5-0214-647d-a01f930034dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-add-utensils:8196dcc4-b64e-4342-afaa-4c13f262fff5"
+      ],
+      "recipe_id": "01a118ac-431b-857a-2c6b-76189df11e43",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    }
+  ],
+  "menu_package_version": {
+    "version_identifier": "mb:9tN9DVVfhmLfXCOz1Nl9KA",
+    "last_modification_time": 1791881069012000000
+  },
+  "robot_brand_id": "kitchen-solutions"
+}

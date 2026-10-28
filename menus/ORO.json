@@ -7,7 +7,7 @@ MAPPINGS:
         "mb:white-rice:8b7f3d96-f76b-4fe3-a274-aba55c39673f"
       ],
       "ingredient_name": "White Jasmine Rice retherm v11",
-      "per_portion_weight_g": 220.0,
+      "per_portion_weight_g": 170.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -31,7 +31,7 @@ MAPPINGS:
         "mb:garlic-green-beans:5d1a7142-01b7-4eee-845b-dc3cb74fa01a"
       ],
       "ingredient_name": "Garlic Green Beans",
-      "per_portion_weight_g": 70.0,
+      "per_portion_weight_g": 50.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -71,7 +71,7 @@ MAPPINGS:
         "mb:extra-shawarma-chicken:b1a95346-8786-4840-a5ec-cb886f58b177"
       ],
       "ingredient_name": "Guajillo  Cumin Chicken cooked",
-      "per_portion_weight_g": 160.0,
+      "per_portion_weight_g": 120.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -79,7 +79,7 @@ MAPPINGS:
         "mb:extra-beef-kebab:57d7c4e3-9cd5-4fb8-a2a0-cebf1e59ebff"
       ],
       "ingredient_name": "Suadero Beef [Cooked]",
-      "per_portion_weight_g": 160.0,
+      "per_portion_weight_g": 120.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -255,7 +255,7 @@ MAPPINGS:
         "mb:lemon-orzo:330ecad1-0a0a-42ea-b1f9-c07e002587ae"
       ],
       "ingredient_name": "Lemon Couscous Expo",
-      "per_portion_weight_g": 220.0,
+      "per_portion_weight_g": 170.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -281,6 +281,14 @@ MAPPINGS:
       "ingredient_name": "Lemon Couscous Expo",
       "per_portion_weight_g": 100.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d:suadero-beef-cooked"
+      ],
+      "ingredient_name": "Suadero Beef [Cooked]",
+      "per_portion_weight_g": 60.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "product_templates": [
@@ -304,23 +312,260 @@ MAPPINGS:
     },
     {
       "source_item_id": "mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e",
-      "target_item_ids": []
+      "target_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:guajillo-cumin-chicken-cooked",
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:white-jasmine-rice-retherm-v11",
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:cucumberquinoa-tabbouleh-mixed",
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:sweet-potatoes-roasted-glazed",
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:hummus-portion",
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:tzatziki-portioned"
+      ]
     },
     {
       "source_item_id": "mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465",
-      "target_item_ids": []
+      "target_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:suadero-beef-cooked",
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:white-jasmine-rice-retherm-v11",
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:sweet-potatoes-roasted-glazed",
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:garlic-green-beans",
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:whipped-feta-sauce-portion",
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:green-salsa-macha-portioned"
+      ]
     },
     {
       "source_item_id": "mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2",
-      "target_item_ids": []
+      "target_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:guajillo-cumin-chicken-cooked",
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:lemon-couscous-expo",
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:cucumberquinoa-tabbouleh-mixed",
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:garlic-green-beans",
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:mintcilantro-chutney-portion",
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:green-salsa-macha-portioned"
+      ]
     },
     {
       "source_item_id": "mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c",
-      "target_item_ids": []
+      "target_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:romaine-chop",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:lemon-couscous-expo",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:cucumberquinoa-tabbouleh-mixed",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:sweet-potatoes-roasted-glazed",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:garlic-green-beans",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:lemon-garlic-dressing-portion",
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:hummus-portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d",
+      "target_item_ids": [
+        "mb-pt:mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d:guajillo-cumin-chicken-cooked",
+        "mb-pt:mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d:suadero-beef-cooked"
+      ]
     }
   ],
   "multi_product_templates": [],
-  "ingredient_templates": [],
+  "ingredient_templates": [
+    {
+      "source_item_id": "mb:no-shawarma-chicken:bc878472-772d-4f40-8a95-9fed123e5fc4",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Guajillo  Cumin Chicken cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-white-rice:1da592b2-4ed4-41c0-b82b-165803fcc3de",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "White Jasmine Rice retherm v11"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-tabbouleh-slaw:208f240b-d5a6-4bee-8502-b69d77e22517",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "CucumberQuinoa Tabbouleh Mixed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-sweet-potatoes:77c66c35-0ef8-4071-a1fe-cef2ec459308",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Sweet Potatoes Roasted Glazed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-hummus:bceb574a-4c44-48d2-8e4c-579b3f957687",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Hummus portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-tzatziki:22c3a70e-70b6-4b14-a94c-bece597496b5",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Tzatziki Portioned"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-beef-kebab:61def8c7-0616-4781-a220-ec95e4af89ab",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Suadero Beef [Cooked]"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-white-rice:bcb1b78f-42ca-41b3-98e7-1db1949e3ae5",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "White Jasmine Rice retherm v11"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-sweet-potatoes:64c2b4ee-0892-4be3-9e9f-76080a25b373",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Sweet Potatoes Roasted Glazed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-green-beans:60432811-aeb7-4f16-9f9d-f4ed31c685a7",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Garlic Green Beans"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-whipped-feta:1ff8b4d7-758d-46e8-9e14-86da3bec27c0",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Whipped Feta sauce portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-green-garlic-sauce:e30415c5-7180-44d3-b3f5-d4b1ab5eb964",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Green Salsa Macha Portioned"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-shawarma-chicken:39f4df5c-9f98-47e5-9998-438347be28e0",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Guajillo  Cumin Chicken cooked"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-lemon-couscous:939181b9-49f2-422a-9e76-d81ba16283eb",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Lemon Couscous Expo"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-tabbouleh-slaw:b9e25b64-ec67-46b8-8ff0-61919de0f4d5",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "CucumberQuinoa Tabbouleh Mixed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-green-beans:161cf410-b879-4e0e-a58a-ecf23da43cf0",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Garlic Green Beans"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-mint-cilantro-chutney:d6df21b3-1a94-42b8-b7d6-5bc779989ffa",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "MintCilantro Chutney portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-green-garlic-sauce:9f7ecdd9-9be7-40d2-a4a7-0ade96f87d09",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Green Salsa Macha Portioned"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-romaine:a654b7e7-b620-44f5-b19b-f717b0fddf52",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Romaine Chop"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-lemon-couscous:e73a8ffb-4b81-41d3-9fff-149aa97cfe27",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Lemon Couscous Expo"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-tabbouleh-slaw:3f1c11d8-1c75-457e-bb9f-14970848d631",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "CucumberQuinoa Tabbouleh Mixed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-sweet-potatoes:c570f951-d165-41ff-ad99-0d7fe55655b8",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Sweet Potatoes Roasted Glazed"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-green-beans:5db646f5-ece2-446f-ad09-b6215207da38",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Garlic Green Beans"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-lemon-vinaigrette:1ca41a3d-982f-4052-babd-25ad7b1252f5",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Lemon Garlic Dressing portion"
+      ]
+    },
+    {
+      "source_item_id": "mb:no-hummus:22562e56-27b1-423e-8c8d-46a74cbcd4a2",
+      "target_item_ids": [],
+      "type": "Remove",
+      "removal_ingredient_names": [
+        "Hummus portion"
+      ]
+    }
+  ],
   "ignored_product_ids": [],
   "ignored_ingredient_ids": [],
   "auxiliary_product_ids": [
@@ -344,7 +589,9 @@ MAPPINGS:
     "mb:olipop-grape-soda:470ac46f-9f3c-4dea-aa43-f144fa2d54cd",
     "mb:poppi-strawberry-lemon:06c9c0ac-d768-4188-9a5d-faa9c454373a",
     "mb:whipped-feta:ce1350bf-dc9d-4155-94b6-ae31d04cb6a0",
-    "mb:whipped-feta:7fe6e4d1-0355-4e5d-bbf5-1ce5d06aba0d"
+    "mb:whipped-feta:7fe6e4d1-0355-4e5d-bbf5-1ce5d06aba0d",
+    "mb:yes-add-utensils:0a598720-a5fd-4619-a451-f4f8c33525e3",
+    "mb:chocolate-chip-brownie:b1ad0b40-55dd-4bee-b5a6-2eea183ef307"
   ],
   "auxiliary_ingredient_ids": [
     "mb:hummus:8e497841-08e7-446e-82f8-c5635ce027be",
@@ -367,7 +614,9 @@ MAPPINGS:
     "mb:olipop-grape-soda:470ac46f-9f3c-4dea-aa43-f144fa2d54cd",
     "mb:poppi-strawberry-lemon:06c9c0ac-d768-4188-9a5d-faa9c454373a",
     "mb:whipped-feta:ce1350bf-dc9d-4155-94b6-ae31d04cb6a0",
-    "mb:whipped-feta:7fe6e4d1-0355-4e5d-bbf5-1ce5d06aba0d"
+    "mb:whipped-feta:7fe6e4d1-0355-4e5d-bbf5-1ce5d06aba0d",
+    "mb:yes-add-utensils:0a598720-a5fd-4619-a451-f4f8c33525e3",
+    "mb:chocolate-chip-brownie:b1ad0b40-55dd-4bee-b5a6-2eea183ef307"
   ],
   "product_rules": [],
   "dynamic_portion_increases": [
@@ -389,22 +638,22 @@ MAPPINGS:
         {
           "ingredient_name": "White Jasmine Rice retherm v11",
           "step_increment_g": 3.2,
-          "max_dispense_weight_g": 240.0
+          "max_dispense_weight_g": 210.0
         },
         {
           "ingredient_name": "Lemon Couscous Expo",
           "step_increment_g": 3.2,
-          "max_dispense_weight_g": 240.0
+          "max_dispense_weight_g": 210.0
         },
         {
           "ingredient_name": "Guajillo  Cumin Chicken cooked",
           "step_increment_g": 0.5,
-          "max_dispense_weight_g": 165.0
+          "max_dispense_weight_g": 130.0
         },
         {
           "ingredient_name": "Suadero Beef [Cooked]",
           "step_increment_g": 0.5,
-          "max_dispense_weight_g": 165.0
+          "max_dispense_weight_g": 130.0
         },
         {
           "ingredient_name": "CucumberQuinoa Tabbouleh Mixed",
@@ -414,11 +663,14 @@ MAPPINGS:
         {
           "ingredient_name": "Garlic Green Beans",
           "step_increment_g": 0.5,
-          "max_dispense_weight_g": 100.0
+          "max_dispense_weight_g": 70.0
         }
       ],
       "ingredient_combined_limits": [],
-      "excluded_ingredients": []
+      "excluded_ingredients": [],
+      "algorithm": "VolumeFill",
+      "volume_fill_fit_share": 0.87,
+      "volume_fill_min_share": 0.4
     }
   ],
   "recipes": [
@@ -427,7 +679,7 @@ MAPPINGS:
         "mb-pt:mb:chicken-shawarma-bowl:8d20b538-7e55-41b4-a21f-4de16b4af582:guajillo-cumin-chicken-cooked"
       ],
       "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
-      "per_portion_weight_g": 160.0,
+      "per_portion_weight_g": 120.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -555,7 +807,7 @@ MAPPINGS:
         "mb-pt:mb:beef-kebab-bowl:a7e6e3b7-07e4-45f0-847b-5340d861b1c3:suadero-beef-cooked"
       ],
       "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
-      "per_portion_weight_g": 160.0,
+      "per_portion_weight_g": 120.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -563,7 +815,7 @@ MAPPINGS:
         "mb-pt:mb:pomegranate-glazed-sweet-potato-bowl:8ee27dd5-994a-4d1d-8ac5-c7ed141259ef:sweet-potatoes-roasted-glazed"
       ],
       "recipe_id": "01a0b686-89f0-8218-5adf-a32f6dd2a219",
-      "per_portion_weight_g": 160.0,
+      "per_portion_weight_g": 120.0,
       "per_portion_minimum_weight_g": 0.0
     },
     {
@@ -893,11 +1145,243 @@ MAPPINGS:
       "recipe_id": "01a0cc0d-ad45-bff3-9b80-cf3075d9d688",
       "per_portion_weight_g": 0.0,
       "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:yes-add-utensils:0a598720-a5fd-4619-a451-f4f8c33525e3"
+      ],
+      "recipe_id": "01a118ac-431b-857a-2c6b-76189df11e43",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb:chocolate-chip-brownie:b1ad0b40-55dd-4bee-b5a6-2eea183ef307"
+      ],
+      "recipe_id": "01a118a1-e8d5-0214-647d-a01f930034dc",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:guajillo-cumin-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:suadero-beef-cooked"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:guajillo-cumin-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 120.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d:guajillo-cumin-chicken-cooked"
+      ],
+      "recipe_id": "01a0d07c-7c5c-9636-f60f-dc1e2fea046e",
+      "per_portion_weight_g": 60.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:shawarma-kebab-bowl:ab8e135d-23b4-4981-9fa5-51a139f9d73d:suadero-beef-cooked"
+      ],
+      "recipe_id": "01a092a9-d287-d83e-c2a0-f1935ba00df4",
+      "per_portion_weight_g": 0.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:white-jasmine-rice-retherm-v11"
+      ],
+      "recipe_id": "01a0cbae-040b-d479-cc33-d97157f6ed3d",
+      "per_portion_weight_g": 170.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:cucumberquinoa-tabbouleh-mixed"
+      ],
+      "recipe_id": "01a0cb67-01be-8b96-2255-4289494ecc44",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:sweet-potatoes-roasted-glazed"
+      ],
+      "recipe_id": "01a0b686-89f0-8218-5adf-a32f6dd2a219",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:hummus-portion"
+      ],
+      "recipe_id": "01a0cc24-101f-6c5a-5a1e-bf11d6d842bf",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-standard:dbb322ad-db4a-4a0e-8b2f-4c6b741c014e:tzatziki-portioned"
+      ],
+      "recipe_id": "01a0cc27-e8e1-dfc6-3b80-039c689cab05",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:white-jasmine-rice-retherm-v11"
+      ],
+      "recipe_id": "01a0cbae-040b-d479-cc33-d97157f6ed3d",
+      "per_portion_weight_g": 170.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:sweet-potatoes-roasted-glazed"
+      ],
+      "recipe_id": "01a0b686-89f0-8218-5adf-a32f6dd2a219",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:garlic-green-beans"
+      ],
+      "recipe_id": "01a0cb70-e659-707e-0a83-f7c57bcc850a",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:whipped-feta-sauce-portion"
+      ],
+      "recipe_id": "01a0cc0d-ad45-bff3-9b80-cf3075d9d688",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-protein-bowl:e7c48942-e63b-4005-a4a5-b00a4d1c0465:green-salsa-macha-portioned"
+      ],
+      "recipe_id": "01a0cb75-e224-2ac1-13d7-522557b1a683",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:lemon-couscous-expo"
+      ],
+      "recipe_id": "01a10f49-c74e-7746-928b-7cb5cb04205d",
+      "per_portion_weight_g": 170.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:cucumberquinoa-tabbouleh-mixed"
+      ],
+      "recipe_id": "01a0cb67-01be-8b96-2255-4289494ecc44",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:garlic-green-beans"
+      ],
+      "recipe_id": "01a0cb70-e659-707e-0a83-f7c57bcc850a",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:mintcilantro-chutney-portion"
+      ],
+      "recipe_id": "01a0cc2c-e938-dd68-b07e-4e7bace0e9ac",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:oro-glow:0b710d99-4043-4a97-8a32-4ee822808de2:green-salsa-macha-portioned"
+      ],
+      "recipe_id": "01a0cb75-e224-2ac1-13d7-522557b1a683",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:romaine-chop"
+      ],
+      "recipe_id": "01a10f73-e922-98ed-ae1d-32094c3cc1e5",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:lemon-couscous-expo"
+      ],
+      "recipe_id": "01a10f49-c74e-7746-928b-7cb5cb04205d",
+      "per_portion_weight_g": 100.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:cucumberquinoa-tabbouleh-mixed"
+      ],
+      "recipe_id": "01a0cb67-01be-8b96-2255-4289494ecc44",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:sweet-potatoes-roasted-glazed"
+      ],
+      "recipe_id": "01a0b686-89f0-8218-5adf-a32f6dd2a219",
+      "per_portion_weight_g": 70.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:garlic-green-beans"
+      ],
+      "recipe_id": "01a0cb70-e659-707e-0a83-f7c57bcc850a",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:lemon-garlic-dressing-portion"
+      ],
+      "recipe_id": "01a0d0dc-ca4e-8988-8569-8c4fd6d326d2",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
+    },
+    {
+      "menu_item_ids": [
+        "mb-pt:mb:golden-greens:914eefc0-4d92-4b19-a4fe-ee1543cf201c:hummus-portion"
+      ],
+      "recipe_id": "01a0cc24-101f-6c5a-5a1e-bf11d6d842bf",
+      "per_portion_weight_g": 50.0,
+      "per_portion_minimum_weight_g": 0.0
     }
   ],
   "menu_package_version": {
-    "version_identifier": "mb:Vr3ed-3Qpk4HuSqwkR35tY",
-    "last_modification_time": 1791576199337000000
+    "version_identifier": "mb:WdgFzKRizAP035Pxw6kNGi",
+    "last_modification_time": 1792702507510000000
   },
   "robot_brand_id": "kitchen-solutions"
 }

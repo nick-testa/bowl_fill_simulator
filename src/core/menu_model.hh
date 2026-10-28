@@ -134,6 +134,9 @@ struct Menu
     /// The order to offer ingredients in, when it matters (Manual Entry lists them
     /// in station order). Empty means alphabetical.
     std::vector<std::string> order;
+    /// How full Volume Fill may make a bowl, as a share of the food room, when the menu
+    /// sets one (volume_fill_fit_share on a dynamic_portion_increases entry).
+    std::optional<double> volume_fill_fit_share;
 
     const Ingredient *find(const std::string &name) const;
     std::vector<std::string> names_of(Kind kind) const;

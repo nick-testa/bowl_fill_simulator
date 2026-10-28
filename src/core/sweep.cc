@@ -123,17 +123,16 @@ std::string sweep_csv_header()
 {
     return "brand,recipe,recipe_kind,bases,proteins,toppings,sauce_cups,ingredients,"
            "nominal_g,nominal_oz,floor_g,legacy_verdict,legacy_final_g,legacy_final_oz,"
-           "legacy_fill_pct,adaptive_status,adaptive_fill_pct,adaptive_alpha,cost,"
+           "legacy_fill_pct,"
            "legacy_p_over_room,legacy_p_over_rim,legacy_p10_ml,legacy_median_ml,"
-           "legacy_p90_ml,adaptive_p_over_room,adaptive_p_over_rim,"
+           "legacy_p90_ml,"
            "volume_status,volume_final_g,volume_final_oz,volume_fill_pct,volume_passes,"
-           "volume_p_over_room,volume_p_over_rim\n";
+           "volume_cost,volume_p_over_room,volume_p_over_rim\n";
 }
 
 bool run_sweep(const std::vector<const Menu *> &menus,
                const CurveSet &curves,
                const SimSettings &legacy_settings,
-               const AdaptiveSettings &adaptive_settings,
                const CostTable *costs,
                const SweepLimits &limits,
                std::ostream &out,
@@ -265,10 +264,7 @@ bool run_sweep(const std::vector<const Menu *> &menus,
                             ls.floor_g = floor_g;
                             ls.compress = true;
                             ls.sauce.cups = cups;
-                            AdaptiveSettings as = adaptive_settings;
-                            as.sauce.cups = cups;
                             const SimResult sim = simulate(items, ls);
-                            const AdaptiveResult ad = solve_adaptive(items, as, costs);
                             const VolumeFillResult vf = volume_fill(items, ls, volume_settings);
                             const Frame &vf_last = vf.sim.last();
 
@@ -297,24 +293,19 @@ bool run_sweep(const std::vector<const Menu *> &menus,
                             cell(fixed(last.grams, 0));
                             cell(fixed(last.ounces, 2));
                             cell(fixed(cap > 0 ? (last.ounces + sauce_oz) / cap * 100 : 0, 0));
-                            cell(to_string(ad.status));
-                            cell(fixed(ad.food_fill() * 100, 0));
-                            cell(fixed(ad.alpha, 3));
-                            cell(fixed(ad.total_cost, 2));
                             // The bowl as a distribution (see FillUncertainty).
                             cell(fixed(sim.fill.p_over_room, 3));
                             cell(fixed(sim.fill.p_over_rim, 3));
                             cell(fixed(sim.fill.p10_oz * kMl, 0));
                             cell(fixed(sim.fill.median_oz * kMl, 0));
                             cell(fixed(sim.fill.p90_oz * kMl, 0));
-                            cell(fixed(ad.fill.p_over_room, 3));
-                            cell(fixed(ad.fill.p_over_rim, 3));
                             // Volume Fill; passes are + up toward the floor, - down to fit.
                             cell(csv_escape(to_string(vf.status)));
                             cell(fixed(vf_last.grams, 0));
                             cell(fixed(vf_last.ounces, 2));
                             cell(fixed(cap > 0 ? (vf_last.ounces + sauce_oz) / cap * 100 : 0, 0));
                             cell(std::to_string(vf.passes_up - vf.passes_down));
+                            cell(fixed(costs ? cost_bowl(vf.sim.items, *costs).total : 0.0, 2));
                             cell(fixed(vf.sim.fill.p_over_room, 3));
                             line += fixed(vf.sim.fill.p_over_rim, 3);
                             line += '\n';
@@ -333,23 +324,6 @@ bool run_sweep(const std::vector<const Menu *> &menus,
                             else
                             {
                                 ++totals.legacy_over;
-                            }
-
-                            if (ad.occupancy() > 1.0)
-                            {
-                                ++totals.adaptive_over_bowl;
-                            }
-                            if (ad.status == AdaptiveStatus::StillOver)
-                            {
-                                ++totals.adaptive_over;
-                            }
-                            else if (ad.status == AdaptiveStatus::Underfilled)
-                            {
-                                ++totals.adaptive_short;
-                            }
-                            else
-                            {
-                                ++totals.adaptive_ok;
                             }
 
                             switch (vf.status)

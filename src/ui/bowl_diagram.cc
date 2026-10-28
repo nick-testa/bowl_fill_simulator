@@ -335,7 +335,7 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     // A band between the 10th and 90th percentile fill levels, across the bowl. Above
     // the rim it is drawn rim-wide, which is close enough to say "this much over".
     // Its edges run out of the bowl to a bracket on the right, labelled.
-    if (result_.fill.valid && result_.fill.sd_oz > 0) {
+    if (!limit_oz_ && result_.fill.valid && result_.fill.sd_oz > 0) {
         const double y_lo = y_at_oz(std::max(0.0, result_.fill.p10_oz));
         const double y_hi = std::max(kMargin, y_at_oz(result_.fill.p90_oz));
         if (y_lo > y_hi) {
@@ -363,6 +363,17 @@ void BowlDiagram::paintEvent(QPaintEvent *)
             p.drawText(QRectF(bx + 4, mid - 9, gut.right, 18), Qt::AlignLeft | Qt::AlignVCenter,
                        "80%");
         }
+    }
+
+    // ---- the most the food may fill, where one is set: in the range's place ----
+    if (limit_oz_) {
+        const double y = y_at_oz(*limit_oz_);
+        const double bx = cx + rim_hw + 10;
+        p.setPen(QPen(pal.accent, 1.6, Qt::DashLine));
+        p.drawLine(QPointF(cx - half_width_at(y), y), QPointF(bx, y));
+        p.setFont(label_font);
+        p.setPen(pal.accent);
+        p.drawText(QRectF(bx + 4, y - 9, gut.right, 18), Qt::AlignLeft | Qt::AlignVCenter, "max");
     }
 
     // ---- bowl outline, over the fill --------------------------------------
@@ -441,18 +452,23 @@ void BowlDiagram::paintEvent(QPaintEvent *)
                QFontMetricsF(foot_note_font).elidedText(note, Qt::ElideRight, width() - 4));
 }
 
-std::vector<QColor> BowlDiagram::item_colours() const
+void BowlDiagram::set_limit(std::optional<double> limit_oz)
 {
-    std::vector<QColor> out(result_.items.size());
-    if (result_.frames.empty()) return out;
+    limit_oz_ = limit_oz;
+    update();
+}
+
+std::vector<QColor> band_colours(const std::vector<BowlItem> &items, const std::vector<double> &oz)
+{
+    std::vector<QColor> out(items.size());
     // Each band takes its food's colour. Two neighbours that would read as one (two
     // greens, two off-whites) are pulled apart in lightness, alternating so a run of
     // similar foods stays distinguishable.
     QColor previous;
     bool lifted = false;
-    for (size_t i = 0; i < result_.items.size(); ++i) {
-        if (result_.last().per_item_oz[i] <= 0.005) continue;
-        const BowlItem &it = result_.items[i];
+    for (size_t i = 0; i < items.size() && i < oz.size(); ++i) {
+        if (oz[i] <= 0.005) continue;
+        const BowlItem &it = items[i];
         QColor c = theme::food_colour(qs(it.name), static_cast<int>(it.kind));
         if (previous.isValid()) {
             const double dr = c.redF() - previous.redF(), dg = c.greenF() - previous.greenF(),
@@ -466,6 +482,12 @@ std::vector<QColor> BowlDiagram::item_colours() const
         previous = c;
     }
     return out;
+}
+
+std::vector<QColor> BowlDiagram::item_colours() const
+{
+    if (result_.frames.empty()) return std::vector<QColor>(result_.items.size());
+    return band_colours(result_.items, result_.last().per_item_oz);
 }
 
 int BowlDiagram::heightForWidth(int w) const
