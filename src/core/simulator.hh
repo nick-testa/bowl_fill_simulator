@@ -126,8 +126,8 @@ struct SauceCups
 ///
 /// Smearing food (rice, greens, most toppings) flows into whatever space there is, so
 /// for it only volume matters. Two things do not flow: rigid sauce cups and chunky
-/// pieces. Each claims height below the lid: a pressed-in cup displaces the food
-/// round it, and a chunk standing proud of the surface needs the lid to clear it.
+/// pieces. A pressed-in cup takes its whole volume out of the food's room, and a chunk
+/// standing proud of the surface needs the lid to clear it.
 ///
 /// Measured 2026-10-12: the bowl is 46 mm deep inside (51 mm outside), 161 mm across
 /// the bottom and 181 mm across the rim, which holds 1058 ml to the rim. The lid's
@@ -161,18 +161,20 @@ struct BowlGeometry
         return depth_mm + std::max(0.0, lid_headroom_mm);
     }
 
-    /// Pressed in, the robot pushes each cup down and the food flows round it, so a
-    /// cup costs only what it displaces. Resting, cups sit on the food as dispensed,
-    /// so the whole surface must stay a cup height below the lid.
+    /// Pressed in, the lidder pushes each cup down into the food, and the cup takes its
+    /// whole volume (SauceCups::cup_ml): cups land tilted, sideways or upside down, so
+    /// none of a cup can be counted as standing clear above the food (lid failures,
+    /// 2026-11). Resting, cups sit on the food as dispensed, so the whole surface must
+    /// stay a cup height below the lid.
     bool cups_pressed = true;
     /// The cup is a frustum, wide at the lid and narrow at the base. The diameters
-    /// only matter when cups are pressed in. Measured 2026-10-12.
+    /// only draw the cups; its volume is SauceCups::cup_ml. Measured 2026-10-12.
     double cup_height_mm = 30.0;        ///< lidded
     double cup_diameter_mm = 65.0;      ///< across the lid
     double cup_base_diameter_mm = 45.0; ///< across the base
 
-    /// Volume of the bottom `height_mm` of a cup, in mm³: what a pressed-in cup
-    /// displaces when the food surface sits that far above its base.
+    /// Volume of the bottom `height_mm` of a cup, in mm³. The whole cup works out to
+    /// 72 ml, which bears out the 70 ml SauceCups::cup_ml.
     double cup_volume_below_mm3(double height_mm) const;
 
     /// How much of a chunk's height stands above the smeared surface around it.
@@ -194,15 +196,15 @@ struct BowlGeometry
 
 /// Space left for food, in oz. With geometry off this is the capacity less the cups'
 /// contents. With it on, food may rise to the fill line the capacity reaches, unless
-/// the tallest chunk or the cups need it lower to clear the lid, less what pressed-in
-/// cups displace.
+/// the tallest chunk or the cups need it lower to clear the lid, less pressed-in cups'
+/// whole volume.
 double food_capacity_oz(double bowl_capacity_oz,
                         const SauceCups &sauce,
                         const BowlGeometry &geometry,
                         double chunk_height_mm);
 
 /// Food that brings the surface to the rim, in oz: the bowl to its rim less the cups
-/// (what pressed-in cups displace with geometry on, their contents with it off).
+/// (their whole volume, pressed in or with geometry off; nothing, resting on top).
 double rim_food_oz(const SauceCups &sauce, const BowlGeometry &geometry);
 
 /// Height of the food's surface above the floor, in mm, with `food_oz` in the bowl:
@@ -434,7 +436,7 @@ constexpr double kFlatToppingRate = 4.5;
 enum class CurveSource
 {
     Own,
-    Group,     ///< its pool group's typical curve, from the fitted curves
+    Group, ///< its pool group's typical curve, from the fitted curves
     Family,
     Composite,
     Flat

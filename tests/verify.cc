@@ -698,8 +698,9 @@ int main()
         // the lid, 45 mm at the base.
         BowlGeometry g;
         g.enabled = true;
-        SauceCups none, two;
+        SauceCups none, one, two;
         none.cups = 0;
+        one.cups = 1;
         two.cups = 2;
         const double kOz = 29.5735295625;
         // Bottom `a` mm of a frustum that widens from radius r0 by `grow` over `h`.
@@ -708,7 +709,6 @@ int main()
             return M_PI * a / 3.0 * (r0 * r0 + r0 * r1 + r1 * r1);
         };
         auto bowl_mm3 = [&](double a) { return frustum(80.5, 10.0, 46.0, a); };
-        auto cup_mm3 = [&](double a) { return frustum(22.5, 10.0, 30.0, a); };
 
         expect_near("a whole cup is 72 ml, near the camera's 70",
                     g.cup_volume_below_mm3(30.0) / 1000.0, 72.06, 0.01);
@@ -726,11 +726,13 @@ int main()
 
         expect_near("no cups, no chunks: the fill line", food_capacity_oz(32, none, g, 0),
                     32.0, 1e-6);
-        // Pressed cups have their tops at the lid (51 mm), so their bases sit at 21 mm
-        // and the fill line covers the bottom 20.6 mm of each.
-        const double pressed = 32.0 - 2 * cup_mm3(fill_mm - 21.0) / 1000.0 / kOz;
-        expect_near("pressed cups cost what they displace", food_capacity_oz(32, two, g, 0),
+        // Pressed cups take their whole 70 ml each, not just the part below the surface:
+        // they land tilted or upside down and do not stand clear above the food.
+        const double pressed = 32.0 - 2 * 70.0 / kOz;
+        expect_near("pressed cups cost their whole volume", food_capacity_oz(32, two, g, 0),
                     pressed, 1e-6);
+        expect_near("each cup costs the same", food_capacity_oz(32, one, g, 0),
+                    32.0 - 70.0 / kOz, 1e-6);
         BowlGeometry resting = g;
         resting.cups_pressed = false;
         expect_near("resting cups hold the whole surface a cup below the lid",
@@ -738,7 +740,7 @@ int main()
 
         // A 20 mm protein standing half proud needs the surface at 41 mm, under the
         // fill line; a 10 mm one needs it at 46 mm, which the fill line already clears.
-        const double chunky = (bowl_mm3(41.0) - 2 * cup_mm3(20.0)) / 1000.0 / kOz;
+        const double chunky = (bowl_mm3(41.0) - 2 * 70e3) / 1000.0 / kOz;
         expect_near("a tall chunk lowers the surface", food_capacity_oz(32, two, g, 20), chunky,
                     1e-6);
         expect_near("a short chunk clears the lid for free", food_capacity_oz(32, two, g, 10),
@@ -811,9 +813,8 @@ int main()
                         && ml[0].roll_off_deg < 0 && ml[1].roll_off_deg == 12
                         && std::fabs(ml[1].volume_mm3 - 10.0 * 29.5735295625 * 1000) < 1e-6);
 
-        expect_near("the rim, less what pressed cups displace there",
-                    rim_food_oz(two, g), (bowl_mm3(46.0) - 2 * cup_mm3(25.0)) / 1000.0 / kOz,
-                    1e-6);
+        expect_near("the rim, less the pressed cups' whole volume", rim_food_oz(two, g),
+                    (bowl_mm3(46.0) - 2 * 70e3) / 1000.0 / kOz, 1e-6);
 
 
         BowlGeometry off;

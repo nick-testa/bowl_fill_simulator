@@ -336,7 +336,9 @@ report both *food fill* and *with sauce cups*.
 The 32 oz *functional fill* is a fill line, not the rim: 946 ml reaches 41.6 mm,
 4.4 mm below it. With *Judge fit by height* on, food may rise to that line unless a
 chunk standing proud or a resting cup would then touch the lid; pressed-in cups
-(tops at the lid) take away what they displace below the surface. The overfill odds
+take away their whole volume. (They once took only what they displaced below the
+surface, with their tops at the lid, but cups land tilted, sideways or upside down and
+the lidder cannot push them upright: lid failures, 2026-11.) The overfill odds
 are judged against both the food room and the real rim.
 
 **COGS is reported, never solved for.** Prices come from

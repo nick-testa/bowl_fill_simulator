@@ -1114,8 +1114,9 @@ QWidget *MainWindow::build_settings()
         track_check(page, heights_, true);
         cups_pressed_ = make_toggle("Cups pressed in");
         cups_resting_ = make_toggle("Cups resting on top");
-        cups_pressed_->setToolTip("The robot pushes each cup down; food flows round it, so a "
-                                  "cup costs only what it displaces.");
+        cups_pressed_->setToolTip("The lidder pushes each cup down into the food, and each "
+                                  "takes its whole volume: cups land tilted or upside down, "
+                                  "so none of one stands clear above the food.");
         cups_resting_->setToolTip("Cups sit on the food as dispensed, so the whole surface "
                                   "must stay a cup height below the lid.");
         const bool pressed = prefs.value("geometry/cups_pressed", true).toBool();
@@ -1163,8 +1164,7 @@ QWidget *MainWindow::build_settings()
         cup_h_ = dim("cups/height_mm", measured.cup_height_mm, 0, 100, 1, " mm");
         cup_h_->setToolTip("Sauce cup height with its lid on (measured: 30 mm).");
         cup_d_ = dim("cups/top_diameter_mm", measured.cup_diameter_mm, 0, 150, 1, " mm");
-        cup_d_->setToolTip("Across the lid (measured: 65 mm). The cup tapers to its base, "
-                           "so a pressed-in cup displaces less than a straight column.");
+        cup_d_->setToolTip("Across the lid (measured: 65 mm). The cup tapers to its base.");
         cup_base_d_ = dim("cups/base_diameter_mm", measured.cup_base_diameter_mm, 0, 150, 1,
                           " mm");
         cup_base_d_->setToolTip("Across the base (measured: 45 mm).");
