@@ -364,7 +364,7 @@ int main()
         {cowgirl,   "Pollo Verde Asado Bowl",  125,  4.4, Verdict::Saturated},
         {siren,     "The Hungry Siren Bowl",   571, 24.8, Verdict::FitsMassBound},
         {farmstand, "Farmstand Ranch Salad",   407, 50.9, Verdict::OverAtStart},
-        // Over since the cups were measured at 70 ml each (they were taken as 50).
+        // Over since the cups were charged 70 ml or more each (they were taken as 50).
         {pita,      "The Oasis",               620, 27.9, Verdict::OverAtStart},
         {meatrice,  "Meat Rice Meat",          545, 23.1, Verdict::NoFloor},
     };
@@ -389,7 +389,7 @@ int main()
         expect_near("floor", s.floor_g, 365, 0.01);
         expect_near("final g", r.last().grams, 225, 0.6);
         expect_near("final oz", r.last().ounces, 27.8, 0.15);
-        // Two 70 ml cups leave 27.3 oz, so the ramp now runs into the volume limit.
+        // Two 100 ml cups leave 25.2 oz, so the ramp runs into the volume limit.
         expect_eq("verdict", verdict_name(r.verdict), "OverWhileRamping");
     }
 
@@ -577,7 +577,7 @@ int main()
 
         SauceCups two;
         two.cups = 2;
-        expect_near("two sauce cups in oz", two.volume_oz(), 4.734, 0.01);
+        expect_near("two sauce cups in oz", two.volume_oz(), 6.763, 0.01);
     }
 
     std::printf("\nPer-brand feasibility audit\n");
@@ -664,7 +664,7 @@ int main()
         expect_near("no cups leaves the whole bowl", none.food_capacity_oz(), 32.0, 1e-9);
         SimSettings two;
         two.sauce.cups = 2;
-        expect_near("two cups", two.food_capacity_oz(), 32.0 - 4.734, 0.01);
+        expect_near("two cups", two.food_capacity_oz(), 32.0 - 6.763, 0.01);
         SimSettings over_max;
         over_max.sauce.cups = 5;
         expect_near("cups are capped at two", over_max.food_capacity_oz(),
@@ -726,13 +726,16 @@ int main()
 
         expect_near("no cups, no chunks: the fill line", food_capacity_oz(32, none, g, 0),
                     32.0, 1e-6);
-        // Pressed cups take their whole 70 ml each, not just the part below the surface:
-        // they land tilted or upside down and do not stand clear above the food.
-        const double pressed = 32.0 - 2 * 70.0 / kOz;
-        expect_near("pressed cups cost their whole volume", food_capacity_oz(32, two, g, 0),
+        // Pressed cups take their whole charge each (SauceCups::cup_ml, 100 ml), not just
+        // the part below the surface: they land tilted or upside down and do not stand
+        // clear above the food.
+        const double cup_ml = SauceCups{}.cup_ml;
+        expect_near("a cup is charged 100 ml", cup_ml, 100.0, 1e-12);
+        const double pressed = 32.0 - 2 * cup_ml / kOz;
+        expect_near("pressed cups cost their whole charge", food_capacity_oz(32, two, g, 0),
                     pressed, 1e-6);
         expect_near("each cup costs the same", food_capacity_oz(32, one, g, 0),
-                    32.0 - 70.0 / kOz, 1e-6);
+                    32.0 - cup_ml / kOz, 1e-6);
         BowlGeometry resting = g;
         resting.cups_pressed = false;
         expect_near("resting cups hold the whole surface a cup below the lid",
@@ -740,7 +743,7 @@ int main()
 
         // A 20 mm protein standing half proud needs the surface at 41 mm, under the
         // fill line; a 10 mm one needs it at 46 mm, which the fill line already clears.
-        const double chunky = (bowl_mm3(41.0) - 2 * 70e3) / 1000.0 / kOz;
+        const double chunky = (bowl_mm3(41.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz;
         expect_near("a tall chunk lowers the surface", food_capacity_oz(32, two, g, 20), chunky,
                     1e-6);
         expect_near("a short chunk clears the lid for free", food_capacity_oz(32, two, g, 10),
@@ -814,7 +817,7 @@ int main()
                         && std::fabs(ml[1].volume_mm3 - 10.0 * 29.5735295625 * 1000) < 1e-6);
 
         expect_near("the rim, less the pressed cups' whole volume", rim_food_oz(two, g),
-                    (bowl_mm3(46.0) - 2 * 70e3) / 1000.0 / kOz, 1e-6);
+                    (bowl_mm3(46.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz, 1e-6);
 
 
         BowlGeometry off;

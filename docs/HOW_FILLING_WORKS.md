@@ -154,8 +154,8 @@ measured at all takes its group's typical curve.
 
 The real bowl, lid and sauce cups were measured. The bowl holds about **1058 ml**
 to the rim; the "32 oz" everyone talks about is a **fill line** about 4 mm below
-the rim. Sauce cups sit in the food and take up roughly 45–70 ml each depending on
-how deep they are pressed. The app takes all of this off the room available for
+the rim. Sauce cups land on top of the food, often tilted or on edge, so each is charged
+100 ml: the cup's own ~70 ml plus 30 ml held back so the lid can press it down. The app takes all of this off the room available for
 food.
 
 ### Mounding

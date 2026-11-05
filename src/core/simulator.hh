@@ -113,10 +113,12 @@ struct SauceCups
 
     /// Two is the common order: one comes with the bowl, the second is an upcharge.
     int cups = 2;
-    /// Space one lidded cup takes, as volume-vision reads it (measured 2026-10-12: ~70
-    /// ml; the cup's own frustum, 30 mm tall, 65 mm across the lid and 45 mm across
-    /// the base, works out to 72 ml).
-    double cup_ml = 70.0;
+    /// Room one cup is charged in the bowl. A lidded cup measures ~70 ml (2026-10-12:
+    /// volume-vision reads ~70 ml, and its frustum, 30 mm tall, 65 mm across the lid
+    /// and 45 mm across the base, works out to 72 ml). It is charged 100 ml: cups land
+    /// on top of the food, tilted or on edge, and lid failures rise with cup count
+    /// (2026-11), so each cup also reserves 30 ml. A trial value, not a fitted one.
+    double cup_ml = 100.0;
 
     double volume_oz() const;
 };
@@ -174,7 +176,7 @@ struct BowlGeometry
     double cup_base_diameter_mm = 45.0; ///< across the base
 
     /// Volume of the bottom `height_mm` of a cup, in mm³. The whole cup works out to
-    /// 72 ml, which bears out the 70 ml SauceCups::cup_ml.
+    /// 72 ml, which bears out the ~70 ml volume-vision reads.
     double cup_volume_below_mm3(double height_mm) const;
 
     /// How much of a chunk's height stands above the smeared surface around it.

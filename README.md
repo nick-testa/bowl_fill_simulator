@@ -321,7 +321,7 @@ cleared. It has no volume term at all.
 The food room is the functional fill less what the sauce cups and any tall chunks
 take, so two cups lower what food may fill, rather than eating into the bowl's headroom.
 
-**Sauce cups** occupy real space in the bowl — up to two at 70 ml each (measured) — so the tiles
+**Sauce cups** occupy real space in the bowl — up to two, each charged 100 ml (a measured ~70 ml cup plus a 30 ml reserve, since cups land tilted on top of the food) — so the tiles
 report both *food fill* and *with sauce cups*.
 
 **The bowl, lid and cups were measured on 2026-10-12** and are the defaults under
