@@ -329,12 +329,12 @@ report both *food fill* and *with sauce cups*.
 
 | | measured | works out to |
 | --- | --- | --- |
-| bowl | 46 mm deep inside (51 mm outside), 161 mm across the floor, 181 mm at the rim | 1058 ml to the rim |
+| bowl | 45 mm deep inside, 160 mm across the floor, 180 mm at the rim | 1023 ml to the rim |
 | lid | inside rises ~5 mm over a ~160 mm centre | ~100 ml above the rim |
 | sauce cup | 30 mm tall lidded, 65 mm across the lid, 45 mm at the base | 72 ml (camera read ~70) |
 
-The 32 oz *functional fill* is a fill line, not the rim: 946 ml reaches 41.6 mm,
-4.4 mm below it. With *Judge fit by height* on, food may rise to that line unless a
+The 32 oz *functional fill* is a fill line, not the rim: 946 ml reaches 42.0 mm,
+3.0 mm below it. With *Judge fit by height* on, food may rise to that line unless a
 chunk standing proud or a resting cup would then touch the lid; pressed-in cups
 take away their whole volume. (They once took only what they displaced below the
 surface, with their tops at the lid, but cups land tilted, sideways or upside down and

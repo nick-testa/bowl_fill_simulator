@@ -1143,12 +1143,12 @@ QWidget *MainWindow::build_settings()
 
         v->addWidget(section_label("Bowl"));
         depth_ = dim("bowl/depth_mm", measured.depth_mm, 0, 200, 1, " mm");
-        depth_->setToolTip("Inside depth, floor to rim (measured: 46 mm; 51 mm outside).");
+        depth_->setToolTip("Inside depth, floor to rim (measured: 45 mm).");
         bowl_top_d_ = dim("bowl/top_diameter_mm", measured.top_diameter_mm, 0, 400, 1, " mm");
-        bowl_top_d_->setToolTip("Inside diameter at the rim (measured: 181 mm).");
+        bowl_top_d_->setToolTip("Inside diameter at the rim (measured: 180 mm).");
         bowl_bottom_d_ = dim("bowl/bottom_diameter_mm", measured.bottom_diameter_mm, 0, 400, 1,
                              " mm");
-        bowl_bottom_d_->setToolTip("Inside diameter at the floor (measured: 161 mm).");
+        bowl_bottom_d_->setToolTip("Inside diameter at the floor (measured: 160 mm).");
         v->addLayout(field_row({field("Depth", depth_), field("Rim diameter", bowl_top_d_),
                                 field("Floor diameter", bowl_bottom_d_)}));
         v->addWidget(section_label("Lid"));

@@ -131,18 +131,18 @@ struct SauceCups
 /// pieces. A pressed-in cup takes its whole volume out of the food's room, and a chunk
 /// standing proud of the surface needs the lid to clear it.
 ///
-/// Measured 2026-10-12: the bowl is 46 mm deep inside (51 mm outside), 161 mm across
-/// the bottom and 181 mm across the rim, which holds 1058 ml to the rim. The lid's
-/// inside rises 5 mm over a 160 mm plateau in its centre, about 100 ml more. The
-/// functional fill (the bowl capacity, 32 oz) is a fill line below the rim: 946 ml
-/// reaches 41.6 mm.
+/// Measured 2026-10-12 and remeasured 2026-11-05, when the bowl's dimensions came out
+/// to round numbers: it is 45 mm deep inside, 160 mm across the bottom and 180 mm
+/// across the rim, which holds 1023 ml to the rim. The lid's inside rises 5 mm over a
+/// 160 mm plateau in its centre, about 100 ml more. The functional fill (the bowl
+/// capacity, 32 oz) is a fill line below the rim: 946 ml reaches 42.0 mm.
 ///
 struct BowlGeometry
 {
     bool enabled = false;                   ///< off: the volume-only model, cups at their contents
-    double depth_mm = 46.0;                 ///< inside, to the rim
-    double top_diameter_mm = 181.0;         ///< inside, at the rim
-    double bottom_diameter_mm = 161.0;      ///< inside, at the floor
+    double depth_mm = 45.0;                 ///< inside, to the rim
+    double top_diameter_mm = 180.0;         ///< inside, at the rim
+    double bottom_diameter_mm = 160.0;      ///< inside, at the floor
     double lid_headroom_mm = 5.0;           ///< how far the lid's centre rises over the rim
     double lid_plateau_diameter_mm = 160.0; ///< across that raised centre
 

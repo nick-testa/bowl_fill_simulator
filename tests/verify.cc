@@ -693,7 +693,7 @@ int main()
 
     std::printf("\nBowl geometry: cups and chunks by height\n");
     {
-        // The measured bowl: 46 mm deep, 161 mm across the floor and 181 mm at the rim,
+        // The measured bowl: 45 mm deep, 160 mm across the floor and 180 mm at the rim,
         // under a lid rising 5 mm over a 160 mm centre. Cups 30 mm tall, 65 mm across
         // the lid, 45 mm at the base.
         BowlGeometry g;
@@ -708,7 +708,7 @@ int main()
             const double r1 = r0 + grow * a / h;
             return M_PI * a / 3.0 * (r0 * r0 + r0 * r1 + r1 * r1);
         };
-        auto bowl_mm3 = [&](double a) { return frustum(80.5, 10.0, 46.0, a); };
+        auto bowl_mm3 = [&](double a) { return frustum(80.0, 10.0, 45.0, a); };
 
         expect_near("a whole cup is 72 ml, near the camera's 70",
                     g.cup_volume_below_mm3(30.0) / 1000.0, 72.06, 0.01);
@@ -717,12 +717,12 @@ int main()
         expect_near("a straight-sided cup is a column",
                     straight.cup_volume_below_mm3(20.0), M_PI * 32.5 * 32.5 * 20.0, 1e-6);
 
-        expect_near("the bowl holds 1058 ml to the rim", g.rim_ml(), 1057.63, 0.01);
+        expect_near("the bowl holds 1023 ml to the rim", g.rim_ml(), 1022.59, 0.01);
         expect_near("the lid's raised centre adds a 160 mm disc 5 mm deep",
-                    g.volume_below_mm3(51.0) - g.volume_below_mm3(46.0),
+                    g.volume_below_mm3(50.0) - g.volume_below_mm3(45.0),
                     M_PI * 80.0 * 80.0 * 5.0, 1e-6);
         const double fill_mm = g.height_of_mm3(32.0 * kOz * 1000.0);
-        expect_near("32 oz is a fill line 4.4 mm below the rim", fill_mm, 41.63, 0.01);
+        expect_near("32 oz is a fill line 3.0 mm below the rim", fill_mm, 41.98, 0.01);
 
         expect_near("no cups, no chunks: the fill line", food_capacity_oz(32, none, g, 0),
                     32.0, 1e-6);
@@ -739,11 +739,11 @@ int main()
         BowlGeometry resting = g;
         resting.cups_pressed = false;
         expect_near("resting cups hold the whole surface a cup below the lid",
-                    food_capacity_oz(32, two, resting, 0), bowl_mm3(21.0) / 1000.0 / kOz, 1e-6);
+                    food_capacity_oz(32, two, resting, 0), bowl_mm3(20.0) / 1000.0 / kOz, 1e-6);
 
-        // A 20 mm protein standing half proud needs the surface at 41 mm, under the
-        // fill line; a 10 mm one needs it at 46 mm, which the fill line already clears.
-        const double chunky = (bowl_mm3(41.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz;
+        // A 20 mm protein standing half proud needs the surface at 40 mm, under the
+        // fill line; a 10 mm one needs it at 45 mm, which the fill line already clears.
+        const double chunky = (bowl_mm3(40.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz;
         expect_near("a tall chunk lowers the surface", food_capacity_oz(32, two, g, 20), chunky,
                     1e-6);
         expect_near("a short chunk clears the lid for free", food_capacity_oz(32, two, g, 10),
@@ -817,7 +817,7 @@ int main()
                         && std::fabs(ml[1].volume_mm3 - 10.0 * 29.5735295625 * 1000) < 1e-6);
 
         expect_near("the rim, less the pressed cups' whole volume", rim_food_oz(two, g),
-                    (bowl_mm3(46.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz, 1e-6);
+                    (bowl_mm3(45.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz, 1e-6);
 
 
         BowlGeometry off;
