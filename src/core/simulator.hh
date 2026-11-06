@@ -120,7 +120,15 @@ struct SauceCups
     /// (2026-11), so each cup also reserves 30 ml. A trial value, not a fitted one.
     double cup_ml = 100.0;
 
+    /// What one lidded cup reads as in a bowl scan: volume-vision sees ~70 ml
+    /// (2026-10-12). Predicted scans add this, not cup_ml: the 30 ml reserve is room
+    /// planning holds back, not volume the camera sees.
+    static constexpr double kScannedCupMl = 70.0;
+
+    /// The cups' charge, in oz: cups * cup_ml.
     double volume_oz() const;
+    /// The cups as a scan reads them, in oz: cups * kScannedCupMl.
+    double scanned_volume_oz() const;
 };
 
 ///

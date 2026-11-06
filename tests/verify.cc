@@ -1014,6 +1014,9 @@ int main()
         auto ml = [&](const BowlRow &r) {
             return predicted_scan_oz(r, curves, truth) * CurveSet::kMlPerFlOz;
         };
+        // The camera reads each cup at its ~70 ml, not the 100 ml room planning charges it.
+        expect_near("a scanned cup reads 70 ml, not its planning charge",
+                    ml(row(mixed[0].items, 2)) - ml(row(mixed[0].items, 0)), 2 * SauceCups::kScannedCupMl, 1e-6);
 
         const std::string path = temp_path("bowlfill-verify-bowls.csv");
         std::ofstream out(path, std::ios::binary | std::ios::trunc);

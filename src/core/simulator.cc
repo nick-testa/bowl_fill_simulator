@@ -31,6 +31,12 @@ double SauceCups::volume_oz() const
     return std::clamp(cups, 0, kMax) * cup_ml * kOzPerMl;
 }
 
+double SauceCups::scanned_volume_oz() const
+{
+    constexpr double kOzPerMl = 1.0 / 29.5735295625;
+    return std::clamp(cups, 0, kMax) * kScannedCupMl * kOzPerMl;
+}
+
 namespace
 {
 constexpr double kMlPerOz = 29.5735295625;

@@ -102,8 +102,8 @@ FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, doubl
 
 RangeCheck check_ranges(const BowlSheet &sheet, const CurveSet &curves, double load_transfer);
 
-/// Predicted scan volume of one row: food, compressed at `load_transfer`, plus the
-/// cups' contents when cups were in for the scan.
+/// Predicted scan volume of one row: food, compressed at `load_transfer`, plus each
+/// cup as the camera reads it (SauceCups::kScannedCupMl) when cups were in for the scan.
 double predicted_scan_oz(const BowlRow &row,
                          const CurveSet &curves,
                          double load_transfer,

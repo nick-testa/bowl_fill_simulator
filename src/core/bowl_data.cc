@@ -346,7 +346,7 @@ double predicted_scan_oz(const BowlRow &row,
     cups.cups = row.cups;
     return scan_frame(row, curves, load_transfer, flat_protein_rate, flat_topping_rate, flat_rate, nullptr)
                .ounces +
-           cups.volume_oz();
+           cups.scanned_volume_oz();
 }
 
 FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, double load_transfer)
@@ -357,9 +357,9 @@ FillUncertainty predicted_scan(const BowlRow &row, const CurveSet &curves, doubl
     FillUncertainty u = fill_uncertainty(items, f.per_item_oz, 0, 0, nullptr);
     SauceCups cups;
     cups.cups = row.cups;
-    u.median_oz += cups.volume_oz();
-    u.p10_oz += cups.volume_oz();
-    u.p90_oz += cups.volume_oz();
+    u.median_oz += cups.scanned_volume_oz();
+    u.p10_oz += cups.scanned_volume_oz();
+    u.p90_oz += cups.scanned_volume_oz();
     return u;
 }
 
