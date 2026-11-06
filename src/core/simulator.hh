@@ -396,7 +396,10 @@ std::vector<double> grams_for_volumes(const std::vector<BowlItem> &items,
 ///   - a bowl over as written has its bases and toppings stepped down, a step per
 ///     pass, until it fits. Proteins are never stepped down, and nothing goes below
 ///     `min_share` of its recipe portion. An ingredient with no step_g is fixed.
-/// "Fits" means within `fit_share` of the food room.
+/// "Fits" means within `fit_share` of the food room. Then, as lab37 dispenses, each
+/// changed portion goes to the nearest 5 g within its bounds, or every changed portion
+/// rounds down where the nearest would overfill a plan that fits; the final grams and
+/// the last frame are that dispensed bowl.
 ///
 struct VolumeFillSettings
 {
@@ -418,7 +421,8 @@ struct VolumeFillResult
 {
     SimResult sim; ///< frames run as-written, then each pass taken
     VolumeFillStatus status = VolumeFillStatus::FilledToLimit;
-    double limit_oz = 0.0; ///< the volume it had to fit
+    double limit_oz = 0.0;   ///< the volume it had to fit
+    double planned_oz = 0.0; ///< the bowl at the last pass, before rounding to 5 g
     int passes_up = 0, passes_down = 0;
 };
 

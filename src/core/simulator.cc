@@ -546,6 +546,59 @@ std::string to_string(VolumeFillStatus s)
     return {};
 }
 
+namespace
+{
+
+/// The robot dispenses on a 5 g grid, as lab37's Volume Fill rounds (kRoundToG).
+constexpr double kDispenseGridG = 5.0;
+
+double round_to_grid(double g)
+{
+    return std::round(g / kDispenseGridG) * kDispenseGridG;
+}
+
+double floor_to_grid(double g)
+{
+    return std::floor(g / kDispenseGridG + 1e-9) * kDispenseGridG;
+}
+
+double ceil_to_grid(double g)
+{
+    return std::ceil(g / kDispenseGridG - 1e-9) * kDispenseGridG;
+}
+
+/// What is dispensed for a planned portion, as lab37's dispensed_g. Unchanged, it is as
+/// ordered. Changed, it is on the 5 g grid (the nearest step, or with `down` the step at
+/// or below the plan), kept between its start and max when stepped up, or between its
+/// floor and start when stepped down. Where no 5 g step lies within those bounds, a
+/// portion stepped up stays as ordered and one stepped down takes the lowest step above
+/// its floor.
+double dispensed_g(const BowlItem &item, double planned, double floor_g, bool down)
+{
+    const double start = item.start_g;
+    if (planned == start)
+    {
+        return start;
+    }
+    const bool up = planned > start;
+    const double lowest = up ? start : floor_g;
+    double highest = up ? (item.max_g > 0 ? item.max_g : planned) : start;
+    if (down)
+    {
+        highest = std::min(highest, planned);
+    }
+    const double g = std::clamp(down ? floor_to_grid(planned) : round_to_grid(planned),
+                                ceil_to_grid(lowest),
+                                std::max(ceil_to_grid(lowest), floor_to_grid(highest)));
+    if (g >= lowest - 1e-9 && g <= highest + 1e-9)
+    {
+        return g;
+    }
+    return up ? start : std::min(ceil_to_grid(lowest), start);
+}
+
+} // namespace
+
 VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &settings, const VolumeFillSettings &vf)
 {
     VolumeFillResult out;
@@ -629,9 +682,43 @@ VolumeFillResult volume_fill(std::vector<BowlItem> items, const SimSettings &set
         }
     }
 
+    // What the robot dispenses, as lab37 settles a plan: each changed portion to the
+    // nearest 5 g within its bounds; where that would overfill a bowl whose plan fits,
+    // each changed portion rounds down instead. The last frame becomes that bowl.
+    std::vector<double> floor_g(items.size());
     for (size_t i = 0; i < items.size(); ++i)
     {
-        items[i].final_g = weight[i];
+        floor_g[i] = items[i].kind == Kind::Protein ? items[i].start_g
+                                                    : items[i].start_g * std::clamp(vf.min_share, 0.0, 1.0);
+    }
+    auto settle = [&](bool down) {
+        std::vector<double> g(items.size());
+        for (size_t i = 0; i < items.size(); ++i)
+        {
+            g[i] = dispensed_g(items[i], weight[i], floor_g[i], down);
+        }
+        return g;
+    };
+    std::vector<double> dispensed = settle(false);
+    Frame settled = bowl_frame(items, dispensed, settings);
+    if (!fits(settled) && fits(result.frames.back()))
+    {
+        dispensed = settle(true);
+        settled = bowl_frame(items, dispensed, settings);
+    }
+    out.planned_oz = result.frames.back().ounces;
+    if (dispensed != weight)
+    {
+        result.frames.back() = std::move(settled);
+    }
+    if (!fits(result.frames.back()))
+    {
+        out.status = VolumeFillStatus::StillOver;
+    }
+
+    for (size_t i = 0; i < items.size(); ++i)
+    {
+        items[i].final_g = dispensed[i];
     }
     result.items = std::move(items);
     result.passes = static_cast<int>(result.frames.size()) - 1;

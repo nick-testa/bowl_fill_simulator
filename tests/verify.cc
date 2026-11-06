@@ -1577,6 +1577,52 @@ int main()
         expect_true("step CSV is rectangular", rectangular);
     }
 
+    std::printf("\nVolume Fill: dispensed on the 5 g grid, as lab37 rounds\n");
+    {
+        // 1 oz per 25 g, so 800 g is a 32 oz food room.
+        auto item = [](Kind kind, double start, double step, double max) {
+            BowlItem it;
+            it.kind = kind;
+            it.start_g = start;
+            it.step_g = step;
+            it.max_g = max;
+            it.flat_oz_per_100g = 4.0;
+            return it;
+        };
+        SimSettings s;
+        s.bowl_capacity_oz = 32.0;
+        s.sauce.cups = 0;
+        VolumeFillSettings vf;
+
+        // 852 g is over 800: 3.7 g a pass (3.2 base, 0.5 topping) takes 15 passes to fit,
+        // 796.5 g with the base at 452 and the topping at 192.5. Nearest 5 g gives 450 and
+        // 195, 797 g, which still fits. The protein, never stepped, keeps its off-grid 152 g.
+        const std::vector<BowlItem> over = {item(Kind::Base, 500, 3.2, 600), item(Kind::Protein, 152, 0.5, 160),
+                                            item(Kind::Topping, 200, 0.5, 250)};
+        const VolumeFillResult nearest = volume_fill(over, s, vf);
+        expect_near("a stepped-down base goes to the nearest 5 g", nearest.sim.items[0].final_g, 450, 1e-9);
+        expect_near("so does a topping", nearest.sim.items[2].final_g, 195, 1e-9);
+        expect_near("an unchanged portion stays as ordered", nearest.sim.items[1].final_g, 152, 1e-9);
+        expect_near("the plan before rounding is kept", nearest.planned_oz * 25, 796.5, 1e-6);
+        expect_near("the last frame is the bowl as dispensed", nearest.sim.last().grams, 797, 1e-9);
+
+        // With 796.6 g to fit, the same 796.5 g plan fits but nearest 5 g (797 g) would
+        // overfill it, so each changed portion rounds down instead: 450 and 190, 792 g.
+        VolumeFillSettings snug;
+        snug.fit_share = 796.6 / 800.0;
+        const VolumeFillResult down = volume_fill(over, s, snug);
+        expect_eq("rounding down keeps it fitting", to_string(down.status), "stepped down to fit");
+        expect_true("within its limit", down.sim.last().ounces <= down.limit_oz + 1e-9);
+        expect_near("the base rounds down", down.sim.items[0].final_g, 450, 1e-9);
+        expect_near("and so does the topping, which nearest 5 g would round up", down.sim.items[2].final_g, 190, 1e-9);
+
+        // Topped up, a portion is never rounded past its max: 403 g at most rounds down to 400.
+        const VolumeFillResult up =
+            volume_fill({item(Kind::Base, 397, 3.2, 403), item(Kind::Protein, 150, 0, 150)}, s, vf);
+        expect_true("a stepped-up portion stays within its max", up.sim.items[0].final_g <= 403);
+        expect_near("on the grid", std::fmod(up.sim.items[0].final_g, 5.0), 0, 1e-9);
+    }
+
     std::printf("\nVolume Fill: step_g passes against the bowl\n");
     {
         // Flat-rate items keep the arithmetic in view: 1 oz per 25 g.

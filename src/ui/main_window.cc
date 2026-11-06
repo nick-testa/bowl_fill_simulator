@@ -3304,9 +3304,9 @@ void MainWindow::recompute()
             if (it.start_g - it.final_g > 0.05)
                 taken << QString("%1 \u2212%2 g").arg(qs(it.name))
                              .arg(QString::number(it.start_g - it.final_g, 'g', 3));
-        foot_note_->setText(QString("Stepped down %1 pass%2 by each ingredient's step_g: %3. "
-                                    "Proteins are never stepped down; nothing goes below %4% "
-                                    "of its portion.")
+        foot_note_->setText(QString("Stepped down %1 pass%2 by each ingredient's step_g, then "
+                                    "to the 5 g the robot dispenses: %3. Proteins are never "
+                                    "stepped down; nothing goes below %4% of its portion.")
                                 .arg(vfr.passes_down).arg(vfr.passes_down == 1 ? "" : "es")
                                 .arg(taken.isEmpty() ? QString("nothing") : taken.join(", "))
                                 .arg(std::round(min_pct_->value())));
