@@ -71,8 +71,8 @@ struct BowlItem
     double p = 1.0;
     double flat_oz_per_100g = 4.5;
 
-    /// Height of one piece, for chunky ingredients that stand proud of the surface
-    /// rather than smearing into it. 0 means the ingredient smears.
+    /// Height of one piece, for chunky ingredients whose pieces stick up above the
+    /// surface rather than smearing into it. 0 means the ingredient smears.
     double piece_height_mm = 0.0;
     /// How steeply it piles when mounding is on; below 0 takes the bowl's default.
     double mound_slope_deg = -1.0;
@@ -136,8 +136,8 @@ struct SauceCups
 ///
 /// Smearing food (rice, greens, most toppings) flows into whatever space there is, so
 /// for it only volume matters. Two things do not flow: rigid sauce cups and chunky
-/// pieces. A pressed-in cup takes its whole volume out of the food's room, and a chunk
-/// standing proud of the surface needs the lid to clear it.
+/// pieces. A cup takes its whole charge out of the food's room, and the part of a piece
+/// standing above the surface needs the lid to clear it.
 ///
 /// Measured 2026-10-12 and remeasured 2026-11-05, when the bowl's dimensions came out
 /// to round numbers: it is 45 mm deep inside, 160 mm across the bottom and 180 mm
@@ -171,14 +171,13 @@ struct BowlGeometry
         return depth_mm + std::max(0.0, lid_headroom_mm);
     }
 
-    /// Pressed in, the lidder pushes each cup down into the food, and the cup takes its
-    /// whole volume (SauceCups::cup_ml): cups land tilted, sideways or upside down, so
-    /// none of a cup can be counted as standing clear above the food (lid failures,
-    /// 2026-11). Resting, cups sit on the food as dispensed, so the whole surface must
-    /// stay a cup height below the lid.
-    bool cups_pressed = true;
-    /// The cup is a frustum, wide at the lid and narrow at the base. The diameters
-    /// only draw the cups; its volume is SauceCups::cup_ml. Measured 2026-10-12.
+    /// Each sauce cup takes its whole charge (SauceCups::cup_ml) below the food's
+    /// surface: cups land tilted, sideways or upside down, so none of a cup can be
+    /// counted as standing clear above the food (lid failures, 2026-11). As in lab37's
+    /// Volume Fill, cups are always pressed in.
+    ///
+    /// The cup is a frustum, wide at the lid and narrow at the base. Its dimensions
+    /// only draw the cups; the room it takes is SauceCups::cup_ml. Measured 2026-10-12.
     double cup_height_mm = 30.0;        ///< lidded
     double cup_diameter_mm = 65.0;      ///< across the lid
     double cup_base_diameter_mm = 45.0; ///< across the base
@@ -187,8 +186,13 @@ struct BowlGeometry
     /// 72 ml, which bears out the ~70 ml volume-vision reads.
     double cup_volume_below_mm3(double height_mm) const;
 
-    /// How much of a chunk's height stands above the smeared surface around it.
-    double chunk_proud = 0.5;
+    /// Placeholder, until pieces are measured; the UI flags this value. lab37's compiled
+    /// default (volume_fill_curves.cc) is the same 0.33.
+    static constexpr double kPlaceholderPieceAboveFoodShare = 0.33;
+
+    /// Share of a piece's height (BowlItem::piece_height_mm) that stands above the food
+    /// around it and needs the lid to clear it. Named as in lab37 and its Catalog.
+    double piece_above_food_share = kPlaceholderPieceAboveFoodShare;
 
     /// Mounding: food dropped at the centre piles up rather than levelling out. With
     /// it on, the surface is a cone of this slope (the food's angle of repose) centred
@@ -200,25 +204,23 @@ struct BowlGeometry
     double mound_slope_deg = 25.0; ///< the default; ingredients may set their own
     static constexpr double kPlaceholderMoundSlope = 25.0;
 
-    /// Placeholder, until chunks are measured; the UI flags this value.
-    static constexpr double kPlaceholderChunkProud = 0.5;
 };
 
 /// Space left for food, in oz. With geometry off this is the capacity less the cups'
-/// contents. With it on, food may rise to the fill line the capacity reaches, unless
-/// the tallest chunk or the cups need it lower to clear the lid, less pressed-in cups'
-/// whole volume.
+/// charge. With it on, food may rise to the fill line the capacity reaches, unless the
+/// tallest piece standing above the food needs it lower to clear the lid, less each
+/// cup's whole charge.
 double food_capacity_oz(double bowl_capacity_oz,
                         const SauceCups &sauce,
                         const BowlGeometry &geometry,
                         double chunk_height_mm);
 
-/// Food that brings the surface to the rim, in oz: the bowl to its rim less the cups
-/// (their whole volume, pressed in or with geometry off; nothing, resting on top).
+/// Food that brings the surface to the rim, in oz: the bowl to its rim less the cups'
+/// whole charge.
 double rim_food_oz(const SauceCups &sauce, const BowlGeometry &geometry);
 
 /// Height of the food's surface above the floor, in mm, with `food_oz` in the bowl:
-/// through the taper, around pressed-in cups (with geometry on), and into the lid's
+/// through the taper, around the cups (with geometry on), and into the lid's
 /// raised centre. Past the lid it carries on as if the lid were not there, so an
 /// overfull bowl still has a height to draw.
 double food_surface_mm(const SauceCups &sauce, const BowlGeometry &geometry, double food_oz);

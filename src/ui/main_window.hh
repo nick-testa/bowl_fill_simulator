@@ -308,9 +308,6 @@ private:
     RollOffAngles roll_off_;           ///< data/ingredient_rolloff.csv
     IngredientColours colours_;        ///< data/ingredient_colours.csv
     QCheckBox *heights_ = nullptr;     ///< judge fit by height under the lid
-    QPushButton *cups_pressed_ = nullptr;
-    QPushButton *cups_resting_ = nullptr;
-    QWidget *cups_segment_ = nullptr;
     QDoubleSpinBox *depth_ = nullptr;
     QDoubleSpinBox *headroom_ = nullptr;
     QDoubleSpinBox *bowl_top_d_ = nullptr;
@@ -319,7 +316,8 @@ private:
     QDoubleSpinBox *cup_h_ = nullptr;
     QDoubleSpinBox *cup_d_ = nullptr;
     QDoubleSpinBox *cup_base_d_ = nullptr;
-    QDoubleSpinBox *chunk_proud_ = nullptr;
+    QDoubleSpinBox *cup_charge_ = nullptr;
+    QDoubleSpinBox *piece_share_ = nullptr;
     QDoubleSpinBox *mound_slope_ = nullptr;
     QCheckBox *mound_ = nullptr;
     QLabel *fill_note_ = nullptr;             ///< median, 80% range and overfill odds

@@ -698,6 +698,10 @@ int main()
         // the lid, 45 mm at the base.
         BowlGeometry g;
         g.enabled = true;
+        // lab37's compiled share by default; these checks use half, for round numbers.
+        expect_near("pieces stand a third above the food by default, as in lab37",
+                    g.piece_above_food_share, 0.33, 1e-12);
+        g.piece_above_food_share = 0.5;
         SauceCups none, one, two;
         none.cups = 0;
         one.cups = 1;
@@ -736,13 +740,12 @@ int main()
                     pressed, 1e-6);
         expect_near("each cup costs the same", food_capacity_oz(32, one, g, 0),
                     32.0 - cup_ml / kOz, 1e-6);
-        BowlGeometry resting = g;
-        resting.cups_pressed = false;
-        expect_near("resting cups hold the whole surface a cup below the lid",
-                    food_capacity_oz(32, two, resting, 0), bowl_mm3(20.0) / 1000.0 / kOz, 1e-6);
-
-        // A 20 mm protein standing half proud needs the surface at 40 mm, under the
-        // fill line; a 10 mm one needs it at 45 mm, which the fill line already clears.
+        SauceCups smaller = two;
+        smaller.cup_ml = 70;
+        expect_near("a set charge is what each cup takes", food_capacity_oz(32, smaller, g, 0),
+                    32.0 - 2 * 70.0 / kOz, 1e-6);
+        // A 20 mm protein with half its height above the food needs the surface at 40 mm,
+        // under the fill line; a 10 mm one needs it at 45 mm, which the fill line clears.
         const double chunky = (bowl_mm3(40.0) - 2 * cup_ml * 1000.0) / 1000.0 / kOz;
         expect_near("a tall chunk lowers the surface", food_capacity_oz(32, two, g, 20), chunky,
                     1e-6);

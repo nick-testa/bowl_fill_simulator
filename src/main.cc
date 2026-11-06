@@ -64,13 +64,22 @@ bowlfill::BowlGeometry configured_geometry(bool volume_only)
     g.lid_headroom_mm = prefs.value("lid/headroom_mm", g.lid_headroom_mm).toDouble();
     g.lid_plateau_diameter_mm =
         prefs.value("lid/plateau_diameter_mm", g.lid_plateau_diameter_mm).toDouble();
-    g.cups_pressed = prefs.value("geometry/cups_pressed", g.cups_pressed).toBool();
     g.cup_height_mm = prefs.value("cups/height_mm", g.cup_height_mm).toDouble();
     g.cup_diameter_mm = prefs.value("cups/top_diameter_mm", g.cup_diameter_mm).toDouble();
     g.cup_base_diameter_mm =
         prefs.value("cups/base_diameter_mm", g.cup_base_diameter_mm).toDouble();
-    g.chunk_proud = prefs.value("geometry/chunk_proud_pct", g.chunk_proud * 100).toDouble() / 100;
+    // Saved as geometry/chunk_proud_pct before the setting took lab37's name.
+    const QVariant share = prefs.value("geometry/piece_above_food_pct",
+                                       prefs.value("geometry/chunk_proud_pct",
+                                                   g.piece_above_food_share * 100));
+    g.piece_above_food_share = share.toDouble() / 100;
     return g;
+}
+
+/// The room each sauce cup is charged, as last set in the window.
+double configured_cup_ml()
+{
+    return QSettings().value("cups/charge_ml", bowlfill::SauceCups{}.cup_ml).toDouble();
 }
 
 /// Volume Fill's fit target and step-down limit, as last set in the window.
@@ -179,6 +188,7 @@ int run_audit(const QString &asset_dir, const QString &want, bool volume_only)
         matched = true;
         SimSettings legacy;
         legacy.geometry = configured_geometry(volume_only);
+        legacy.sauce.cup_ml = configured_cup_ml();
         legacy.dispense = configured_dispense();
         const BrandAudit audit = audit_brand(m, curves, legacy, configured_volume_fill());
         const std::string csv = audit.to_csv();
@@ -209,6 +219,7 @@ int run_export_volume_fill(const QString &asset_dir, const QString &path, const 
 
     SimSettings settings;
     settings.geometry = configured_geometry(false);
+    settings.sauce.cup_ml = configured_cup_ml();
     settings.compress = true;
     settings.load_transfer = 1.0;
     std::vector<std::string> active;
@@ -314,6 +325,7 @@ int run_sweep_cli(const QString &asset_dir, const QString &want, const QString &
     std::vector<SweepTotals> totals;
     SimSettings legacy;
     legacy.geometry = configured_geometry(volume_only);
+    legacy.sauce.cup_ml = configured_cup_ml();
     legacy.dispense = configured_dispense();
     run_sweep(menus, curves, legacy, &costs,
               limits, out, [&](std::int64_t done, std::int64_t total) {

@@ -119,7 +119,7 @@ MappingDialog::MappingDialog(const std::vector<Menu> &menus, const NameMappings 
         "brands that call one ingredient different things only share that data once "
         "both map to the same name. Leave <i>Maps to</i> as it is to keep the automatic "
         "name; set <i>Kind</i> only to correct a wrong guess. Give a <i>Piece height</i> "
-        "only to chunky ingredients that stand proud of the food; everything else smears. "
+        "only to chunky ingredients whose pieces stick up above the food; everything else smears. "
         "A <i>Mound slope</i> sets how steeply an ingredient piles when mounding is "
         "shown; leave it on <i>Default</i> to use the default slope in Settings \u2192 Mounding & chunks. "
         "Give chunky pieces that roll off a mound a <i>Roll-off</i> angle: they roll down "
@@ -293,8 +293,8 @@ void MappingDialog::populate(const NameMappings &current, const PieceHeights &pi
             row.kind == "protein"
                 ? QString("%1 mm (placeholder)").arg(kPlaceholderProteinPieceMm, 0, 'f', 0)
                 : QString("Smears"));
-        piece->setToolTip("Height of one piece, for chunky ingredients that stand proud of "
-                          "the food. 0 mm means it smears. Shared by every row that maps "
+        piece->setToolTip("Height of one piece, for chunky ingredients whose pieces stick up "
+                          "above the food. 0 mm means it smears. Shared by every row that maps "
                           "to the same name.");
         table_->setCellWidget(r, kPiece, in_cell(piece));
 

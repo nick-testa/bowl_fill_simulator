@@ -1069,11 +1069,6 @@ QWidget *MainWindow::build_settings()
         track(page, cb, [cb, fallback] { return cb->isChecked() != fallback; },
               [cb, fallback] { cb->setChecked(fallback); });
     };
-    auto track_choice = [&](int page, QPushButton *the_default) {
-        track(page, the_default, [the_default] { return !the_default->isChecked(); },
-              [the_default] { if (!the_default->isChecked()) the_default->click(); });
-    };
-
     QSettings prefs;
     // Spin boxes that remember themselves under `key`.
     auto dim = [&](const QString &key, double def, double lo, double hi, int dp,
@@ -1107,37 +1102,14 @@ QWidget *MainWindow::build_settings()
 
         heights_ = new QCheckBox("Judge fit by height under the lid");
         heights_->setChecked(prefs.value("geometry/enabled", true).toBool());
-        heights_->setToolTip(QString("Rigid sauce cups and chunky pieces need room below the "
-                                     "lid, not just their volume. Off: each cup counts as the "
-                                     "%1 ml it takes up.").arg(SauceCups{}.cup_ml, 0, 'f', 0));
+        heights_->setToolTip("Chunky pieces need room below the lid, not just their volume. "
+                             "Each sauce cup takes its whole charge either way.");
         v->addWidget(heights_);
         track_check(page, heights_, true);
-        cups_pressed_ = make_toggle("Cups pressed in");
-        cups_resting_ = make_toggle("Cups resting on top");
-        cups_pressed_->setToolTip("The lidder pushes each cup down into the food, and each "
-                                  "takes its whole volume: cups land tilted or upside down, "
-                                  "so none of one stands clear above the food.");
-        cups_resting_->setToolTip("Cups sit on the food as dispensed, so the whole surface "
-                                  "must stay a cup height below the lid.");
-        const bool pressed = prefs.value("geometry/cups_pressed", true).toBool();
-        cups_pressed_->setChecked(pressed);
-        cups_resting_->setChecked(!pressed);
-        cups_segment_ = segment({cups_pressed_, cups_resting_});
-        v->addWidget(cups_segment_);
-        track_choice(page, cups_pressed_);
         connect(heights_, &QCheckBox::toggled, this, [this](bool on) {
             QSettings().setValue("geometry/enabled", on);
-            cups_segment_->setVisible(on);
             recompute();
         });
-        for (QPushButton *b : {cups_pressed_, cups_resting_})
-            connect(b, &QPushButton::clicked, this, [this, b] {
-                cups_pressed_->setChecked(b == cups_pressed_);
-                cups_resting_->setChecked(b == cups_resting_);
-                QSettings().setValue("geometry/cups_pressed", cups_pressed_->isChecked());
-                recompute();
-            });
-        cups_segment_->setVisible(heights_->isChecked());
         geometry_note_ = make_label("", "note");
         v->addWidget(geometry_note_);
 
@@ -1161,20 +1133,31 @@ QWidget *MainWindow::build_settings()
         v->addLayout(field_row({field("Rises", headroom_),
                                 field("Over a centre of", lid_plateau_d_)}));
         v->addWidget(section_label("Sauce cup"));
+        cup_charge_ = dim("cups/charge_ml", SauceCups{}.cup_ml, 0, 250, 0, " ml");
+        cup_charge_->setToolTip("Room each sauce cup takes from the food. A lidded cup "
+                                "measures about 70 ml; the default 100 ml adds a 30 ml "
+                                "reserve, since cups land on top of the food, tilted or on "
+                                "edge. lab37 reads it from the Catalog's "
+                                "volume_settings.sauce_cup_ml. Scans still count a cup as "
+                                "the 70 ml the camera sees.");
+        v->addWidget(field("Charge per cup", cup_charge_));
         cup_h_ = dim("cups/height_mm", measured.cup_height_mm, 0, 100, 1, " mm");
-        cup_h_->setToolTip("Sauce cup height with its lid on (measured: 30 mm).");
+        cup_h_->setToolTip("Sauce cup height with its lid on (measured: 30 mm). Only draws "
+                           "the cups; the charge sets the room they take.");
         cup_d_ = dim("cups/top_diameter_mm", measured.cup_diameter_mm, 0, 150, 1, " mm");
-        cup_d_->setToolTip("Across the lid (measured: 65 mm). The cup tapers to its base.");
+        cup_d_->setToolTip("Across the lid (measured: 65 mm). The cup tapers to its base. "
+                           "Only draws the cups.");
         cup_base_d_ = dim("cups/base_diameter_mm", measured.cup_base_diameter_mm, 0, 150, 1,
                           " mm");
-        cup_base_d_->setToolTip("Across the base (measured: 45 mm).");
+        cup_base_d_->setToolTip("Across the base (measured: 45 mm). Only draws the cups.");
         v->addLayout(field_row({field("Height", cup_h_), field("Lid diameter", cup_d_),
                                 field("Base diameter", cup_base_d_)}));
         const std::pair<QDoubleSpinBox *, double> dims[] = {
             {depth_, measured.depth_mm}, {bowl_top_d_, measured.top_diameter_mm},
             {bowl_bottom_d_, measured.bottom_diameter_mm}, {headroom_, measured.lid_headroom_mm},
             {lid_plateau_d_, measured.lid_plateau_diameter_mm}, {cup_h_, measured.cup_height_mm},
-            {cup_d_, measured.cup_diameter_mm}, {cup_base_d_, measured.cup_base_diameter_mm}};
+            {cup_d_, measured.cup_diameter_mm}, {cup_base_d_, measured.cup_base_diameter_mm},
+            {cup_charge_, SauceCups{}.cup_ml}};
         for (const auto &[sp, def] : dims) track_spin(page, sp, [def] { return def; });
         v->addStretch(1);
     }
@@ -1241,20 +1224,27 @@ QWidget *MainWindow::build_settings()
     {
         auto [v, page] = add_page("Mounding & chunks",
                                   "How food piles when it lands, and how far chunky pieces "
-                                  "stand proud. Turn mounding on from the finished bowl.");
+                                  "stick up above the food. Turn mounding on from the "
+                                  "finished bowl.");
         mound_slope_ = dim("mound/slope_deg", BowlGeometry::kPlaceholderMoundSlope, 0, 80, 0,
                            "°");
         mound_slope_->setToolTip("How steep a pile's sides are, the food's angle of repose; "
                                  "0° is a level fill. Read it off a side-on triage photo. "
                                  "Ingredients can set their own under Ingredients.");
-        chunk_proud_ = dim("geometry/chunk_proud_pct", BowlGeometry::kPlaceholderChunkProud * 100,
+        // Saved as geometry/chunk_proud_pct before the setting took lab37's name.
+        piece_share_ = dim("geometry/piece_above_food_pct",
+                           prefs.value("geometry/chunk_proud_pct",
+                                       BowlGeometry::kPlaceholderPieceAboveFoodShare * 100)
+                               .toDouble(),
                            0, 100, 0, " %");
-        chunk_proud_->setToolTip("How much of a chunky piece's height stands above the "
-                                 "smeared food around it.");
+        piece_share_->setToolTip("Share of a chunky piece's height that sticks up above the "
+                                 "food around it, which the lid must clear. lab37 reads it "
+                                 "from the Catalog's volume_settings.piece_above_food_share.");
         v->addLayout(field_row({field("Default mound slope", mound_slope_),
-                                field("Chunks stand proud by", chunk_proud_)}));
+                                field("Pieces stand above the food by", piece_share_)}));
         track_spin(page, mound_slope_, [] { return BowlGeometry::kPlaceholderMoundSlope; });
-        track_spin(page, chunk_proud_, [] { return BowlGeometry::kPlaceholderChunkProud * 100; });
+        track_spin(page, piece_share_,
+                   [] { return BowlGeometry::kPlaceholderPieceAboveFoodShare * 100; });
         auto *per = new QPushButton("Per-ingredient slopes and piece heights…");
         connect(per, &QPushButton::clicked, this, &MainWindow::show_mappings);
         v->addWidget(per);
@@ -2772,6 +2762,7 @@ SimSettings MainWindow::legacy_settings() const
     s.floor_g = floor_->value();
     s.bowl_capacity_oz = units::to_oz(capacity_->value());
     s.sauce.cups = sauce_cup_count();
+    s.sauce.cup_ml = cup_charge_->value();
     s.geometry = geometry();
     s.compress = compress_->isChecked();
     s.load_transfer = load_transfer_->value();
@@ -2873,11 +2864,10 @@ BowlGeometry MainWindow::geometry() const
     g.bottom_diameter_mm = bowl_bottom_d_->value();
     g.lid_headroom_mm = headroom_->value();
     g.lid_plateau_diameter_mm = lid_plateau_d_->value();
-    g.cups_pressed = cups_pressed_->isChecked();
     g.cup_height_mm = cup_h_->value();
     g.cup_diameter_mm = cup_d_->value();
     g.cup_base_diameter_mm = cup_base_d_->value();
-    g.chunk_proud = chunk_proud_->value() / 100.0;
+    g.piece_above_food_share = piece_share_->value() / 100.0;
     g.mound = mound_->isChecked();
     g.mound_slope_deg = mound_slope_->value();
     return g;
@@ -2888,7 +2878,7 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
 {
     if (!g.enabled) {
         geometry_note_->setText(QString("Fit is judged by volume alone; each sauce cup "
-                                        "counts as the %1 ml it takes up.")
+                                        "takes its %1 ml charge.")
                                     .arg(sauce.cup_ml, 0, 'f', 0));
         return;
     }
@@ -2905,9 +2895,8 @@ void MainWindow::update_geometry_note(double capacity_oz, const SauceCups &sauce
                        .arg(units::volume(g.rim_ml() / kMlPerOz, true))
                        .arg(g.lid_mm(), 0, 'f', 1);
     if (sauce.cups > 0)
-        text += QString("%1 %2 %3 take%4 <b>%5</b>. ")
+        text += QString("%1 %2 take%3 <b>%4</b>. ")
                     .arg(sauce.cups).arg(sauce.cups == 1 ? "cup" : "cups")
-                    .arg(g.cups_pressed ? "pressed in" : "resting on top")
                     .arg(sauce.cups == 1 ? "s" : "")
                     .arg(units::volume(after_chunks - after_cups, true));
     if (chunk_mm > 0 && room - after_chunks < 0.01)
@@ -3376,8 +3365,9 @@ void MainWindow::update_estimates(const std::vector<BowlItem> &items)
                                     .arg(qs(it.name)).arg(it.piece_height_mm, 0, 'f', 0),
                                 [this] { show_mappings(); }});
         }
-        if (tallest > 0 && g.chunk_proud == BowlGeometry::kPlaceholderChunkProud)
-            list.push_back({"How far chunks stand proud is a placeholder", go_page(kMounding)});
+        if (tallest > 0 && g.piece_above_food_share == BowlGeometry::kPlaceholderPieceAboveFoodShare)
+            list.push_back({"How far pieces stand above the food is a placeholder",
+                            go_page(kMounding)});
     }
     if (g.mound && g.mound_slope_deg == BowlGeometry::kPlaceholderMoundSlope) {
         QStringList defaulted;

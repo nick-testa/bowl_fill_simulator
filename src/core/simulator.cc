@@ -77,8 +77,8 @@ double BowlGeometry::height_of_mm3(double volume_mm3) const
 namespace
 {
 
-/// Food, in mm³, that brings the surface to `surface_mm` with pressed-in cups: each
-/// takes its whole volume. Cups land tilted, sideways or upside down on the food, and
+/// Food, in mm³, that brings the surface to `surface_mm` with the cups in: each takes
+/// its whole charge. Cups land tilted, sideways or upside down on the food, and
 /// the lidder cannot push them upright into it, so none of a cup can be counted as
 /// standing clear above the food (lid failures, 2026-11).
 double food_to_surface_mm3(const BowlGeometry &g, const SauceCups &sauce, int cups, double surface_mm)
@@ -96,17 +96,12 @@ double food_capacity_oz(double bowl_capacity_oz, const SauceCups &sauce, const B
     }
 
     const int cups = std::clamp(sauce.cups, 0, SauceCups::kMax);
-    const double chunk = std::max(0.0, chunk_height_mm) * std::clamp(g.chunk_proud, 0.0, 1.0);
+    const double clear = std::max(0.0, chunk_height_mm) * std::clamp(g.piece_above_food_share, 0.0, 1.0);
     const double fill_line = g.height_of_mm3(bowl_capacity_oz * kMlPerOz * 1000.0);
-    // The surface may rise to the fill line, unless what stands on it would then
-    // touch the lid: a chunk's proud part always, and resting cups their whole height.
-    double clear = chunk;
-    if (!g.cups_pressed && cups > 0)
-    {
-        clear = std::max(clear, g.cup_height_mm);
-    }
+    // The surface may rise to the fill line, unless the part of a piece standing above
+    // the food would then touch the lid.
     const double surface = std::min(fill_line, g.lid_mm() - clear);
-    const double food = g.cups_pressed ? food_to_surface_mm3(g, sauce, cups, surface) : g.volume_below_mm3(surface);
+    const double food = food_to_surface_mm3(g, sauce, cups, surface);
     return std::max(0.0, food) / 1000.0 / kMlPerOz;
 }
 
@@ -118,16 +113,14 @@ double rim_food_oz(const SauceCups &sauce, const BowlGeometry &g)
         return std::max(0.0, rim - sauce.volume_oz());
     }
     const int cups = std::clamp(sauce.cups, 0, SauceCups::kMax);
-    // Resting cups ride on the food and take nothing below the rim.
-    const double food =
-        g.cups_pressed ? food_to_surface_mm3(g, sauce, cups, g.depth_mm) : g.volume_below_mm3(g.depth_mm);
+    const double food = food_to_surface_mm3(g, sauce, cups, g.depth_mm);
     return std::max(0.0, food) / 1000.0 / kMlPerOz;
 }
 
 double food_surface_mm(const SauceCups &sauce, const BowlGeometry &g, double food_oz)
 {
     const double v = std::max(0.0, food_oz) * kMlPerOz * 1000.0;
-    const int cups = g.enabled && g.cups_pressed ? std::clamp(sauce.cups, 0, SauceCups::kMax) : 0;
+    const int cups = g.enabled ? std::clamp(sauce.cups, 0, SauceCups::kMax) : 0;
     const double lid = g.lid_mm();
     const double at_lid = food_to_surface_mm3(g, sauce, cups, lid);
     if (v >= at_lid)

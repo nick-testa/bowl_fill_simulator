@@ -335,10 +335,11 @@ report both *food fill* and *with sauce cups*.
 
 The 32 oz *functional fill* is a fill line, not the rim: 946 ml reaches 42.0 mm,
 3.0 mm below it. With *Judge fit by height* on, food may rise to that line unless a
-chunk standing proud or a resting cup would then touch the lid; pressed-in cups
-take away their whole volume. (They once took only what they displaced below the
-surface, with their tops at the lid, but cups land tilted, sideways or upside down and
-the lidder cannot push them upright: lid failures, 2026-11.) The overfill odds
+piece standing above the food would then touch the lid, and each sauce cup takes its
+whole charge (*Settings → Bowl & lid → Charge per cup*, 100 ml by default). (Cups once
+took only what they displaced below the surface, with their tops at the lid, but cups
+land tilted, sideways or upside down and the lidder cannot push them upright: lid
+failures, 2026-11.) The overfill odds
 are judged against both the food room and the real rim.
 
 **COGS is reported, never solved for.** Prices come from

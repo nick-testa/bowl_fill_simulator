@@ -176,7 +176,7 @@ VolumeFillExport export_volume_fill(const std::vector<Menu> &menus,
     s += std::format("        .min_share = {},\n", num(vf.min_share));
     s += std::format("        .bowl_capacity_oz = {},\n", num(settings.bowl_capacity_oz));
     s += std::format("        .cup_ml = {},\n", num(settings.sauce.cup_ml));
-    s += std::format("        .piece_above_food_share = {},\n", num(g.chunk_proud));
+    s += std::format("        .piece_above_food_share = {},\n", num(g.piece_above_food_share));
     s += std::format("        .compress = {},\n", flag(settings.compress));
     s += std::format("        .load_transfer = {},\n", num(settings.load_transfer));
     s += "        .bowl =\n"

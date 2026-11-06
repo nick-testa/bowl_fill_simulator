@@ -135,11 +135,7 @@ void BowlDiagram::paintEvent(QPaintEvent *)
                                        kMaxDrawnOver);
     // The "+X over the rim" caption sits above the heap, so it needs a line too.
     const double caption_h = over_rim ? QFontMetricsF(foot_note_font).height() + 6 : 0;
-    double reserve = std::max(lid_share, drawn_over);
-    // A resting cup rides on the food and may stand well above the rim.
-    if (!g.cups_pressed && set.sauce.cups > 0)
-        reserve = std::max(reserve, (std::min(food_mm, g.lid_mm()) + g.cup_height_mm - g.depth_mm)
-                                        / g.depth_mm);
+    const double reserve = std::max(lid_share, drawn_over);
 
     const double avail_h = height() - footer_h - caption_h - kMargin * 2;
     const Gutters gut = gutters();
@@ -279,15 +275,14 @@ void BowlDiagram::paintEvent(QPaintEvent *)
     const QFont label_font = theme::font(theme::Text::Caption, true);
 
     // ---- sauce cups, to scale --------------------------------------------
-    // Pressed in, a cup's top is at the lid and the food closes round it; resting, it
-    // sits on the food. Drawn opaque over the food, since that is what it displaces.
+    // A cup's top is at the lid and the food closes round it. Drawn opaque over the
+    // food, since that is what it displaces.
     const int cups = std::clamp(set.sauce.cups, 0, SauceCups::kMax);
     if (cups > 0 && g.cup_height_mm > 0) {
         const double mm = rim_w / g.top_diameter_mm;   // the drawing is to one scale
         const double top_hw = g.cup_diameter_mm * mm / 2, foot_hw = g.cup_base_diameter_mm * mm / 2;
         const double cup_h = g.cup_height_mm * mm;
-        const double cup_top = g.cups_pressed ? y_at_mm(g.lid_mm())
-                                              : y_at_mm(std::min(food_mm, g.lid_mm())) - cup_h;
+        const double cup_top = y_at_mm(g.lid_mm());
         const double offsets[2][2] = {{0.35, 0}, {-0.42, 0.42}};
         for (int i = 0; i < cups; ++i) {
             const double x = cx + rim_hw * offsets[cups - 1][i];
